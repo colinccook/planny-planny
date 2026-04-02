@@ -5,9 +5,12 @@ create table public.ingredients (
   name text not null,
   starred boolean not null default false,
   warning boolean not null default false,
-  created_at timestamptz not null default now(),
-  unique (household_id, lower(name))
+  created_at timestamptz not null default now()
 );
+
+-- Case-insensitive uniqueness per household
+create unique index ingredients_household_name_unique
+  on public.ingredients (household_id, lower(name));
 
 alter table public.ingredients enable row level security;
 

@@ -29,9 +29,96 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 | E2E Testing | Playwright + playwright-bdd (Gherkin BDD) |
 | CI/CD | GitHub Actions |
 
-## 📱 Screenshots
+## 📱 Screenshots & User Journeys
 
-> Screenshots will be added once the UI is implemented.
+### 1. Sign Up & Sign In
+
+New users create an account with a display name, email, and password. A personal household is automatically created for them.
+
+<p align="center">
+  <img src="docs/screenshots/01-register-mobile.png" alt="Registration (mobile)" width="280" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/02-login-mobile.png" alt="Login (mobile)" width="280" />
+</p>
+
+<details>
+<summary>Desktop view</summary>
+<p align="center">
+  <img src="docs/screenshots/03-register-desktop.png" alt="Registration (desktop)" width="600" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/04-login-desktop.png" alt="Login (desktop)" width="600" />
+</p>
+</details>
+
+---
+
+### 2. Calendar — Perpetual Meal Plan
+
+The main view is a perpetual scrolling calendar starting from today. Each day shows:
+- **Who's eating** — the number of adults 👨 and children 👧 (from household defaults + any visitors)
+- **Day theme** — recurring placeholders like "🐟 Oily fish day" or "🍖 Sunday roast"
+- **Meals** — each meal shows its title, description, and tagged ingredients as coloured pills
+- **⭐ Starred ingredients** — highlighted with a star to encourage variety
+- **⚠️ Warning ingredients** — flagged when overused (e.g. Chicken)
+
+Tap **+ Add meal** on any day to plan a new meal.
+
+<p align="center">
+  <img src="docs/screenshots/05-calendar-mobile.png" alt="Calendar (mobile)" width="280" />
+</p>
+
+<details>
+<summary>Desktop view</summary>
+<p align="center">
+  <img src="docs/screenshots/08-calendar-desktop.png" alt="Calendar (desktop)" width="700" />
+</p>
+</details>
+
+---
+
+### 3. Ingredients — Track & Balance Your Diet
+
+The Ingredients tab shows your household's full ingredient library with:
+- **Usage stats** — how many times each ingredient has been planned and when it was last used
+- **⭐ Star** ingredients you want to use regularly (they'll appear in suggestions)
+- **⚠️ Warning** flag for ingredients you tend to overuse
+- **Sort** by A–Z, most used, or least recently planned
+- **Search** to quickly find any ingredient
+
+<p align="center">
+  <img src="docs/screenshots/06-ingredients-mobile.png" alt="Ingredients (mobile)" width="280" />
+</p>
+
+<details>
+<summary>Desktop view</summary>
+<p align="center">
+  <img src="docs/screenshots/09-ingredients-desktop.png" alt="Ingredients (desktop)" width="700" />
+</p>
+</details>
+
+---
+
+### 4. Settings — Household Configuration
+
+The Settings tab lets you manage your household:
+- **Switch households** — if you belong to multiple households
+- **Household settings** — name, alias (e.g. your address), default adults & children
+- **Day placeholders** — set recurring themes for each day of the week
+- **Members** — view household members and their roles (owner/member/guest)
+- **Invites** — generate invite links for new members or guests
+- **Public sharing** — toggle a read-only public link for visiting family
+
+<p align="center">
+  <img src="docs/screenshots/07-settings-mobile.png" alt="Settings (mobile)" width="280" />
+</p>
+
+<details>
+<summary>Desktop view</summary>
+<p align="center">
+  <img src="docs/screenshots/10-settings-desktop.png" alt="Settings (desktop)" width="700" />
+</p>
+</details>
 
 ## 🚀 Getting Started
 

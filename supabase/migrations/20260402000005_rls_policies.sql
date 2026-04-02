@@ -48,15 +48,20 @@ create policy "Authenticated users can create households"
 -- ============================================================
 -- HOUSEHOLD MEMBERS
 -- ============================================================
+-- Users can see memberships for any household they belong to.
+-- Using a security definer function to avoid infinite recursion.
+create or replace function public.is_household_member(p_household_id uuid)
+returns boolean as $$
+  select exists (
+    select 1 from public.household_members
+    where household_id = p_household_id
+    and user_id = auth.uid()
+  )
+$$ language sql security definer stable;
+
 create policy "Members can view co-members"
   on public.household_members for select
-  using (
-    exists (
-      select 1 from public.household_members as my_membership
-      where my_membership.household_id = household_members.household_id
-      and my_membership.user_id = auth.uid()
-    )
-  );
+  using (public.is_household_member(household_id));
 
 create policy "Owner can manage members"
   on public.household_members for insert
