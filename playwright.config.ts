@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
 const testDir = defineBddConfig({
@@ -12,10 +12,21 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5173',
-    ...devices['iPhone 13'],
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
+  projects: [
+    {
+      name: 'Mobile Chrome',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+      },
+    },
+  ],
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:5173',
