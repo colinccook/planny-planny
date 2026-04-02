@@ -1,0 +1,99 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const mockUseHousehold = vi.fn()
+
+vi.mock('../../hooks/useHousehold', () => ({
+  useHousehold: () => mockUseHousehold(),
+}))
+
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: vi.fn().mockReturnValue({
+      update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
+    }),
+  },
+}))
+
+import HouseholdSettings from './HouseholdSettings'
+
+function createWrapper() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client: queryClient }, children)
+  }
+}
+
+const mockHousehold = {
+  id: 'h1',
+  name: 'Test House',
+  alias: 'My Place',
+  default_adults: 3,
+  default_children: 1,
+  public_share_token: null,
+  created_by: 'u1',
+  created_at: '',
+}
+
+describe('HouseholdSettings', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('renders nothing when no current household', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: null,
+      currentRole: null,
+    })
+
+    const { container } = render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('renders form with household values', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'owner',
+    })
+
+    render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    expect(screen.getByDisplayValue('Test House')).toBeDefined()
+    expect(screen.getByDisplayValue('My Place')).toBeDefined()
+    expect(screen.getByDisplayValue('3')).toBeDefined()
+    expect(screen.getByDisplayValue('1')).toBeDefined()
+  })
+
+  it('shows save button for owners', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'owner',
+    })
+
+    render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    expect(screen.getByRole('button', { name: /Save changes/i })).toBeDefined()
+  })
+
+  it('shows read-only message for guests', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'guest',
+    })
+
+    render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    expect(screen.getByText(/You are a guest/)).toBeDefined()
+    expect(screen.queryByRole('button', { name: /Save/i })).toBeNull()
+  })
+
+  it('disables inputs for guests', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'guest',
+    })
+
+    render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    const nameInput = screen.getByDisplayValue('Test House') as HTMLInputElement
+    expect(nameInput.disabled).toBe(true)
+  })
+})
