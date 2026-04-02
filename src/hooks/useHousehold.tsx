@@ -66,17 +66,19 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   )
   const currentRole = (currentMembership?.role as HouseholdMember['role']) ?? null
 
-  // Auto-select first household and subscribe to Realtime
+  // Auto-select first household
+  if (currentHousehold && !currentHouseholdId) {
+    setCurrentHouseholdId(currentHousehold.id)
+  }
+
+  // Subscribe to Realtime when household changes
   useEffect(() => {
     if (currentHousehold && realtimeRef.current) {
       if (realtimeRef.current.householdId !== currentHousehold.id) {
         realtimeRef.current.subscribe(currentHousehold.id)
       }
-      if (!currentHouseholdId) {
-        setCurrentHouseholdId(currentHousehold.id)
-      }
     }
-  }, [currentHousehold, currentHouseholdId])
+  }, [currentHousehold])
 
   const switchHousehold = (householdId: string) => {
     setCurrentHouseholdId(householdId)
@@ -98,6 +100,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useHousehold(): HouseholdContextType {
   const context = useContext(HouseholdContext)
   if (context === undefined) {

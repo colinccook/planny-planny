@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useHousehold } from '../../hooks/useHousehold'
 import {
   useDayPlaceholders,
@@ -22,18 +22,25 @@ export default function DayPlaceholders() {
   const upsertMutation = useUpsertDayPlaceholder()
   const deleteMutation = useDeleteDayPlaceholder()
 
-  const [labels, setLabels] = useState<Record<number, string>>({})
+  const [localEdits, setLocalEdits] = useState<Record<number, string>>({})
   const [savedDays, setSavedDays] = useState<Set<number>>(new Set())
 
   const canEdit = currentRole === 'owner' || currentRole === 'member'
 
-  useEffect(() => {
+  const serverLabels = useMemo(() => {
     const map: Record<number, string> = {}
     for (const p of placeholders) {
       map[p.day_of_week] = p.label
     }
-    setLabels(map)
+    return map
   }, [placeholders])
+
+  // Merge server labels with local edits (local edits take priority)
+  const labels = { ...serverLabels, ...localEdits }
+
+  const setLabel = (dayOfWeek: number, value: string) => {
+    setLocalEdits((prev) => ({ ...prev, [dayOfWeek]: value }))
+  }
 
   if (!currentHousehold) return null
 
@@ -66,7 +73,7 @@ export default function DayPlaceholders() {
       householdId: currentHousehold.id,
     })
 
-    setLabels((prev) => {
+    setLocalEdits((prev) => {
       const next = { ...prev }
       delete next[dayOfWeek]
       return next
@@ -109,9 +116,7 @@ export default function DayPlaceholders() {
                   className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
                   placeholder={`e.g. ${name} theme`}
                   value={labels[index] ?? ''}
-                  onChange={(e) =>
-                    setLabels((prev) => ({ ...prev, [index]: e.target.value }))
-                  }
+                  onChange={(e) => setLabel(index, e.target.value)}
                   onBlur={() => handleBlur(index)}
                   disabled={!canEdit}
                   aria-label={`${name} placeholder`}

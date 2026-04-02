@@ -39,13 +39,16 @@ function generateDateRange(start: Date, count: number): string[] {
 }
 
 export default function CalendarView({ household, currentRole }: CalendarViewProps) {
-  const today = useRef(new Date())
-  today.current.setHours(0, 0, 0, 0)
+  const [today] = useState(() => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+  })
 
   const [dayCount, setDayCount] = useState(INITIAL_DAYS)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const dates = generateDateRange(today.current, dayCount)
+  const dates = generateDateRange(today, dayCount)
   const startDate = dates[0]
   const endDate = dates[dates.length - 1]
 
