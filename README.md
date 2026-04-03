@@ -182,31 +182,56 @@ npm run test:e2e:ui
 
 ## 🌍 Deployment
 
-### Deploy to Production
+### How It Works
 
-1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+When you merge to `main`, GitHub Actions automatically:
+1. **Pushes database migrations** to your hosted Supabase project
+2. **Builds the frontend** with your Supabase credentials baked in
+3. **Deploys to GitHub Pages**
 
-2. **Link your local project:**
-   ```bash
-   npx supabase link --project-ref YOUR_PROJECT_REF
-   ```
+No local Supabase CLI installation is needed — everything runs in CI.
 
-3. **Push database migrations:**
-   ```bash
-   npx supabase db push
-   ```
+### First-Time Setup
 
-4. **Set environment variables** for your hosting provider:
-   ```
-   VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key
-   ```
+#### 1. Create a Supabase project
 
-5. **Build and deploy:**
-   ```bash
-   npm run build
-   ```
-   Deploy the `dist/` folder to any static host: Vercel, Netlify, Cloudflare Pages, etc.
+Go to [supabase.com](https://supabase.com) and create a new project. Note your **project ref** (in Project Settings → General).
+
+#### 2. Generate a Supabase access token
+
+Go to [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) and create a personal access token.
+
+#### 3. Set GitHub repository secrets
+
+In your GitHub repo → Settings → Secrets and variables → Actions → **Secrets**, add:
+
+| Secret | Value | Where to find |
+|--------|-------|---------------|
+| `SUPABASE_ACCESS_TOKEN` | Personal access token | [Account tokens page](https://supabase.com/dashboard/account/tokens) |
+| `SUPABASE_DB_PASSWORD` | Database password | Project Settings → Database |
+
+#### 4. Set GitHub repository variables
+
+In your GitHub repo → Settings → Secrets and variables → Actions → **Variables**, add:
+
+| Variable | Value | Where to find |
+|----------|-------|---------------|
+| `SUPABASE_PROJECT_REF` | Your project ref (e.g. `abcdefghijklmnop`) | Project Settings → General |
+| `VITE_SUPABASE_URL` | `https://YOUR_PROJECT_REF.supabase.co` | Project Settings → API |
+| `VITE_SUPABASE_ANON_KEY` | Your anon/public key | Project Settings → API |
+
+#### 5. Configure Supabase Auth
+
+In your Supabase Dashboard → Authentication → URL Configuration:
+
+- **Site URL**: `https://YOUR_USERNAME.github.io/planny-planny/`
+- **Redirect URLs**: Add `https://YOUR_USERNAME.github.io/planny-planny/**`
+
+#### 6. Deploy
+
+Either push a commit to `main`, or go to Actions → "Deploy to GitHub Pages & Supabase" → Run workflow (manual trigger).
+
+The workflow will push all database migrations and deploy the frontend. Subsequent merges to `main` will automatically deploy any new migrations and frontend changes.
 
 ## 🏛️ Architecture
 
