@@ -64,6 +64,9 @@ export function useCreateMealPlan() {
       queryClient.invalidateQueries({
         queryKey: ['meal-plans', variables.household_id],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['plan-streak', variables.household_id],
+      })
     },
   })
 }
@@ -91,6 +94,9 @@ export function useUpdateMealPlan() {
       queryClient.invalidateQueries({
         queryKey: ['meal-plans', householdId],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['plan-streak', householdId],
+      })
     },
   })
 }
@@ -113,6 +119,9 @@ export function useDeleteMealPlan() {
     onSuccess: ({ householdId }) => {
       queryClient.invalidateQueries({
         queryKey: ['meal-plans', householdId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['plan-streak', householdId],
       })
     },
   })
