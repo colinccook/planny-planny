@@ -91,6 +91,20 @@ describe('SettingsPage', () => {
     expect(screen.getByText('test@example.com')).toBeDefined()
   })
 
+  it('renders sign out button in the account section', () => {
+    mockUseHousehold.mockReturnValue({
+      households: [{ id: 'h1', name: 'My House' }],
+      currentHousehold: { id: 'h1', name: 'My House' },
+      currentRole: 'owner',
+      switchHousehold: vi.fn(),
+      isLoading: false,
+    })
+
+    render(createElement(SettingsPage), { wrapper: createWrapper() })
+
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeDefined()
+  })
+
   it('does not show settings sections while loading', () => {
     mockUseHousehold.mockReturnValue({
       households: [],
