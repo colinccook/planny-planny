@@ -10,17 +10,13 @@ vi.mock('../lib/supabase', () => {
 })
 
 import { computeStreak } from './usePlanStreak'
+import { toDateString, addDays } from '../lib/dates'
 
 function dateSet(...offsets: number[]): Set<string> {
   const today = new Date(2026, 3, 4) // April 4, 2026
   const set = new Set<string>()
   for (const offset of offsets) {
-    const d = new Date(today)
-    d.setDate(d.getDate() + offset)
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    set.add(`${y}-${m}-${day}`)
+    set.add(toDateString(addDays(today, offset)))
   }
   return set
 }

@@ -5,6 +5,7 @@ import {
   useDayContexts,
   useDayPlaceholders,
 } from '../../hooks/useMealPlans'
+import { generateDateRange } from '../../lib/dates'
 import DayRow from './DayRow'
 
 type Household = Database['public']['Tables']['households']['Row']
@@ -16,27 +17,6 @@ interface CalendarViewProps {
 
 const INITIAL_DAYS = 14
 const LOAD_MORE_DAYS = 14
-
-function toDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
-
-function generateDateRange(start: Date, count: number): string[] {
-  const dates: string[] = []
-  for (let i = 0; i < count; i++) {
-    dates.push(toDateString(addDays(start, i)))
-  }
-  return dates
-}
 
 export default function CalendarView({ household, currentRole }: CalendarViewProps) {
   const [today] = useState(() => {

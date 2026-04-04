@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+const mockSignOut = vi.fn()
 const mockUseHousehold = vi.fn()
 
 vi.mock('../hooks/useHousehold', () => ({
@@ -16,7 +17,7 @@ vi.mock('../hooks/useAuth', () => ({
     loading: false,
     signUp: vi.fn(),
     signIn: vi.fn(),
-    signOut: vi.fn(),
+    signOut: mockSignOut,
   }),
 }))
 
@@ -91,7 +92,7 @@ describe('SettingsPage', () => {
     expect(screen.getByText('test@example.com')).toBeDefined()
   })
 
-  it('renders sign out button in the account section', () => {
+  it('renders sign out button in the account section and triggers signOut on click', () => {
     mockUseHousehold.mockReturnValue({
       households: [{ id: 'h1', name: 'My House' }],
       currentHousehold: { id: 'h1', name: 'My House' },
@@ -102,7 +103,20 @@ describe('SettingsPage', () => {
 
     render(createElement(SettingsPage), { wrapper: createWrapper() })
 
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeDefined()
+    // Verify the Account heading exists
+    expect(screen.getByText('Account')).toBeDefined()
+
+    // The sign out button should be a sibling of the email in the Account section
+    const signOutButton = screen.getByRole('button', { name: 'Sign out' })
+    expect(signOutButton).toBeDefined()
+
+    // Verify button is inside the same container as the Account heading
+    const accountSection = screen.getByText('Account').closest('div')
+    expect(accountSection?.contains(signOutButton)).toBe(true)
+
+    // Verify clicking calls signOut
+    fireEvent.click(signOutButton)
+    expect(mockSignOut).toHaveBeenCalledOnce()
   })
 
   it('does not show settings sections while loading', () => {

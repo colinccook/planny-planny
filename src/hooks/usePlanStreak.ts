@@ -1,18 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-
-function toDateString(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
+import { toDateString, addDays } from '../lib/dates'
 
 /** Number of consecutive days (starting from today) that have at least one meal planned. */
 export function computeStreak(
@@ -41,12 +29,10 @@ export function usePlanStreak(householdId: string | undefined) {
   return useQuery({
     queryKey: ['plan-streak', householdId, startDate],
     queryFn: async () => {
-      if (!householdId) return 0
-
       const { data, error } = await supabase
         .from('meal_plans')
         .select('date')
-        .eq('household_id', householdId)
+        .eq('household_id', householdId!)
         .gte('date', startDate)
         .lte('date', endDate)
 
