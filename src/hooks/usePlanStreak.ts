@@ -29,10 +29,12 @@ export function usePlanStreak(householdId: string | undefined) {
   return useQuery({
     queryKey: ['plan-streak', householdId, startDate],
     queryFn: async () => {
+      if (!householdId) return 0
+
       const { data, error } = await supabase
         .from('meal_plans')
         .select('date')
-        .eq('household_id', householdId!)
+        .eq('household_id', householdId)
         .gte('date', startDate)
         .lte('date', endDate)
 
