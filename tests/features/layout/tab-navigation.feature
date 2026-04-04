@@ -1,5 +1,6 @@
 Feature: Tab Navigation
 
-  Scenario: Tab bar links use replace navigation to avoid browser back button
-    Given I am on the login page
-    Then I should see the login form
+  Scenario: Tab bar uses replace navigation to avoid browser back button issues
+    Given I am not authenticated
+    When I navigate to the calendar page
+    Then I should be redirected to the login page

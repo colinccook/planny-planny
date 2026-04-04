@@ -33,8 +33,7 @@ export function computeStreak(
 const LOOKAHEAD_DAYS = 90
 
 export function usePlanStreak(householdId: string | undefined) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = new Date(new Date().setHours(0, 0, 0, 0))
 
   const startDate = toDateString(today)
   const endDate = toDateString(addDays(today, LOOKAHEAD_DAYS))
