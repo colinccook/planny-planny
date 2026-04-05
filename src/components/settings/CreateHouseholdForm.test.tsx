@@ -9,7 +9,7 @@ vi.mock('../../lib/supabase', () => ({
       insert: vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           single: vi.fn().mockResolvedValue({
-            data: { id: 'new-h', name: 'Test', alias: null, default_adults: 2, default_children: 0, public_share_token: null, created_by: 'u1', created_at: '' },
+            data: { id: 'new-h', name: 'Test', alias: null, default_adults: 2, default_children: 0, default_babies: 0, public_share_token: null, created_by: 'u1', created_at: '' },
             error: null,
           }),
         }),
@@ -68,6 +68,7 @@ describe('CreateHouseholdForm', () => {
     expect(screen.getByLabelText(/Alias/)).toBeDefined()
     expect(screen.getByLabelText(/Default adults/)).toBeDefined()
     expect(screen.getByLabelText(/Default children/)).toBeDefined()
+    expect(screen.getByLabelText(/Default babies/)).toBeDefined()
     expect(screen.getByRole('button', { name: /Create household/i })).toBeDefined()
   })
 
@@ -78,12 +79,14 @@ describe('CreateHouseholdForm', () => {
     expect(submitButton).toHaveProperty('disabled', true)
   })
 
-  it('has correct default values for adults and children', () => {
+  it('has correct default values for adults, children, and babies', () => {
     render(createElement(CreateHouseholdForm), { wrapper: createWrapper() })
     fireEvent.click(screen.getByText('Create new household'))
     const adultsInput = screen.getByLabelText(/Default adults/) as HTMLInputElement
     const childrenInput = screen.getByLabelText(/Default children/) as HTMLInputElement
+    const babiesInput = screen.getByLabelText(/Default babies/) as HTMLInputElement
     expect(adultsInput.value).toBe('2')
     expect(childrenInput.value).toBe('0')
+    expect(babiesInput.value).toBe('0')
   })
 })

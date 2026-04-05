@@ -10,6 +10,7 @@ describe('DayContextBadge', () => {
       createElement(DayContextBadge, {
         defaultAdults: 2,
         defaultChildren: 1,
+        defaultBabies: 0,
         contexts: [],
         onEdit: vi.fn(),
       })
@@ -28,6 +29,7 @@ describe('DayContextBadge', () => {
         event_name: null,
         extra_adults: 2,
         extra_children: 3,
+        extra_babies: 0,
         created_at: '',
       },
     ]
@@ -36,6 +38,7 @@ describe('DayContextBadge', () => {
       createElement(DayContextBadge, {
         defaultAdults: 2,
         defaultChildren: 1,
+        defaultBabies: 0,
         contexts,
         onEdit: vi.fn(),
       })
@@ -55,6 +58,7 @@ describe('DayContextBadge', () => {
         event_name: 'Mum visiting',
         extra_adults: 1,
         extra_children: 0,
+        extra_babies: 0,
         created_at: '',
       },
       {
@@ -64,6 +68,7 @@ describe('DayContextBadge', () => {
         event_name: "Colin's birthday",
         extra_adults: 0,
         extra_children: 0,
+        extra_babies: 0,
         created_at: '',
       },
     ]
@@ -72,6 +77,7 @@ describe('DayContextBadge', () => {
       createElement(DayContextBadge, {
         defaultAdults: 2,
         defaultChildren: 0,
+        defaultBabies: 0,
         contexts,
         onEdit: vi.fn(),
       })
@@ -86,6 +92,7 @@ describe('DayContextBadge', () => {
       createElement(DayContextBadge, {
         defaultAdults: 2,
         defaultChildren: 0,
+        defaultBabies: 0,
         contexts: [],
         onEdit: vi.fn(),
       })
@@ -93,5 +100,64 @@ describe('DayContextBadge', () => {
 
     expect(screen.getByText('2')).toBeDefined()
     expect(screen.queryByLabelText('children')).toBeNull()
+  })
+
+  it('hides babies count when zero', () => {
+    render(
+      createElement(DayContextBadge, {
+        defaultAdults: 2,
+        defaultChildren: 0,
+        defaultBabies: 0,
+        contexts: [],
+        onEdit: vi.fn(),
+      })
+    )
+
+    expect(screen.queryByLabelText('babies')).toBeNull()
+  })
+
+  it('shows babies emoji when babies count is positive', () => {
+    render(
+      createElement(DayContextBadge, {
+        defaultAdults: 2,
+        defaultChildren: 0,
+        defaultBabies: 1,
+        contexts: [],
+        onEdit: vi.fn(),
+      })
+    )
+
+    expect(screen.getByLabelText('babies')).toBeDefined()
+    expect(screen.getByText('1')).toBeDefined()
+  })
+
+  it('floors negative totals at zero', () => {
+    const contexts = [
+      {
+        id: 'ctx1',
+        household_id: 'h1',
+        date: '2024-06-15',
+        event_name: 'Partner away',
+        extra_adults: -100,
+        extra_children: 0,
+        extra_babies: 0,
+        created_at: '',
+      },
+    ]
+
+    render(
+      createElement(DayContextBadge, {
+        defaultAdults: 2,
+        defaultChildren: 1,
+        defaultBabies: 0,
+        contexts,
+        onEdit: vi.fn(),
+      })
+    )
+
+    // Adults total: 2 + (-100) = -98 → clamped to 0 → hidden
+    expect(screen.queryByLabelText('adults')).toBeNull()
+    // Children unaffected
+    expect(screen.getByText('1')).toBeDefined()
   })
 })

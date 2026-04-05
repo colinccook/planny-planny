@@ -51,6 +51,7 @@ describe('PublicHouseholdPage', () => {
       alias: null,
       default_adults: 2,
       default_children: 0,
+      default_babies: 0,
       public_share_token: 'test-token',
       created_by: 'u1',
       created_at: '',

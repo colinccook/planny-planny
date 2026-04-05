@@ -54,6 +54,7 @@ describe('DayContextForm', () => {
     expect(screen.getByLabelText('Event')).toBeDefined()
     expect(screen.getByLabelText('Extra adults')).toBeDefined()
     expect(screen.getByLabelText('Extra children')).toBeDefined()
+    expect(screen.getByLabelText('Extra babies')).toBeDefined()
     expect(screen.getByText('Add context')).toBeDefined()
   })
 
@@ -65,6 +66,7 @@ describe('DayContextForm', () => {
       event_name: 'Party',
       extra_adults: 3,
       extra_children: 2,
+      extra_babies: 1,
       created_at: '',
     }
 
@@ -81,6 +83,7 @@ describe('DayContextForm', () => {
     expect((screen.getByLabelText('Event') as HTMLInputElement).value).toBe('Party')
     expect((screen.getByLabelText('Extra adults') as HTMLInputElement).value).toBe('3')
     expect((screen.getByLabelText('Extra children') as HTMLInputElement).value).toBe('2')
+    expect((screen.getByLabelText('Extra babies') as HTMLInputElement).value).toBe('1')
     expect(screen.getByText('Update')).toBeDefined()
   })
 
@@ -110,6 +113,7 @@ describe('DayContextForm', () => {
         event_name: 'BBQ night',
         extra_adults: 2,
         extra_children: 0,
+        extra_babies: 0,
       })
     })
     expect(onClose).toHaveBeenCalled()
@@ -134,6 +138,7 @@ describe('DayContextForm', () => {
       event_name: 'Party',
       extra_adults: 0,
       extra_children: 0,
+      extra_babies: 0,
       created_at: '',
     }
 
@@ -158,6 +163,7 @@ describe('DayContextForm', () => {
       event_name: 'Party',
       extra_adults: 0,
       extra_children: 0,
+      extra_babies: 0,
       created_at: '',
     }
 

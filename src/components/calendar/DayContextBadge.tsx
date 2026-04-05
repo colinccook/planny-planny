@@ -5,6 +5,7 @@ type DayContext = Database['public']['Tables']['day_contexts']['Row']
 interface DayContextBadgeProps {
   defaultAdults: number
   defaultChildren: number
+  defaultBabies: number
   contexts: DayContext[]
   onEdit: () => void
 }
@@ -12,13 +13,16 @@ interface DayContextBadgeProps {
 export default function DayContextBadge({
   defaultAdults,
   defaultChildren,
+  defaultBabies,
   contexts,
   onEdit,
 }: DayContextBadgeProps) {
   const extraAdults = contexts.reduce((sum, c) => sum + c.extra_adults, 0)
   const extraChildren = contexts.reduce((sum, c) => sum + c.extra_children, 0)
-  const totalAdults = defaultAdults + extraAdults
-  const totalChildren = defaultChildren + extraChildren
+  const extraBabies = contexts.reduce((sum, c) => sum + c.extra_babies, 0)
+  const totalAdults = Math.max(0, defaultAdults + extraAdults)
+  const totalChildren = Math.max(0, defaultChildren + extraChildren)
+  const totalBabies = Math.max(0, defaultBabies + extraBabies)
   const events = contexts.filter((c) => c.event_name).map((c) => c.event_name!)
 
   return (
@@ -38,6 +42,12 @@ export default function DayContextBadge({
           <span>
             {totalChildren}
             <span role="img" aria-label="children">🧒</span>
+          </span>
+        )}
+        {totalBabies > 0 && (
+          <span>
+            {totalBabies}
+            <span role="img" aria-label="babies">👶</span>
           </span>
         )}
       </span>

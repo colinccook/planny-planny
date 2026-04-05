@@ -14,6 +14,7 @@ export default function CreateHouseholdForm() {
   const [alias, setAlias] = useState('')
   const [defaultAdults, setDefaultAdults] = useState(2)
   const [defaultChildren, setDefaultChildren] = useState(0)
+  const [defaultBabies, setDefaultBabies] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -32,6 +33,7 @@ export default function CreateHouseholdForm() {
           alias: alias.trim() || null,
           default_adults: defaultAdults,
           default_children: defaultChildren,
+          default_babies: defaultBabies,
           created_by: user.id,
         })
         .select()
@@ -54,6 +56,7 @@ export default function CreateHouseholdForm() {
       setAlias('')
       setDefaultAdults(2)
       setDefaultChildren(0)
+      setDefaultBabies(0)
       setIsOpen(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create household')
@@ -115,7 +118,7 @@ export default function CreateHouseholdForm() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label htmlFor="default-adults" className="mb-1 block text-sm font-medium text-gray-700">
                 Default adults
@@ -139,6 +142,19 @@ export default function CreateHouseholdForm() {
                 min={0}
                 value={defaultChildren}
                 onChange={(e) => setDefaultChildren(Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label htmlFor="default-babies" className="mb-1 block text-sm font-medium text-gray-700">
+                Default babies
+              </label>
+              <input
+                id="default-babies"
+                type="number"
+                min={0}
+                value={defaultBabies}
+                onChange={(e) => setDefaultBabies(Number(e.target.value))}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
               />
             </div>

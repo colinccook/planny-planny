@@ -32,6 +32,7 @@ const mockHousehold = {
   alias: 'My Place',
   default_adults: 3,
   default_children: 1,
+  default_babies: 0,
   public_share_token: null,
   created_by: 'u1',
   created_at: '',
