@@ -90,6 +90,7 @@ describe('CalendarPage', () => {
         alias: null,
         default_adults: 2,
         default_children: 1,
+        default_babies: 0,
         public_share_token: null,
         created_by: 'u1',
         created_at: '',

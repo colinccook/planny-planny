@@ -24,6 +24,7 @@ export default function DayContextForm({
   const [eventName, setEventName] = useState(existing?.event_name ?? '')
   const [extraAdults, setExtraAdults] = useState(existing?.extra_adults ?? 0)
   const [extraChildren, setExtraChildren] = useState(existing?.extra_children ?? 0)
+  const [extraBabies, setExtraBabies] = useState(existing?.extra_babies ?? 0)
 
   const createCtx = useCreateDayContext()
   const updateCtx = useUpdateDayContext()
@@ -41,6 +42,7 @@ export default function DayContextForm({
         event_name: eventName.trim() || null,
         extra_adults: extraAdults,
         extra_children: extraChildren,
+        extra_babies: extraBabies,
       })
     } else {
       await createCtx.mutateAsync({
@@ -49,6 +51,7 @@ export default function DayContextForm({
         event_name: eventName.trim() || null,
         extra_adults: extraAdults,
         extra_children: extraChildren,
+        extra_babies: extraBabies,
       })
     }
     onClose()
@@ -81,7 +84,7 @@ export default function DayContextForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label htmlFor="extra-adults" className="block text-sm font-medium text-gray-700">
               Extra adults
@@ -107,6 +110,20 @@ export default function DayContextForm({
               max={99}
               value={extraChildren}
               onChange={(e) => setExtraChildren(Number(e.target.value))}
+              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label htmlFor="extra-babies" className="block text-sm font-medium text-gray-700">
+              Extra babies
+            </label>
+            <input
+              id="extra-babies"
+              type="number"
+              min={-99}
+              max={99}
+              value={extraBabies}
+              onChange={(e) => setExtraBabies(Number(e.target.value))}
               className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
           </div>

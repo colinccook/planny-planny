@@ -52,8 +52,8 @@ describe('HouseholdSwitcher', () => {
 
   it('renders select with household options', () => {
     const households = [
-      { id: 'h1', name: 'House 1', alias: null, default_adults: 2, default_children: 0, public_share_token: null, created_by: 'u1', created_at: '' },
-      { id: 'h2', name: 'House 2', alias: 'My Place', default_adults: 2, default_children: 0, public_share_token: null, created_by: 'u1', created_at: '' },
+      { id: 'h1', name: 'House 1', alias: null, default_adults: 2, default_children: 0, default_babies: 0, public_share_token: null, created_by: 'u1', created_at: '' },
+      { id: 'h2', name: 'House 2', alias: 'My Place', default_adults: 2, default_children: 0, default_babies: 0, public_share_token: null, created_by: 'u1', created_at: '' },
     ]
 
     mockUseHousehold.mockReturnValue({
@@ -77,7 +77,7 @@ describe('HouseholdSwitcher', () => {
 
   it('displays role badge for current household', () => {
     const households = [
-      { id: 'h1', name: 'House 1', alias: null, default_adults: 2, default_children: 0, public_share_token: null, created_by: 'u1', created_at: '' },
+      { id: 'h1', name: 'House 1', alias: null, default_adults: 2, default_children: 0, default_babies: 0, public_share_token: null, created_by: 'u1', created_at: '' },
     ]
 
     mockUseHousehold.mockReturnValue({
