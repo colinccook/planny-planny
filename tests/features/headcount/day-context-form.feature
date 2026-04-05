@@ -27,3 +27,15 @@ Feature: Day context form supports negative adjustments and babies
     Then the extra adults input should have value 3
     And the extra children input should have value 2
     And the extra babies input should have value 1
+
+  Scenario: Day context form rejects values below minimum
+    Given the day context form is rendered for a new entry
+    Then the extra adults input should have a minimum of -99
+    And the extra children input should have a minimum of -99
+    And the extra babies input should have a minimum of -99
+
+  Scenario: Day context form rejects values above maximum
+    Given the day context form is rendered for a new entry
+    Then the extra adults input should have a maximum of 99
+    And the extra children input should have a maximum of 99
+    And the extra babies input should have a maximum of 99

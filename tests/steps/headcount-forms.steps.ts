@@ -113,6 +113,50 @@ Then(
   }
 )
 
+// ── Boundary validation steps ─────────────────────────────────
+
+Then(
+  'the extra adults input should have a minimum of {int}',
+  async ({ page }, min: number) => {
+    await expect(page.locator('#extra-adults')).toHaveAttribute('min', String(min))
+  }
+)
+
+Then(
+  'the extra children input should have a minimum of {int}',
+  async ({ page }, min: number) => {
+    await expect(page.locator('#extra-children')).toHaveAttribute('min', String(min))
+  }
+)
+
+Then(
+  'the extra babies input should have a minimum of {int}',
+  async ({ page }, min: number) => {
+    await expect(page.locator('#extra-babies')).toHaveAttribute('min', String(min))
+  }
+)
+
+Then(
+  'the extra adults input should have a maximum of {int}',
+  async ({ page }, max: number) => {
+    await expect(page.locator('#extra-adults')).toHaveAttribute('max', String(max))
+  }
+)
+
+Then(
+  'the extra children input should have a maximum of {int}',
+  async ({ page }, max: number) => {
+    await expect(page.locator('#extra-children')).toHaveAttribute('max', String(max))
+  }
+)
+
+Then(
+  'the extra babies input should have a maximum of {int}',
+  async ({ page }, max: number) => {
+    await expect(page.locator('#extra-babies')).toHaveAttribute('max', String(max))
+  }
+)
+
 // ── Household Settings steps ──────────────────────────────────
 
 function buildSettingsFormHtml(): string {
@@ -190,5 +234,14 @@ Then(
   'the create form default babies input should have value {int}',
   async ({ page }, value: number) => {
     await expect(page.locator('#default-babies')).toHaveValue(String(value))
+  }
+)
+
+Then(
+  'the default babies input should accept a new value of {int}',
+  async ({ page }, value: number) => {
+    const input = page.locator('#settings-babies')
+    await input.fill(String(value))
+    await expect(input).toHaveValue(String(value))
   }
 )

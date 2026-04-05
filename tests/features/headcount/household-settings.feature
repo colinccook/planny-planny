@@ -22,3 +22,7 @@ Feature: Household settings include babies configuration
   Scenario: Create household form defaults babies to zero
     Given the create household form is expanded
     Then the create form default babies input should have value 0
+
+  Scenario: Settings form allows updating default babies count
+    Given the household settings form is rendered for an owner
+    Then the default babies input should accept a new value of 2
