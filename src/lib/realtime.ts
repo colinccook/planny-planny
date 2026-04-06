@@ -49,6 +49,10 @@ export class HouseholdRealtimeManager {
           },
           () => {
             this.queryClient.invalidateQueries({ queryKey: [queryKey, householdId] })
+            // Keep plan-streak in sync when meal_plans change via realtime
+            if (table === 'meal_plans') {
+              this.queryClient.invalidateQueries({ queryKey: ['plan-streak', householdId] })
+            }
           }
         )
         .subscribe()

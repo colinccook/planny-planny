@@ -9,7 +9,7 @@ import InviteManager from '../components/settings/InviteManager'
 import PublicShareToggle from '../components/settings/PublicShareToggle'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { isLoading } = useHousehold()
 
   if (isLoading) {
@@ -38,6 +38,12 @@ export default function SettingsPage() {
       <div className="rounded-lg bg-white p-4 shadow">
         <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
         <p className="text-xs text-gray-500">{user?.email}</p>
+        <button
+          onClick={signOut}
+          className="mt-3 w-full rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+        >
+          Sign out
+        </button>
       </div>
     </div>
   )

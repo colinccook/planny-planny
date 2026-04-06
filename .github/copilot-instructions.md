@@ -37,6 +37,12 @@ All new functionality **must** be covered by appropriate tests:
 - `tests/steps/` — Playwright BDD step definitions
 - `tests/support/` — Test fixtures and helpers
 
+## Pull Request Requirements
+
+- **Screenshots are required** for any PR that adds or changes UI functionality. Capture at mobile viewport (390×844) using Playwright or browser dev tools.
+- Use the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
+- Include a Screenshots section with images showing the new/changed views.
+
 ## Conventions
 
 - Mobile-first design: always design for small screens first, then add breakpoints for larger ones.

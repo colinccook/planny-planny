@@ -11,6 +11,7 @@ export default function HouseholdSettings() {
   const [alias, setAlias] = useState('')
   const [defaultAdults, setDefaultAdults] = useState(2)
   const [defaultChildren, setDefaultChildren] = useState(0)
+  const [defaultBabies, setDefaultBabies] = useState(0)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -21,6 +22,7 @@ export default function HouseholdSettings() {
       setAlias(currentHousehold.alias ?? '')
       setDefaultAdults(currentHousehold.default_adults)
       setDefaultChildren(currentHousehold.default_children)
+      setDefaultBabies(currentHousehold.default_babies)
     }
   }, [currentHousehold])
 
@@ -44,6 +46,7 @@ export default function HouseholdSettings() {
           alias: alias.trim() || null,
           default_adults: defaultAdults,
           default_children: defaultChildren,
+          default_babies: defaultBabies,
         })
         .eq('id', currentHousehold.id)
 
@@ -101,7 +104,7 @@ export default function HouseholdSettings() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label htmlFor="settings-adults" className="mb-1 block text-sm font-medium text-gray-700">
               Default adults
@@ -126,6 +129,20 @@ export default function HouseholdSettings() {
               min={0}
               value={defaultChildren}
               onChange={(e) => setDefaultChildren(Number(e.target.value))}
+              disabled={isReadOnly}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="settings-babies" className="mb-1 block text-sm font-medium text-gray-700">
+              Default babies
+            </label>
+            <input
+              id="settings-babies"
+              type="number"
+              min={0}
+              value={defaultBabies}
+              onChange={(e) => setDefaultBabies(Number(e.target.value))}
               disabled={isReadOnly}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
             />

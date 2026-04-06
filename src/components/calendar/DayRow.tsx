@@ -47,8 +47,10 @@ export default function DayRow({
 
   const extraAdults = contexts.reduce((sum, c) => sum + c.extra_adults, 0)
   const extraChildren = contexts.reduce((sum, c) => sum + c.extra_children, 0)
-  const totalAdults = household.default_adults + extraAdults
-  const totalChildren = household.default_children + extraChildren
+  const extraBabies = contexts.reduce((sum, c) => sum + c.extra_babies, 0)
+  const totalAdults = Math.max(0, household.default_adults + extraAdults)
+  const totalChildren = Math.max(0, household.default_children + extraChildren)
+  const totalBabies = Math.max(0, household.default_babies + extraBabies)
   const events = contexts.filter((c) => c.event_name).map((c) => c.event_name!)
 
   return (
@@ -80,6 +82,12 @@ export default function DayRow({
               <span>
                 {totalChildren}
                 <span role="img" aria-label="children">🧒</span>
+              </span>
+            )}
+            {totalBabies > 0 && (
+              <span>
+                {totalBabies}
+                <span role="img" aria-label="babies">👶</span>
               </span>
             )}
           </span>

@@ -87,6 +87,7 @@ export default function DayDetailView({
           <DayContextBadge
             defaultAdults={household.default_adults}
             defaultChildren={household.default_children}
+            defaultBabies={household.default_babies}
             contexts={contexts}
             onEdit={handleEditContext}
           />

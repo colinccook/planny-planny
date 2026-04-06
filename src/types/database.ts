@@ -40,6 +40,7 @@ export interface Database {
           alias: string | null
           default_adults: number
           default_children: number
+          default_babies: number
           public_share_token: string | null
           created_by: string | null
           created_at: string
@@ -50,6 +51,7 @@ export interface Database {
           alias?: string | null
           default_adults?: number
           default_children?: number
+          default_babies?: number
           public_share_token?: string | null
           created_by?: string | null
           created_at?: string
@@ -60,6 +62,7 @@ export interface Database {
           alias?: string | null
           default_adults?: number
           default_children?: number
+          default_babies?: number
           public_share_token?: string | null
           created_by?: string | null
           created_at?: string
@@ -173,6 +176,7 @@ export interface Database {
           event_name: string | null
           extra_adults: number
           extra_children: number
+          extra_babies: number
           created_at: string
         }
         Insert: {
@@ -182,6 +186,7 @@ export interface Database {
           event_name?: string | null
           extra_adults?: number
           extra_children?: number
+          extra_babies?: number
           created_at?: string
         }
         Update: {
@@ -191,6 +196,7 @@ export interface Database {
           event_name?: string | null
           extra_adults?: number
           extra_children?: number
+          extra_babies?: number
           created_at?: string
         }
         Relationships: []
