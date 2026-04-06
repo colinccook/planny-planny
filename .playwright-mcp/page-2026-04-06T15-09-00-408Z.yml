@@ -1,0 +1,303 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e9]:
+        - button "Toggle navigation" [ref=e11] [cursor=pointer]
+        - link "Homepage" [ref=e17] [cursor=pointer]:
+          - /url: /
+          - img [ref=e18]
+        - generic [ref=e20]:
+          - link "Sign in" [ref=e21] [cursor=pointer]:
+            - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fcolinccook%2Fplanny-planny%2Fpull%2F4
+          - button "Appearance settings" [disabled] [ref=e24]:
+            - img
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - generic [ref=e32]:
+        - img [ref=e33]
+        - link "colinccook" [ref=e36] [cursor=pointer]:
+          - /url: /colinccook
+        - generic [ref=e37]: /
+        - strong [ref=e38]:
+          - link "planny-planny" [ref=e39] [cursor=pointer]:
+            - /url: /colinccook/planny-planny
+        - generic [ref=e40]: Public
+      - navigation "Repository" [ref=e41]:
+        - list [ref=e42]:
+          - listitem [ref=e43]:
+            - link "Code" [ref=e44] [cursor=pointer]:
+              - /url: /colinccook/planny-planny
+              - img [ref=e45]
+              - generic [ref=e47]: Code
+          - listitem [ref=e48]:
+            - link "Issues" [ref=e49] [cursor=pointer]:
+              - /url: /colinccook/planny-planny/issues
+              - img [ref=e50]
+              - generic [ref=e53]: Issues
+          - listitem [ref=e54]
+          - listitem [ref=e55]
+          - listitem [ref=e56]
+          - listitem [ref=e57]
+        - button "Additional navigation options" [ref=e61] [cursor=pointer]:
+          - img
+    - generic [ref=e68]:
+      - generic [ref=e71]:
+        - 'heading "Refactor: Full-screen day view with tray-based meal creation #4" [level=1] [ref=e73]':
+          - text: "Refactor: Full-screen day view with tray-based meal creation"
+          - generic [ref=e75]: "#4"
+        - generic [ref=e78]:
+          - generic [ref=e80]:
+            - img "Pull request" [ref=e81]
+            - text: Open
+          - generic [ref=e84]:
+            - link "colinccook" [ref=e85] [cursor=pointer]:
+              - /url: /colinccook
+            - text: wants to merge 2 commits into
+            - link "main" [ref=e86] [cursor=pointer]:
+              - /url: /colinccook/planny-planny/tree/main
+            - generic [ref=e87]: from
+            - generic [ref=e88]:
+              - link "refactor/fullscreen-day-tray-ui" [ref=e89] [cursor=pointer]:
+                - /url: /colinccook/planny-planny/tree/refactor/fullscreen-day-tray-ui
+              - button "Copy head branch name to clipboard" [ref=e90] [cursor=pointer]:
+                - img [ref=e91]
+        - navigation "Pull request navigation tabs" [ref=e97]:
+          - tablist [ref=e98]:
+            - tab "Conversation" [selected] [ref=e99] [cursor=pointer]
+            - tab "Commits (2)" [ref=e100] [cursor=pointer]:
+              - text: Commits
+              - generic [ref=e101]: "2"
+              - generic [ref=e102]: (2)
+            - tab "Checks" [ref=e103] [cursor=pointer]
+            - tab "Files changed" [ref=e104] [cursor=pointer]
+      - generic [ref=e109]:
+        - generic [ref=e111]:
+          - heading "Conversation" [level=2] [ref=e112]
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - group [ref=e122]:
+                    - button "Show options" [ref=e123] [cursor=pointer]:
+                      - img "Show options" [ref=e126]
+                  - heading "@colinccook colinccook commented Apr 6, 202613 minutes ago •" [level=3] [ref=e128]:
+                    - generic [ref=e129]:
+                      - img "@colinccook" [ref=e131]
+                      - strong [ref=e132]:
+                        - link "colinccook" [ref=e133] [cursor=pointer]:
+                          - /url: /colinccook
+                      - text: commented
+                      - link "Apr 6, 202613 minutes ago" [ref=e134] [cursor=pointer]:
+                        - /url: "#issue-4212317224"
+                      - generic [ref=e135]:
+                        - generic [ref=e136]: •
+                        - group [ref=e137]:
+                          - button "edited" [ref=e138] [cursor=pointer]:
+                            - generic [ref=e139]:
+                              - text: edited
+                              - img [ref=e140]
+                - generic [ref=e145]:
+                  - heading "Summary" [level=2] [ref=e146]
+                  - paragraph [ref=e147]: Refactors the calendar UI to use a mobile-friendly stacked navigation pattern with slide-from-top tray components.
+                  - heading "Screenshots" [level=2] [ref=e148]
+                  - table [ref=e150]:
+                    - rowgroup [ref=e151]:
+                      - row "Calendar List Day Detail Add Meal Ingredients Tray" [ref=e152]:
+                        - columnheader "Calendar List" [ref=e153]
+                        - columnheader "Day Detail" [ref=e154]
+                        - columnheader "Add Meal" [ref=e155]
+                        - columnheader "Ingredients Tray" [ref=e156]
+                  - heading "Navigation flow" [level=3] [ref=e157]
+                  - list [ref=e158]:
+                    - listitem [ref=e159]:
+                      - strong [ref=e160]: Calendar list
+                      - text: → tap a day →
+                      - strong [ref=e161]: Day Detail
+                      - text: (full screen)
+                    - listitem [ref=e162]:
+                      - strong [ref=e163]: Day Detail
+                      - text: → tap "Add meal" →
+                      - strong [ref=e164]: Add Meal
+                      - text: (full screen)
+                    - listitem [ref=e165]:
+                      - strong [ref=e166]: Add Meal
+                      - text: → tap a field →
+                      - strong [ref=e167]: Tray
+                      - text: (slides from top)
+                  - heading "Changes" [level=2] [ref=e168]
+                  - heading "New components" [level=3] [ref=e169]
+                  - list [ref=e170]:
+                    - listitem [ref=e171]:
+                      - strong [ref=e172]: Tray
+                      - text: — Reusable slide-from-top overlay. Dismissible by X button, backdrop tap, or swipe-down gesture (80px threshold). Phase-based state machine for smooth animations.
+                    - listitem [ref=e173]:
+                      - strong [ref=e174]: FullScreenView
+                      - text: — Layout with sticky title bar + back button.
+                    - listitem [ref=e175]:
+                      - strong [ref=e176]: DayDetailView
+                      - text: — Full-screen day view with meals, context badges, and Add meal button.
+                    - listitem [ref=e177]:
+                      - strong [ref=e178]: AddMealView
+                      - text: — Tray-based meal form with tappable field cards for title, notes, and ingredients.
+                  - heading "Tray-based meal creation" [level=3] [ref=e179]
+                  - list [ref=e180]:
+                    - listitem [ref=e181]:
+                      - strong [ref=e182]: Title tray
+                      - text: — "What's for dinner?" with text input
+                    - listitem [ref=e183]:
+                      - strong [ref=e184]: Notes tray
+                      - text: — "Optional notes" with textarea
+                    - listitem [ref=e185]:
+                      - strong [ref=e186]: Ingredients tray
+                      - text: — Search/autocomplete, removable tags, Add Ingredients dismiss button, and a 💡 Ideas section showing
+                      - strong [ref=e187]: least commonly used ingredients
+                      - text: (excluding warning items)
+                  - heading "Routing" [level=3] [ref=e188]
+                  - list [ref=e189]:
+                    - listitem [ref=e190]:
+                      - code [ref=e191]: /calendar/:date
+                      - text: — Day detail view
+                    - listitem [ref=e192]:
+                      - code [ref=e193]: /calendar/:date/add
+                      - text: — Add meal
+                    - listitem [ref=e194]:
+                      - code [ref=e195]: /calendar/:date/edit/:mealId
+                      - text: — Edit meal
+                  - heading "Other" [level=3] [ref=e196]
+                  - list [ref=e197]:
+                    - listitem [ref=e198]:
+                      - strong [ref=e199]: .github/PULL_REQUEST_TEMPLATE.md
+                      - text: — PR template now requires screenshots for UI changes
+                    - listitem [ref=e200]:
+                      - strong [ref=e201]: copilot-instructions.md
+                      - text: — Added PR screenshot requirement
+                  - heading "Testing" [level=2] [ref=e202]
+                  - list [ref=e203]:
+                    - listitem [ref=e204]:
+                      - strong [ref=e205]: Vitest
+                      - text: ": 34 new tests across Tray (8), FullScreenView (5), AddMealView (13), DayRow (7 updated)"
+                    - listitem [ref=e206]:
+                      - strong [ref=e207]: BDD features
+                      - text: ": Tray component (5 scenarios), day detail auth (2), add meal auth (2)"
+                    - listitem [ref=e208]:
+                      - text: All
+                      - strong [ref=e209]: 186 tests pass
+                      - text: ", lint clean, build succeeds"
+              - generic [ref=e212]:
+                - generic [ref=e213]:
+                  - img [ref=e215]
+                  - generic [ref=e217]:
+                    - link "colinccook" [ref=e218] [cursor=pointer]:
+                      - /url: /colinccook
+                    - text: and others added 2 commits
+                    - link "April 6, 2026 15:5414 minutes ago" [ref=e219] [cursor=pointer]:
+                      - /url: "#commits-pushed-ebc2fe5"
+                - generic [ref=e220]:
+                  - generic [ref=e221]:
+                    - img [ref=e223]
+                    - generic [ref=e228]:
+                      - generic [ref=e230]:
+                        - link "@colinccook" [ref=e231] [cursor=pointer]:
+                          - /url: /colinccook
+                          - img "@colinccook" [ref=e232]
+                        - link [ref=e233] [cursor=pointer]:
+                          - /url: /apps/github-copilot-cli
+                          - img [ref=e235]
+                      - generic [ref=e238]:
+                        - code [ref=e239]:
+                          - 'link "refactor: full-screen day view with tray-based meal creation" [ref=e240] [cursor=pointer]':
+                            - /url: /colinccook/planny-planny/pull/4/commits/ebc2fe56eef994dee1fc3ec216133b6097f06a91
+                        - button "…" [ref=e242] [cursor=pointer]
+                      - code [ref=e249]:
+                        - link "ebc2fe5" [ref=e250] [cursor=pointer]:
+                          - /url: /colinccook/planny-planny/pull/4/commits/ebc2fe56eef994dee1fc3ec216133b6097f06a91
+                  - generic [ref=e251]:
+                    - img [ref=e253]
+                    - generic [ref=e258]:
+                      - generic [ref=e260]:
+                        - link "@colinccook" [ref=e261] [cursor=pointer]:
+                          - /url: /colinccook
+                          - img "@colinccook" [ref=e262]
+                        - link [ref=e263] [cursor=pointer]:
+                          - /url: /apps/github-copilot-cli
+                          - img [ref=e265]
+                      - generic [ref=e268]:
+                        - code [ref=e269]:
+                          - 'link "fix: resolve merge conflict, add PR template with screenshot requirement" [ref=e270] [cursor=pointer]':
+                            - /url: /colinccook/planny-planny/pull/4/commits/062276264701d8aba1905e2dbc9d08921e6f8b2b
+                        - button "…" [ref=e272] [cursor=pointer]
+                      - code [ref=e279]:
+                        - link "0622762" [ref=e280] [cursor=pointer]:
+                          - /url: /colinccook/planny-planny/pull/4/commits/062276264701d8aba1905e2dbc9d08921e6f8b2b
+            - generic [ref=e284]:
+              - link "Sign up for free" [ref=e285] [cursor=pointer]:
+                - /url: /join?source=comment-repo
+              - strong [ref=e286]: to join this conversation on GitHub
+              - text: . Already have an account?
+              - link "Sign in to comment" [ref=e287] [cursor=pointer]:
+                - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Fcolinccook%2Fplanny-planny%2Fpull%2F4
+        - generic [ref=e291]:
+          - form "Select reviewers" [ref=e293]:
+            - heading "Reviewers" [level=3] [ref=e294]
+            - text: No reviews
+          - form "Select assignees" [ref=e296]:
+            - heading "Assignees" [level=3] [ref=e297]
+            - text: No one assigned
+          - generic [ref=e298]:
+            - heading "Labels" [level=3] [ref=e299]
+            - generic [ref=e300]: None yet
+          - form "Select projects" [ref=e302]:
+            - heading "Projects" [level=3] [ref=e303]
+            - text: None yet
+          - form "Select milestones" [ref=e305]:
+            - heading "Milestone" [level=3] [ref=e306]
+            - text: No milestone
+          - form "Link issues" [ref=e312]:
+            - heading "Development" [level=3] [ref=e313]
+            - paragraph [ref=e314]: Successfully merging this pull request may close these issues.
+            - paragraph [ref=e316]: None yet
+          - generic [ref=e318]:
+            - heading "1 participant" [level=3] [ref=e319]
+            - link "@colinccook" [ref=e321] [cursor=pointer]:
+              - /url: /colinccook
+              - img "@colinccook" [ref=e322]
+  - contentinfo [ref=e323]:
+    - heading "Footer" [level=2] [ref=e324]
+    - generic [ref=e325]:
+      - generic [ref=e326]:
+        - link "GitHub Homepage" [ref=e327] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e328]
+        - generic [ref=e330]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e331]:
+        - heading "Footer navigation" [level=3] [ref=e332]
+        - list "Footer navigation" [ref=e333]:
+          - listitem [ref=e334]:
+            - link "Terms" [ref=e335] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e336]:
+            - link "Privacy" [ref=e337] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e338]:
+            - link "Security" [ref=e339] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e340]:
+            - link "Status" [ref=e341] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e342]:
+            - link "Community" [ref=e343] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e344]:
+            - link "Docs" [ref=e345] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e346]:
+            - link "Contact" [ref=e347] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e348]:
+            - button "Manage cookies" [ref=e350] [cursor=pointer]
+          - listitem [ref=e351]:
+            - button "Do not share my personal information" [ref=e353] [cursor=pointer]

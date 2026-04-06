@@ -130,10 +130,7 @@ When('I swipe down on the tray panel', async ({ page }) => {
   const startX = box.x + box.width / 2;
   const startY = box.y + 20;
 
-  await page.touchscreen.tap(startX, startY);
-  await page.mouse.move(startX, startY);
-
-  // Simulate touch swipe down
+  // Simulate touch swipe down via dispatched events
   await panel.dispatchEvent('touchstart', {
     touches: [{ clientX: startX, clientY: startY, identifier: 0 }],
   });
