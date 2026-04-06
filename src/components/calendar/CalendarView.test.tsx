@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 vi.mock('../../hooks/useMealPlans', () => ({
@@ -27,13 +28,15 @@ vi.mock('../../hooks/useMealPlans', () => ({
   useDayPlaceholders: () => ({
     data: [],
   }),
-  useDeleteMealPlan: () => ({ mutate: vi.fn(), isPending: false }),
-  useCreateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useCreateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useDeleteDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  }
+})
 
 import CalendarView from './CalendarView'
 
@@ -51,7 +54,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   })
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children)
+    return createElement(
+      MemoryRouter,
+      null,
+      createElement(QueryClientProvider, { client: queryClient }, children),
+    )
   }
 }
 
@@ -92,9 +99,10 @@ describe('CalendarView', () => {
     expect(screen.getByText('Today')).toBeDefined()
     // Should show "Tomorrow"
     expect(screen.getByText('Tomorrow')).toBeDefined()
-    // Should have 14 Add meal buttons (one per day)
-    const addButtons = screen.getAllByText('+ Add meal')
-    expect(addButtons).toHaveLength(14)
+    // DayRow is now a clickable card, no "Add meal" buttons in calendar view
+    const dayRows = screen.getAllByText('No meals planned')
+    // 13 empty days (1 has a meal)
+    expect(dayRows.length).toBe(13)
   })
 
   it('renders meals from data', () => {
@@ -109,7 +117,7 @@ describe('CalendarView', () => {
     expect(screen.getByText('Test Meal')).toBeDefined()
   })
 
-  it('hides add meal buttons for guests', () => {
+  it('renders day rows as clickable cards', () => {
     render(
       createElement(CalendarView, {
         household: mockHousehold,
@@ -118,6 +126,8 @@ describe('CalendarView', () => {
       { wrapper: createWrapper() }
     )
 
-    expect(screen.queryByText('+ Add meal')).toBeNull()
+    // Day rows should be rendered as clickable buttons
+    const buttons = screen.getAllByRole('button')
+    expect(buttons.length).toBe(14)
   })
 })

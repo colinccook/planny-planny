@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // ── Supabase mock ──────────────────────────────────────────
@@ -13,20 +14,15 @@ vi.mock('../../lib/supabase', () => ({
   },
 }))
 
-// ── useMealPlans mock (for DayRow) ──────────────────────────
+// ── Navigation mock ─────────────────────────────────────────
 
-const mockDeleteMutate = vi.fn()
+const mockNavigate = vi.fn()
 
-vi.mock('../../hooks/useMealPlans', async () => {
-  const actual = await vi.importActual('../../hooks/useMealPlans')
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
   return {
     ...actual,
-    useDeleteMealPlan: () => ({ mutate: mockDeleteMutate, isPending: false }),
-    useCreateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useUpdateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useCreateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useUpdateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-    useDeleteDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
+    useNavigate: () => mockNavigate,
   }
 })
 
@@ -37,7 +33,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   })
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children)
+    return createElement(
+      MemoryRouter,
+      null,
+      createElement(QueryClientProvider, { client: queryClient }, children),
+    )
   }
 }
 
@@ -79,13 +79,10 @@ describe('DayRow', () => {
         meals: [],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
-    // Should display a formatted date
-    // 2099-12-25 is a Friday in most locales
     expect(screen.getByRole('heading', { level: 3 })).toBeDefined()
-    // Default people count
     expect(screen.getByText('2')).toBeDefined()
     expect(screen.getByText('1')).toBeDefined()
   })
@@ -100,11 +97,10 @@ describe('DayRow', () => {
         meals: [baseMeal],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
     expect(screen.getByText('Grilled Salmon')).toBeDefined()
-    expect(screen.getByText('with roasted veggies')).toBeDefined()
   })
 
   it('renders multiple meals', () => {
@@ -123,14 +119,14 @@ describe('DayRow', () => {
         meals: [baseMeal, secondMeal],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
     expect(screen.getByText('Grilled Salmon')).toBeDefined()
     expect(screen.getByText('Pasta Carbonara')).toBeDefined()
   })
 
-  it('shows the + Add meal button for owners', () => {
+  it('shows empty state when no meals', () => {
     render(
       createElement(DayRow, {
         date: '2024-06-15',
@@ -140,13 +136,13 @@ describe('DayRow', () => {
         meals: [],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
-    expect(screen.getByText('+ Add meal')).toBeDefined()
+    expect(screen.getByText('No meals planned')).toBeDefined()
   })
 
-  it('hides + Add meal button for guests', () => {
+  it('navigates to day detail on click', () => {
     render(
       createElement(DayRow, {
         date: '2024-06-15',
@@ -154,32 +150,13 @@ describe('DayRow', () => {
         contexts: [],
         placeholder: null,
         meals: [],
-        currentRole: 'guest',
+        currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
-    expect(screen.queryByText('+ Add meal')).toBeNull()
-  })
-
-  it('shows meal form when + Add meal is clicked', async () => {
-    render(
-      createElement(DayRow, {
-        date: '2024-06-15',
-        household: mockHousehold,
-        contexts: [],
-        placeholder: null,
-        meals: [],
-        currentRole: 'member',
-      }),
-      { wrapper: createWrapper() }
-    )
-
-    fireEvent.click(screen.getByText('+ Add meal'))
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText("What's for dinner?")).toBeDefined()
-    })
+    fireEvent.click(screen.getByRole('button'))
+    expect(mockNavigate).toHaveBeenCalledWith('/calendar/2024-06-15')
   })
 
   it('renders day placeholder label', () => {
@@ -197,7 +174,7 @@ describe('DayRow', () => {
         meals: [],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
     expect(screen.getByText('🐟 Oily fish day')).toBeDefined()
@@ -223,7 +200,7 @@ describe('DayRow', () => {
         meals: [],
         currentRole: 'owner',
       }),
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     )
 
     expect(screen.getByText('Mum visiting')).toBeDefined()
