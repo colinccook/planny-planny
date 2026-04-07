@@ -37,11 +37,14 @@ All new functionality **must** be covered by appropriate tests:
 - `tests/steps/` — Playwright BDD step definitions
 - `tests/support/` — Test fixtures and helpers
 
-## Pull Request Requirements
+## Branching & Pull Requests
 
+- **Always work in a new branch** — never commit directly to `main`. Create a descriptive feature branch (e.g., `feat/number-stepper`, `fix/swipe-dismiss`) before making changes.
+- **Create a Pull Request** for every change. Push the branch and open a PR against `main`.
 - **Screenshots are required** for any PR that adds or changes UI functionality. Capture at mobile viewport (390×844) using Playwright or browser dev tools.
 - Use the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
 - Include a Screenshots section with images showing the new/changed views.
+- **Verify CI passes** — after pushing, poll the PR's check runs (lint, test) until they complete. If any check fails, read the job logs, fix the issue, and push again. Do not consider the task done until all checks are green.
 
 ## Conventions
 
