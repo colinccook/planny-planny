@@ -104,6 +104,7 @@ export default function DayDetailView({
             householdId={household.id}
             date={date}
             existing={editingContext}
+            household={household}
             onClose={() => {
               setShowContextForm(false)
               setEditingContext(undefined)

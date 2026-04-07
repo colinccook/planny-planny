@@ -66,9 +66,9 @@ describe('CreateHouseholdForm', () => {
     fireEvent.click(screen.getByText('Create new household'))
     expect(screen.getByLabelText(/Name/)).toBeDefined()
     expect(screen.getByLabelText(/Alias/)).toBeDefined()
-    expect(screen.getByLabelText(/Default adults/)).toBeDefined()
-    expect(screen.getByLabelText(/Default children/)).toBeDefined()
-    expect(screen.getByLabelText(/Default babies/)).toBeDefined()
+    expect(screen.getByText('Default adults')).toBeDefined()
+    expect(screen.getByText('Default children')).toBeDefined()
+    expect(screen.getByText('Default babies')).toBeDefined()
     expect(screen.getByRole('button', { name: /Create household/i })).toBeDefined()
   })
 
@@ -82,11 +82,8 @@ describe('CreateHouseholdForm', () => {
   it('has correct default values for adults, children, and babies', () => {
     render(createElement(CreateHouseholdForm), { wrapper: createWrapper() })
     fireEvent.click(screen.getByText('Create new household'))
-    const adultsInput = screen.getByLabelText(/Default adults/) as HTMLInputElement
-    const childrenInput = screen.getByLabelText(/Default children/) as HTMLInputElement
-    const babiesInput = screen.getByLabelText(/Default babies/) as HTMLInputElement
-    expect(adultsInput.value).toBe('2')
-    expect(childrenInput.value).toBe('0')
-    expect(babiesInput.value).toBe('0')
+    expect(screen.getByTestId('default-adults-value').textContent).toBe('2')
+    expect(screen.getByTestId('default-children-value').textContent).toBe('0')
+    expect(screen.getByTestId('default-babies-value').textContent).toBe('0')
   })
 })

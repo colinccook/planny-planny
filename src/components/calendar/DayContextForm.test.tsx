@@ -24,6 +24,18 @@ vi.mock('../../hooks/useMealPlans', () => ({
 
 import DayContextForm from './DayContextForm'
 
+const mockHousehold = {
+  id: 'h1',
+  name: 'Test',
+  alias: null,
+  owner_id: 'u1',
+  default_adults: 2,
+  default_children: 1,
+  default_babies: 0,
+  created_at: '',
+  invite_code: null,
+}
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -46,15 +58,16 @@ describe('DayContextForm', () => {
       createElement(DayContextForm, {
         householdId: 'h1',
         date: '2024-06-15',
+        household: mockHousehold,
         onClose: vi.fn(),
       }),
       { wrapper: createWrapper() }
     )
 
     expect(screen.getByLabelText('Event')).toBeDefined()
-    expect(screen.getByLabelText('Extra adults')).toBeDefined()
-    expect(screen.getByLabelText('Extra children')).toBeDefined()
-    expect(screen.getByLabelText('Extra babies')).toBeDefined()
+    expect(screen.getByText('Extra adults')).toBeDefined()
+    expect(screen.getByText('Extra children')).toBeDefined()
+    expect(screen.getByText('Extra babies')).toBeDefined()
     expect(screen.getByText('Add context')).toBeDefined()
   })
 
@@ -75,48 +88,66 @@ describe('DayContextForm', () => {
         householdId: 'h1',
         date: '2024-06-15',
         existing,
+        household: mockHousehold,
         onClose: vi.fn(),
       }),
       { wrapper: createWrapper() }
     )
 
     expect((screen.getByLabelText('Event') as HTMLInputElement).value).toBe('Party')
-    expect((screen.getByLabelText('Extra adults') as HTMLInputElement).value).toBe('3')
-    expect((screen.getByLabelText('Extra children') as HTMLInputElement).value).toBe('2')
-    expect((screen.getByLabelText('Extra babies') as HTMLInputElement).value).toBe('1')
+    expect(screen.getByTestId('extra-adults-value').textContent).toBe('3')
+    expect(screen.getByTestId('extra-children-value').textContent).toBe('2')
+    expect(screen.getByTestId('extra-babies-value').textContent).toBe('1')
     expect(screen.getByText('Update')).toBeDefined()
   })
 
-  it('calls createDayContext on submit for new context', async () => {
+  it('increments extra adults via stepper', async () => {
     const onClose = vi.fn()
     render(
       createElement(DayContextForm, {
         householdId: 'h1',
         date: '2024-06-15',
+        household: mockHousehold,
         onClose,
       }),
       { wrapper: createWrapper() }
     )
 
-    fireEvent.change(screen.getByLabelText('Event'), {
-      target: { value: 'BBQ night' },
-    })
-    fireEvent.change(screen.getByLabelText('Extra adults'), {
-      target: { value: '2' },
-    })
+    fireEvent.click(screen.getByTestId('extra-adults-increment'))
+    fireEvent.click(screen.getByTestId('extra-adults-increment'))
+
+    expect(screen.getByTestId('extra-adults-value').textContent).toBe('2')
+
     fireEvent.click(screen.getByText('Add context'))
 
     await waitFor(() => {
       expect(mockCreateMutateAsync).toHaveBeenCalledWith({
         household_id: 'h1',
         date: '2024-06-15',
-        event_name: 'BBQ night',
+        event_name: null,
         extra_adults: 2,
         extra_children: 0,
         extra_babies: 0,
       })
     })
-    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('clamps extra adults min to negative household default', () => {
+    render(
+      createElement(DayContextForm, {
+        householdId: 'h1',
+        date: '2024-06-15',
+        household: { ...mockHousehold, default_adults: 3 },
+        onClose: vi.fn(),
+      }),
+      { wrapper: createWrapper() }
+    )
+
+    // Click decrement 4 times — should stop at -3
+    for (let i = 0; i < 4; i++) {
+      fireEvent.click(screen.getByTestId('extra-adults-decrement'))
+    }
+    expect(screen.getByTestId('extra-adults-value').textContent).toBe('-3')
   })
 
   it('shows Delete button only for existing contexts', () => {
@@ -124,6 +155,7 @@ describe('DayContextForm', () => {
       createElement(DayContextForm, {
         householdId: 'h1',
         date: '2024-06-15',
+        household: mockHousehold,
         onClose: vi.fn(),
       }),
       { wrapper: createWrapper() }
@@ -147,6 +179,7 @@ describe('DayContextForm', () => {
         householdId: 'h1',
         date: '2024-06-15',
         existing,
+        household: mockHousehold,
         onClose: vi.fn(),
       })
     )
@@ -172,6 +205,7 @@ describe('DayContextForm', () => {
         householdId: 'h1',
         date: '2024-06-15',
         existing,
+        household: mockHousehold,
         onClose,
       }),
       { wrapper: createWrapper() }

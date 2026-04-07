@@ -5,13 +5,16 @@ import {
   useDeleteDayContext,
 } from '../../hooks/useMealPlans'
 import type { Database } from '../../types/database'
+import NumberStepper from '../ui/NumberStepper'
 
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
+type Household = Database['public']['Tables']['households']['Row']
 
 interface DayContextFormProps {
   householdId: string
   date: string
   existing?: DayContext
+  household: Household
   onClose: () => void
 }
 
@@ -19,6 +22,7 @@ export default function DayContextForm({
   householdId,
   date,
   existing,
+  household,
   onClose,
 }: DayContextFormProps) {
   const [eventName, setEventName] = useState(existing?.event_name ?? '')
@@ -85,48 +89,30 @@ export default function DayContextForm({
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label htmlFor="extra-adults" className="block text-sm font-medium text-gray-700">
-              Extra adults
-            </label>
-            <input
-              id="extra-adults"
-              type="number"
-              min={-99}
-              max={99}
-              value={extraAdults}
-              onChange={(e) => setExtraAdults(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label htmlFor="extra-children" className="block text-sm font-medium text-gray-700">
-              Extra children
-            </label>
-            <input
-              id="extra-children"
-              type="number"
-              min={-99}
-              max={99}
-              value={extraChildren}
-              onChange={(e) => setExtraChildren(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label htmlFor="extra-babies" className="block text-sm font-medium text-gray-700">
-              Extra babies
-            </label>
-            <input
-              id="extra-babies"
-              type="number"
-              min={-99}
-              max={99}
-              value={extraBabies}
-              onChange={(e) => setExtraBabies(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            />
-          </div>
+          <NumberStepper
+            id="extra-adults"
+            label="Extra adults"
+            value={extraAdults}
+            min={-household.default_adults}
+            max={99}
+            onChange={setExtraAdults}
+          />
+          <NumberStepper
+            id="extra-children"
+            label="Extra children"
+            value={extraChildren}
+            min={-household.default_children}
+            max={99}
+            onChange={setExtraChildren}
+          />
+          <NumberStepper
+            id="extra-babies"
+            label="Extra babies"
+            value={extraBabies}
+            min={-household.default_babies}
+            max={99}
+            onChange={setExtraBabies}
+          />
         </div>
       </div>
 

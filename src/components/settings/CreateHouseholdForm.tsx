@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useHousehold } from '../../hooks/useHousehold'
+import NumberStepper from '../ui/NumberStepper'
 
 export default function CreateHouseholdForm() {
   const { user } = useAuth()
@@ -119,45 +120,30 @@ export default function CreateHouseholdForm() {
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label htmlFor="default-adults" className="mb-1 block text-sm font-medium text-gray-700">
-                Default adults
-              </label>
-              <input
-                id="default-adults"
-                type="number"
-                min={0}
-                value={defaultAdults}
-                onChange={(e) => setDefaultAdults(Number(e.target.value))}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="default-children" className="mb-1 block text-sm font-medium text-gray-700">
-                Default children
-              </label>
-              <input
-                id="default-children"
-                type="number"
-                min={0}
-                value={defaultChildren}
-                onChange={(e) => setDefaultChildren(Number(e.target.value))}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="default-babies" className="mb-1 block text-sm font-medium text-gray-700">
-                Default babies
-              </label>
-              <input
-                id="default-babies"
-                type="number"
-                min={0}
-                value={defaultBabies}
-                onChange={(e) => setDefaultBabies(Number(e.target.value))}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
+            <NumberStepper
+              id="default-adults"
+              label="Default adults"
+              value={defaultAdults}
+              min={0}
+              max={99}
+              onChange={setDefaultAdults}
+            />
+            <NumberStepper
+              id="default-children"
+              label="Default children"
+              value={defaultChildren}
+              min={0}
+              max={99}
+              onChange={setDefaultChildren}
+            />
+            <NumberStepper
+              id="default-babies"
+              label="Default babies"
+              value={defaultBabies}
+              min={0}
+              max={99}
+              onChange={setDefaultBabies}
+            />
           </div>
 
           <button

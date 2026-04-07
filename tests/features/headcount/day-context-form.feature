@@ -1,41 +1,40 @@
-Feature: Day context form supports negative adjustments and babies
+Feature: Day context form with stepper controls for headcount adjustments
 
-  Events can reduce the headcount of a household. For example, a partner
-  might go away for the day requiring a -1 adjustment to adults.
-  The form must also support recording babies alongside adults and children.
+  Events can adjust the headcount of a household using +/- stepper buttons.
+  The minimum value is clamped to the negative of the household default,
+  so the total headcount can never go below zero.
 
-  Scenario: Day context form has an extra babies field
+  Scenario: Day context form has stepper controls for all categories
     Given the day context form is rendered for a new entry
-    Then I should see an extra adults input
-    And I should see an extra children input
-    And I should see an extra babies input
+    Then I should see an extra adults stepper
+    And I should see an extra children stepper
+    And I should see an extra babies stepper
 
-  Scenario: Day context form allows negative values for extra adults
+  Scenario: Increment extra adults via stepper
     Given the day context form is rendered for a new entry
-    Then the extra adults input should accept the value -1
+    When I click the increment button for extra adults
+    Then the extra adults value should be 1
 
-  Scenario: Day context form allows negative values for extra children
+  Scenario: Decrement extra adults via stepper
     Given the day context form is rendered for a new entry
-    Then the extra children input should accept the value -1
-
-  Scenario: Day context form allows negative values for extra babies
-    Given the day context form is rendered for a new entry
-    Then the extra babies input should accept the value -1
+    When I click the increment button for extra adults
+    And I click the increment button for extra adults
+    And I click the decrement button for extra adults
+    Then the extra adults value should be 1
 
   Scenario: Day context form populates existing values including babies
     Given the day context form is rendered with an existing context of 3 extra adults, 2 extra children, and 1 extra babies
-    Then the extra adults input should have value 3
-    And the extra children input should have value 2
-    And the extra babies input should have value 1
+    Then the extra adults value should be 3
+    And the extra children value should be 2
+    And the extra babies value should be 1
 
-  Scenario: Day context form rejects values below minimum
-    Given the day context form is rendered for a new entry
-    Then the extra adults input should have a minimum of -99
-    And the extra children input should have a minimum of -99
-    And the extra babies input should have a minimum of -99
+  Scenario: Extra adults cannot go below negative household default
+    Given the day context form is rendered with household defaults of 2 adults, 1 children, and 0 babies
+    When I click the decrement button for extra adults 2 times
+    Then the extra adults value should be -2
+    And the extra adults decrement button should be disabled
 
-  Scenario: Day context form rejects values above maximum
-    Given the day context form is rendered for a new entry
-    Then the extra adults input should have a maximum of 99
-    And the extra children input should have a maximum of 99
-    And the extra babies input should have a maximum of 99
+  Scenario: Extra adults can still go positive when household default is zero
+    Given the day context form is rendered with household defaults of 0 adults, 0 children, and 0 babies
+    Then the extra adults decrement button should be disabled
+    And the extra adults increment button should be enabled

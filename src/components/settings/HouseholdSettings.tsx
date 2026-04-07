@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useHousehold } from '../../hooks/useHousehold'
+import NumberStepper from '../ui/NumberStepper'
 
 export default function HouseholdSettings() {
   const { currentHousehold, currentRole } = useHousehold()
@@ -105,48 +106,33 @@ export default function HouseholdSettings() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label htmlFor="settings-adults" className="mb-1 block text-sm font-medium text-gray-700">
-              Default adults
-            </label>
-            <input
-              id="settings-adults"
-              type="number"
-              min={0}
-              value={defaultAdults}
-              onChange={(e) => setDefaultAdults(Number(e.target.value))}
-              disabled={isReadOnly}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="settings-children" className="mb-1 block text-sm font-medium text-gray-700">
-              Default children
-            </label>
-            <input
-              id="settings-children"
-              type="number"
-              min={0}
-              value={defaultChildren}
-              onChange={(e) => setDefaultChildren(Number(e.target.value))}
-              disabled={isReadOnly}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="settings-babies" className="mb-1 block text-sm font-medium text-gray-700">
-              Default babies
-            </label>
-            <input
-              id="settings-babies"
-              type="number"
-              min={0}
-              value={defaultBabies}
-              onChange={(e) => setDefaultBabies(Number(e.target.value))}
-              disabled={isReadOnly}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-            />
-          </div>
+          <NumberStepper
+            id="settings-adults"
+            label="Default adults"
+            value={defaultAdults}
+            min={0}
+            max={99}
+            onChange={setDefaultAdults}
+            disabled={isReadOnly}
+          />
+          <NumberStepper
+            id="settings-children"
+            label="Default children"
+            value={defaultChildren}
+            min={0}
+            max={99}
+            onChange={setDefaultChildren}
+            disabled={isReadOnly}
+          />
+          <NumberStepper
+            id="settings-babies"
+            label="Default babies"
+            value={defaultBabies}
+            min={0}
+            max={99}
+            onChange={setDefaultBabies}
+            disabled={isReadOnly}
+          />
         </div>
 
         {!isReadOnly && (

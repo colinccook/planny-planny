@@ -62,8 +62,9 @@ describe('HouseholdSettings', () => {
     render(createElement(HouseholdSettings), { wrapper: createWrapper() })
     expect(screen.getByDisplayValue('Test House')).toBeDefined()
     expect(screen.getByDisplayValue('My Place')).toBeDefined()
-    expect(screen.getByDisplayValue('3')).toBeDefined()
-    expect(screen.getByDisplayValue('1')).toBeDefined()
+    expect(screen.getByTestId('settings-adults-value').textContent).toBe('3')
+    expect(screen.getByTestId('settings-children-value').textContent).toBe('1')
+    expect(screen.getByTestId('settings-babies-value').textContent).toBe('0')
   })
 
   it('shows save button for owners', () => {
