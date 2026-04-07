@@ -44,6 +44,7 @@ All new functionality **must** be covered by appropriate tests:
 - **Screenshots are required** for any PR that adds or changes UI functionality. Capture at mobile viewport (390×844) using Playwright or browser dev tools.
 - Use the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
 - Include a Screenshots section with images showing the new/changed views.
+- **Verify CI passes** — after pushing, poll the PR's check runs (lint, test) until they complete. If any check fails, read the job logs, fix the issue, and push again. Do not consider the task done until all checks are green.
 
 ## Conventions
 
