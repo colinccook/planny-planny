@@ -28,12 +28,12 @@ const mockHousehold = {
   id: 'h1',
   name: 'Test',
   alias: null,
-  owner_id: 'u1',
   default_adults: 2,
   default_children: 1,
   default_babies: 0,
+  public_share_token: null,
+  created_by: null,
   created_at: '',
-  invite_code: null,
 }
 
 function createWrapper() {
