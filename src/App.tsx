@@ -6,6 +6,8 @@ import AppShell from './components/layout/AppShell'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import CalendarPage from './pages/CalendarPage'
+import DayDetailPage from './pages/DayDetailPage'
+import MealFormPage from './pages/MealFormPage'
 import IngredientsPage from './pages/IngredientsPage'
 import SettingsPage from './pages/SettingsPage'
 import JoinInvitePage from './pages/JoinInvitePage'
@@ -27,6 +29,9 @@ function App() {
                 <AppShell>
                   <Routes>
                     <Route path="/calendar" element={<CalendarPage />} />
+                    <Route path="/calendar/:date" element={<DayDetailPage />} />
+                    <Route path="/calendar/:date/add" element={<MealFormPage />} />
+                    <Route path="/calendar/:date/edit/:mealId" element={<MealFormPage />} />
                     <Route path="/ingredients" element={<IngredientsPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="*" element={<Navigate to="/calendar" replace />} />

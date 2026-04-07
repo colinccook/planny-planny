@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const mockUseHousehold = vi.fn()
@@ -13,13 +14,15 @@ vi.mock('../hooks/useMealPlans', () => ({
   useMealPlans: () => ({ data: [], isLoading: false }),
   useDayContexts: () => ({ data: [], isLoading: false }),
   useDayPlaceholders: () => ({ data: [] }),
-  useDeleteMealPlan: () => ({ mutate: vi.fn(), isPending: false }),
-  useCreateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateMealPlan: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useCreateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useDeleteDayContext: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  }
+})
 
 import CalendarPage from './CalendarPage'
 
@@ -37,7 +40,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   })
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children)
+    return createElement(
+      MemoryRouter,
+      null,
+      createElement(QueryClientProvider, { client: queryClient }, children),
+    )
   }
 }
 
