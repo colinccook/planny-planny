@@ -132,8 +132,8 @@ describe('CalendarView', () => {
       { wrapper: createWrapper() }
     )
 
-    // Day rows should be rendered as clickable buttons (14 day rows + 1 "View past" button)
-    const buttons = screen.getAllByRole('button')
-    expect(buttons.length).toBe(15)
+    // Each day row has a data-testid like "day-row-YYYY-MM-DD"
+    const dayRows = screen.getAllByTestId(/^day-row-/)
+    expect(dayRows.length).toBe(14)
   })
 })
