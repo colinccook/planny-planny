@@ -25,6 +25,7 @@ vi.mock('react-router-dom', async () => {
 })
 
 import CalendarPage from './CalendarPage'
+import { CalendarDirectionProvider } from '../hooks/useCalendarDirection'
 
 // Mock IntersectionObserver for jsdom
 class MockIntersectionObserver {
@@ -43,7 +44,11 @@ function createWrapper() {
     return createElement(
       MemoryRouter,
       null,
-      createElement(QueryClientProvider, { client: queryClient }, children),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(CalendarDirectionProvider, null, children),
+      ),
     )
   }
 }

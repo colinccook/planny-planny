@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
+import { useCalendarDirection } from '../../hooks/useCalendarDirection'
 
 const tabs = [
   { to: '/calendar', label: 'Calendar', icon: '📅' },
@@ -7,6 +8,22 @@ const tabs = [
 ] as const
 
 export default function TabBar() {
+  const location = useLocation()
+  const { toggleDirection } = useCalendarDirection()
+
+  const handleCalendarTabClick = (e: React.MouseEvent) => {
+    const isOnCalendar = location.pathname === '/calendar'
+    if (!isOnCalendar) return // Normal navigation
+
+    e.preventDefault()
+
+    if (window.scrollY > 0) {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      toggleDirection()
+    }
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
       <div className="safe-area-bottom mx-auto flex max-w-lg">
@@ -15,6 +32,7 @@ export default function TabBar() {
             key={tab.to}
             to={tab.to}
             replace
+            onClick={tab.to === '/calendar' ? handleCalendarTabClick : undefined}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
                 isActive

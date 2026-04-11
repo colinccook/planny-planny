@@ -39,6 +39,7 @@ vi.mock('react-router-dom', async () => {
 })
 
 import CalendarView from './CalendarView'
+import { CalendarDirectionProvider } from '../../hooks/useCalendarDirection'
 
 // Mock IntersectionObserver for jsdom
 class MockIntersectionObserver {
@@ -57,7 +58,11 @@ function createWrapper() {
     return createElement(
       MemoryRouter,
       null,
-      createElement(QueryClientProvider, { client: queryClient }, children),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(CalendarDirectionProvider, null, children),
+      ),
     )
   }
 }
@@ -127,8 +132,8 @@ describe('CalendarView', () => {
       { wrapper: createWrapper() }
     )
 
-    // Day rows should be rendered as clickable buttons
+    // Day rows should be rendered as clickable buttons (14 day rows + 1 "View past" button)
     const buttons = screen.getAllByRole('button')
-    expect(buttons.length).toBe(14)
+    expect(buttons.length).toBe(15)
   })
 })
