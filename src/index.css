@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Match the iOS status-bar / safe-area background to the header colour */
+html {
+  background-color: #059669; /* emerald-600 – same as the app header */
+}
+
 /* Safe area inset utilities for iPhone notch and home indicator */
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
