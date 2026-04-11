@@ -2,7 +2,7 @@
 
 /* Match the iOS status-bar / safe-area background to the header colour */
 html {
-  background-color: #059669; /* emerald-600 – same as the app header */
+  background-color: var(--color-emerald-600);
 }
 
 /* Safe area inset utilities for iPhone notch and home indicator */
