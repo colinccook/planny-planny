@@ -50,6 +50,10 @@ function buildPromptText(): string {
     lines.push(`There's an event on this day: ${event.name}.`)
   }
 
+  if (dayTheme) {
+    lines.push(`The theme for this day is "${dayTheme}" — please take this into consideration.`)
+  }
+
   lines.push('')
   lines.push('I want something easy that takes under 30 minutes to prepare.')
   lines.push('')
@@ -193,9 +197,18 @@ function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): strin
     }
     function copyPrompt(btn) {
       const ta = document.querySelector('[data-testid="prompt-textarea"]');
-      navigator.clipboard.writeText(ta.value).catch(() => {});
-      btn.textContent = '✓ Copied to clipboard!';
-      btn.classList.add('copied');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(ta.value).catch(() => {});
+        }
+      } catch(e) {}
+      // Show toast
+      const toast = document.createElement('div');
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('data-testid', 'toast');
+      toast.textContent = 'Copied prompt to clipboard';
+      toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:8px 16px;border-radius:8px;z-index:50;';
+      document.body.appendChild(toast);
     }
   </script>
 </body>
@@ -334,7 +347,8 @@ Then('the prompt textarea should contain {string}', async ({ page }, text: strin
   expect(value).toContain(text)
 })
 
-Then('the copy button should show {string}', async ({ page }, text: string) => {
-  const btn = page.locator('[data-testid="copy-prompt-button"]')
-  await expect(btn).toContainText(text)
+Then('a toast should show {string}', async ({ page }, text: string) => {
+  const toast = page.locator('[data-testid="toast"]')
+  await expect(toast).toBeVisible()
+  await expect(toast).toContainText(text)
 })

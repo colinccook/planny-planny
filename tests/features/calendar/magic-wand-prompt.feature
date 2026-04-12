@@ -84,7 +84,7 @@ Feature: Magic Wand AI Prompt Generator
     When I view the day detail
     And I tap the magic wand button
     And I tap the copy button
-    Then the copy button should show "Copied to clipboard"
+    Then a toast should show "Copied prompt to clipboard"
 
   Scenario: Prompt includes healthy eating guidance
     Given the day has no meals planned

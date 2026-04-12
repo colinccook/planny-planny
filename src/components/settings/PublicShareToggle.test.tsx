@@ -3,6 +3,11 @@ import { render, screen } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
+const mockShowToast = vi.fn()
+vi.mock('../../hooks/useToast', () => ({
+  useToast: () => ({ showToast: mockShowToast }),
+}))
+
 const mockUseHousehold = vi.fn()
 
 vi.mock('../../hooks/useHousehold', () => ({

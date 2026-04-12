@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+@theme {
+  --animate-fade-in-up: fade-in-up 0.3s ease-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Match the iOS status-bar / safe-area background to the header colour */
 html {
   background-color: var(--color-emerald-600);

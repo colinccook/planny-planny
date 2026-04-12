@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import type { Database } from '../../types/database'
 import { useIngredients, useIngredientUsageStats } from '../../hooks/useIngredients'
 import { buildPrompt } from '../../lib/buildPrompt'
+import { copyToClipboard } from '../../lib/clipboard'
+import { useToast } from '../../hooks/useToast'
 import type { Complexity } from '../../lib/buildPrompt'
 
 type Household = Database['public']['Tables']['households']['Row']
@@ -22,8 +24,8 @@ export default function MealPromptGenerator({
 }: MealPromptGeneratorProps) {
   const [complexity, setComplexity] = useState<Complexity>('easy')
   const [includeTheme, setIncludeTheme] = useState(true)
-  const [copied, setCopied] = useState(false)
   const [promptOverride, setPromptOverride] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   const { data: allIngredients = [] } = useIngredients(household.id)
   const { data: usageStats = [] } = useIngredientUsageStats(household.id)
@@ -61,18 +63,8 @@ export default function MealPromptGenerator({
   const displayPrompt = promptOverride ?? generatedPrompt
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(displayPrompt)
-    } catch {
-      const textarea = document.createElement('textarea')
-      textarea.value = displayPrompt
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    await copyToClipboard(displayPrompt)
+    showToast('Copied prompt to clipboard')
   }
 
   // Reset override when inputs change
@@ -160,14 +152,10 @@ export default function MealPromptGenerator({
       <button
         type="button"
         onClick={handleCopy}
-        className={`w-full rounded-lg py-3 text-sm font-semibold transition-colors ${
-          copied
-            ? 'bg-emerald-100 text-emerald-700'
-            : 'bg-emerald-600 text-white hover:bg-emerald-700'
-        }`}
+        className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
         data-testid="copy-prompt-button"
       >
-        {copied ? '✓ Copied to clipboard!' : '📋 Copy prompt to clipboard'}
+        📋 Copy prompt to clipboard
       </button>
     </div>
   )
