@@ -7,7 +7,7 @@ interface DayContextBadgeProps {
   defaultChildren: number
   defaultBabies: number
   contexts: DayContext[]
-  onEdit: () => void
+  onEdit?: () => void
 }
 
 export default function DayContextBadge({
@@ -25,12 +25,8 @@ export default function DayContextBadge({
   const totalBabies = Math.max(0, defaultBabies + extraBabies)
   const events = contexts.filter((c) => c.event_name).map((c) => c.event_name!)
 
-  return (
-    <button
-      type="button"
-      onClick={onEdit}
-      className="flex flex-wrap items-center gap-2 text-sm"
-    >
+  const content = (
+    <>
       <span className="inline-flex items-center gap-1 text-gray-600">
         {totalAdults > 0 && (
           <span>
@@ -60,6 +56,24 @@ export default function DayContextBadge({
           {event}
         </span>
       ))}
-    </button>
+    </>
+  )
+
+  if (onEdit) {
+    return (
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex flex-wrap items-center gap-2 text-sm"
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <span className="flex flex-wrap items-center gap-2 text-sm">
+      {content}
+    </span>
   )
 }
