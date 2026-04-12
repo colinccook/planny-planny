@@ -40,6 +40,7 @@ All new functionality **must** be covered by appropriate tests:
 ## Branching & Pull Requests
 
 - **Always work in a new branch** — never commit directly to `main`. Create a descriptive feature branch (e.g., `feat/number-stepper`, `fix/swipe-dismiss`) before making changes.
+- **Always branch from the latest `main`** — run `git fetch origin main` and create your branch from `origin/main` to avoid stale bases.
 - **Create a Pull Request** for every change. Push the branch and open a PR against `main`.
 - **Screenshots are required** for any PR that adds or changes UI functionality. Capture at mobile viewport (390×844) using Playwright or browser dev tools.
 - Use the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.

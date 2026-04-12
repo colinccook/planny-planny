@@ -4,6 +4,7 @@ import { useCalendarDirection } from '../../hooks/useCalendarDirection'
 const tabs = [
   { to: '/calendar', label: 'Calendar', icon: '📅' },
   { to: '/ingredients', label: 'Ingredients', icon: '🥕' },
+  { to: '/store-cupboard', label: 'Cupboard', icon: '🗄️' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ] as const
 

@@ -5,7 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   base: process.env.GITHUB_PAGES ? '/planny-planny/' : '/',
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   test: {
     environment: 'jsdom',
     globals: true,
