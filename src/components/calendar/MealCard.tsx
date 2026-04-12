@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
 import IngredientTag from '../ingredients/IngredientTag'
 
@@ -9,8 +10,19 @@ interface MealCardProps {
 }
 
 export default function MealCard({ meal, canEdit, onEdit, onDelete }: MealCardProps) {
+  const [confirming, setConfirming] = useState(false)
+
+  const handleDelete = () => {
+    if (confirming) {
+      onDelete()
+      setConfirming(false)
+    } else {
+      setConfirming(true)
+    }
+  }
+
   return (
-    <div className="group rounded-lg bg-emerald-50/60 px-3 py-2.5">
+    <div className="group rounded-lg bg-emerald-50/60 px-3 py-2.5" data-testid="meal-card">
       <div className="flex items-start justify-between gap-2">
         <button
           type="button"
@@ -24,12 +36,13 @@ export default function MealCard({ meal, canEdit, onEdit, onDelete }: MealCardPr
         </button>
 
         {canEdit && (
-          <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="flex shrink-0 gap-1">
             <button
               type="button"
               onClick={onEdit}
-              className="rounded p-1 text-gray-400 hover:bg-emerald-100 hover:text-emerald-700"
+              className="rounded p-1.5 text-gray-400 hover:bg-emerald-100 hover:text-emerald-700"
               aria-label={`Edit ${meal.title}`}
+              data-testid="edit-meal-button"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -37,17 +50,47 @@ export default function MealCard({ meal, canEdit, onEdit, onDelete }: MealCardPr
             </button>
             <button
               type="button"
-              onClick={onDelete}
-              className="rounded p-1 text-gray-400 hover:bg-red-100 hover:text-red-600"
-              aria-label={`Delete ${meal.title}`}
+              onClick={handleDelete}
+              className={`rounded p-1.5 transition-colors ${
+                confirming
+                  ? 'bg-red-100 text-red-600'
+                  : 'text-gray-400 hover:bg-red-100 hover:text-red-600'
+              }`}
+              aria-label={confirming ? `Confirm delete ${meal.title}` : `Delete ${meal.title}`}
+              data-testid="delete-meal-button"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              {confirming ? (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
             </button>
+            {confirming && (
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                aria-label="Cancel delete"
+                data-testid="cancel-delete-button"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {confirming && (
+        <p className="mt-1 text-xs text-red-500" data-testid="delete-confirm-text">
+          Tap ✓ again to delete this meal
+        </p>
+      )}
 
       {meal.meal_plan_ingredients.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
