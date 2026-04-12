@@ -21,3 +21,12 @@ export function generateDateRange(start: Date, count: number): string[] {
   }
   return dates
 }
+
+/** Generate an array of YYYY-MM-DD strings going backward from `start` for `count` days. */
+export function generateBackwardDateRange(start: Date, count: number): string[] {
+  const dates: string[] = []
+  for (let i = 0; i < count; i++) {
+    dates.push(toDateString(addDays(start, -i)))
+  }
+  return dates
+}

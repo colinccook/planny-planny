@@ -21,6 +21,8 @@ function formatDateLabel(dateStr: string): string {
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
 
   // Parse as local date (dateStr is YYYY-MM-DD)
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -28,6 +30,7 @@ function formatDateLabel(dateStr: string): string {
 
   if (date.getTime() === today.getTime()) return 'Today'
   if (date.getTime() === tomorrow.getTime()) return 'Tomorrow'
+  if (date.getTime() === yesterday.getTime()) return 'Yesterday'
 
   return new Intl.DateTimeFormat('en-GB', {
     weekday: 'short',
