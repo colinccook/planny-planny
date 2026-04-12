@@ -1,4 +1,4 @@
-import type { Database } from '../../types/database'
+import type { Database } from '../types/database'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
