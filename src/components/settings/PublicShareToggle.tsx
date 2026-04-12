@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useHousehold } from '../../hooks/useHousehold'
+import { copyToClipboard } from '../../lib/clipboard'
+import { useToast } from '../../hooks/useToast'
 
 export default function PublicShareToggle() {
   const { currentHousehold, currentRole } = useHousehold()
   const queryClient = useQueryClient()
   const [toggling, setToggling] = useState(false)
   const [copied, setCopied] = useState(false)
+  const { showToast } = useToast()
 
   if (!currentHousehold || (currentRole !== 'owner' && currentRole !== 'member')) {
     return null
@@ -37,8 +40,9 @@ export default function PublicShareToggle() {
   const copyLink = async () => {
     if (!currentHousehold.public_share_token) return
     const url = `${window.location.origin}/shared/${currentHousehold.public_share_token}`
-    await navigator.clipboard.writeText(url)
+    await copyToClipboard(url)
     setCopied(true)
+    showToast('Copied share link to clipboard')
     setTimeout(() => setCopied(false), 2000)
   }
 

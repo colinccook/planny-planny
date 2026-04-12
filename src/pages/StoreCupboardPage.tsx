@@ -3,6 +3,8 @@ import { useHousehold } from '../hooks/useHousehold'
 import { useAuth } from '../hooks/useAuth'
 import { useCupboardIngredients } from '../hooks/useCupboardIngredients'
 import { useStoreCupboard } from '../hooks/useStoreCupboard'
+import { copyToClipboard } from '../lib/clipboard'
+import { useToast } from '../hooks/useToast'
 import CupboardHeader from '../components/store-cupboard/CupboardHeader'
 import CupboardList from '../components/store-cupboard/CupboardList'
 
@@ -15,6 +17,7 @@ export default function StoreCupboardPage() {
   const { dismissedIds, dismiss, undismiss, resetAll } = useStoreCupboard(user?.id)
 
   const [showHidden, setShowHidden] = useState(false)
+  const { showToast } = useToast()
 
   const visibleIngredients = ingredients.filter(
     (ing) => showHidden || !dismissedIds.includes(ing.id)
@@ -29,20 +32,9 @@ export default function StoreCupboardPage() {
       ? `🛒 Shopping List\n${lines.join('\n')}`
       : 'Shopping list is empty!'
 
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      // Fallback for browsers that don't support clipboard API
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    }
-  }, [visibleIngredients, dismissedIds])
+    await copyToClipboard(text)
+    showToast('Copied shopping list to clipboard')
+  }, [visibleIngredients, dismissedIds, showToast])
 
   if (householdLoading || ingredientsLoading) {
     return (

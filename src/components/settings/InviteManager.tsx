@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useHousehold } from '../../hooks/useHousehold'
+import { copyToClipboard } from '../../lib/clipboard'
+import { useToast } from '../../hooks/useToast'
 import RoleBadge from './RoleBadge'
 
 export default function InviteManager() {
@@ -12,6 +14,7 @@ export default function InviteManager() {
   const [inviteRole, setInviteRole] = useState<'member' | 'guest'>('member')
   const [creating, setCreating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   const { data: invites = [], isLoading } = useQuery({
     queryKey: ['household-invites', currentHousehold?.id],
@@ -66,8 +69,9 @@ export default function InviteManager() {
 
   const copyLink = async (token: string, id: string) => {
     const url = `${window.location.origin}/invite/${token}`
-    await navigator.clipboard.writeText(url)
+    await copyToClipboard(url)
     setCopiedId(id)
+    showToast('Copied invite link to clipboard')
     setTimeout(() => setCopiedId(null), 2000)
   }
 
