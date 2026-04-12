@@ -228,14 +228,21 @@ interface EventCardProps {
 
 function EventCard({ context, canEdit, onEdit, onDelete }: EventCardProps) {
   const changes: string[] = []
+  const accessibleChanges: string[] = []
   if (context.extra_adults !== 0) {
-    changes.push(`${context.extra_adults > 0 ? '+' : ''}${context.extra_adults} 🧑`)
+    const sign = context.extra_adults > 0 ? '+' : ''
+    changes.push(`${sign}${context.extra_adults} 🧑`)
+    accessibleChanges.push(`${sign}${context.extra_adults} adults`)
   }
   if (context.extra_children !== 0) {
-    changes.push(`${context.extra_children > 0 ? '+' : ''}${context.extra_children} 🧒`)
+    const sign = context.extra_children > 0 ? '+' : ''
+    changes.push(`${sign}${context.extra_children} 🧒`)
+    accessibleChanges.push(`${sign}${context.extra_children} children`)
   }
   if (context.extra_babies !== 0) {
-    changes.push(`${context.extra_babies > 0 ? '+' : ''}${context.extra_babies} 👶`)
+    const sign = context.extra_babies > 0 ? '+' : ''
+    changes.push(`${sign}${context.extra_babies} 👶`)
+    accessibleChanges.push(`${sign}${context.extra_babies} babies`)
   }
 
   return (
@@ -248,7 +255,7 @@ function EventCard({ context, canEdit, onEdit, onDelete }: EventCardProps) {
           {context.event_name || 'Headcount change'}
         </p>
         {changes.length > 0 && (
-          <p className="mt-0.5 text-xs text-gray-500">{changes.join('  ')}</p>
+          <p className="mt-0.5 text-xs text-gray-500" aria-label={accessibleChanges.join(', ')}>{changes.join('  ')}</p>
         )}
       </div>
       {canEdit && (
