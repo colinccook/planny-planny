@@ -10,6 +10,8 @@ import FullScreenView from '../ui/FullScreenView'
 import MealCard from './MealCard'
 import DayContextBadge from './DayContextBadge'
 import DayContextForm from './DayContextForm'
+import MealPromptGenerator from './MealPromptGenerator'
+import Tray from '../ui/Tray'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
@@ -51,6 +53,7 @@ export default function DayDetailView({
   onEditMeal,
 }: DayDetailViewProps) {
   const [showContextForm, setShowContextForm] = useState(false)
+  const [showPromptTray, setShowPromptTray] = useState(false)
   const [editingContext, setEditingContext] = useState<DayContext | undefined>(
     undefined,
   )
@@ -119,12 +122,38 @@ export default function DayDetailView({
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state with magic wand */}
         {!mealsLoading && meals.length === 0 && (
           <div className="py-8 text-center">
             <p className="text-gray-400">No meals planned yet</p>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setShowPromptTray(true)}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-purple-50 px-4 py-2.5 text-sm font-medium text-purple-700 transition-colors hover:bg-purple-100"
+                data-testid="magic-wand-button"
+              >
+                <span className="text-lg">🪄</span>
+                Get AI meal suggestions
+              </button>
+            )}
           </div>
         )}
+
+        {/* AI prompt tray */}
+        <Tray
+          isOpen={showPromptTray}
+          onClose={() => setShowPromptTray(false)}
+          title="🪄 AI Meal Suggestions"
+          description="Generate a prompt to get meal ideas from AI"
+        >
+          <MealPromptGenerator
+            household={household}
+            date={date}
+            contexts={contexts}
+            dayTheme={placeholder?.label ?? null}
+          />
+        </Tray>
 
         {/* Meals list */}
         <div className="space-y-2">
