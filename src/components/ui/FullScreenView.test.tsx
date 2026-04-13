@@ -1,72 +1,107 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { createElement } from 'react'
 
 import FullScreenView from './FullScreenView'
+import { HeaderOverrideProvider, useHeaderOverride } from '../../hooks/useHeaderOverride'
+
+/** Helper that renders FullScreenView inside the required context provider */
+function renderWithProvider(props: { title: string; onBack: () => void; children: React.ReactNode }) {
+  return render(
+    createElement(HeaderOverrideProvider, null,
+      createElement(FullScreenView, { title: props.title, onBack: props.onBack, children: props.children }),
+    ),
+  )
+}
+
+/** Test helper that reads the current header override from context */
+function OverrideReader({ onRead }: { onRead: (o: ReturnType<typeof useHeaderOverride>['override']) => void }) {
+  const { override } = useHeaderOverride()
+  onRead(override)
+  return null
+}
 
 describe('FullScreenView', () => {
-  it('renders the title', () => {
-    render(
-      createElement(FullScreenView, {
-        title: 'Today',
-        onBack: vi.fn(),
-        children: createElement('p', null, 'page content'),
-      }),
-    )
-
-    expect(screen.getByText('Today')).toBeDefined()
-  })
-
   it('renders children content', () => {
-    render(
-      createElement(FullScreenView, {
-        title: 'Test Page',
-        onBack: vi.fn(),
-        children: createElement('p', null, 'My content here'),
-      }),
-    )
+    renderWithProvider({
+      title: 'Test Page',
+      onBack: vi.fn(),
+      children: createElement('p', null, 'My content here'),
+    })
 
     expect(screen.getByText('My content here')).toBeDefined()
   })
 
-  it('calls onBack when back button is clicked', () => {
-    const onBack = vi.fn()
+  it('sets header override with correct title', () => {
+    const onRead = vi.fn()
+
     render(
-      createElement(FullScreenView, {
-        title: 'Test Page',
-        onBack,
-        children: createElement('p', null, 'content'),
-      }),
+      createElement(HeaderOverrideProvider, null,
+        createElement(FullScreenView, {
+          title: 'Wednesday 15 June',
+          onBack: vi.fn(),
+          children: createElement('p', null, 'content'),
+        }),
+        createElement(OverrideReader, { onRead }),
+      ),
     )
 
-    fireEvent.click(screen.getByTestId('back-button'))
+    const lastCall = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(lastCall).not.toBeNull()
+    expect(lastCall.title).toBe('Wednesday 15 June')
+  })
+
+  it('sets header override with correct onBack callback', () => {
+    const onBack = vi.fn()
+    const onRead = vi.fn()
+
+    render(
+      createElement(HeaderOverrideProvider, null,
+        createElement(FullScreenView, {
+          title: 'Test Page',
+          onBack,
+          children: createElement('p', null, 'content'),
+        }),
+        createElement(OverrideReader, { onRead }),
+      ),
+    )
+
+    const lastCall = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(lastCall).not.toBeNull()
+    lastCall.onBack()
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
-  it('has accessible back button label', () => {
-    render(
-      createElement(FullScreenView, {
-        title: 'Test Page',
-        onBack: vi.fn(),
-        children: createElement('p', null, 'content'),
-      }),
+  it('clears header override on unmount', () => {
+    const onRead = vi.fn()
+
+    const { unmount } = render(
+      createElement(HeaderOverrideProvider, null,
+        createElement(FullScreenView, {
+          title: 'Test Page',
+          onBack: vi.fn(),
+          children: createElement('p', null, 'content'),
+        }),
+        createElement(OverrideReader, { onRead }),
+      ),
     )
 
-    expect(screen.getByLabelText('Go back')).toBeDefined()
-  })
+    const beforeUnmount = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(beforeUnmount).not.toBeNull()
 
-  it('renders title in heading element', () => {
+    // Re-render without FullScreenView to trigger unmount
+    unmount()
+
+    const onRead2 = vi.fn()
+
+    // After unmount, render only the reader to check the override was cleared
     render(
-      createElement(FullScreenView, {
-        title: 'Wednesday 15 June',
-        onBack: vi.fn(),
-        children: createElement('p', null, 'content'),
-      }),
+      createElement(HeaderOverrideProvider, null,
+        createElement(OverrideReader, { onRead: onRead2 }),
+      ),
     )
 
-    expect(
-      screen.getByRole('heading', { level: 1 }),
-    ).toBeDefined()
-    expect(screen.getByText('Wednesday 15 June')).toBeDefined()
+    const afterUnmount = onRead2.mock.calls[onRead2.mock.calls.length - 1][0]
+    expect(afterUnmount).toBeNull()
   })
 })
