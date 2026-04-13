@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { ReactNode } from 'react'
 
 interface HeaderOverride {
@@ -48,11 +48,16 @@ export function useHeaderOverride() {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useRegisterHeaderOverride(title: string, onBack: () => void) {
   const { setOverride, clearOverride } = useHeaderOverride()
+  const onBackRef = useRef(onBack)
 
   useEffect(() => {
-    setOverride({ title, onBack })
+    onBackRef.current = onBack
+  })
+
+  useEffect(() => {
+    setOverride({ title, onBack: () => onBackRef.current() })
     return () => {
       clearOverride()
     }
-  }, [title, onBack, setOverride, clearOverride])
+  }, [title, setOverride, clearOverride])
 }

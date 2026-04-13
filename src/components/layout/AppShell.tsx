@@ -12,7 +12,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="safe-area-top flex items-center bg-emerald-600 px-4 py-3">
+      <header className="safe-area-top flex items-center gap-3 bg-emerald-600 px-4 py-3">
         {override ? (
           <>
             <button
@@ -32,7 +32,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="ml-3 flex-1 text-lg font-bold text-white">{override.title}</h1>
+            <h1 className="flex-1 text-lg font-bold text-white">{override.title}</h1>
           </>
         ) : (
           <>
