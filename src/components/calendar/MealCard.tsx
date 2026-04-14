@@ -7,9 +7,10 @@ interface MealCardProps {
   canEdit: boolean
   onEdit: () => void
   onDelete: () => void
+  onCopy?: () => void
 }
 
-export default function MealCard({ meal, canEdit, onEdit, onDelete }: MealCardProps) {
+export default function MealCard({ meal, canEdit, onEdit, onDelete, onCopy }: MealCardProps) {
   const [confirming, setConfirming] = useState(false)
 
   const handleDelete = () => {
@@ -48,6 +49,19 @@ export default function MealCard({ meal, canEdit, onEdit, onDelete }: MealCardPr
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </button>
+            {onCopy && (
+              <button
+                type="button"
+                onClick={onCopy}
+                className="rounded p-1.5 text-gray-400 hover:bg-blue-100 hover:text-blue-700"
+                aria-label={`Copy ${meal.title}`}
+                data-testid="copy-meal-button"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            )}
             <button
               type="button"
               onClick={handleDelete}

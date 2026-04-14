@@ -127,6 +127,73 @@ export function useDeleteMealPlan() {
   })
 }
 
+export function useCopyMealPlan() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      meal,
+      targetDate,
+      move,
+    }: {
+      meal: MealPlanWithIngredients
+      targetDate: string
+      move: boolean
+    }) => {
+      // Create the copy
+      const { data: newMeal, error: createError } = await supabase
+        .from('meal_plans')
+        .insert({
+          household_id: meal.household_id,
+          date: targetDate,
+          title: meal.title,
+          description: meal.description,
+        })
+        .select()
+        .single()
+
+      if (createError) throw createError
+
+      // Copy ingredient links
+      const ingredientIds = meal.meal_plan_ingredients.map(
+        (mpi) => mpi.ingredient_id,
+      )
+      if (ingredientIds.length > 0) {
+        const rows = ingredientIds.map((id) => ({
+          meal_plan_id: newMeal.id,
+          ingredient_id: id,
+        }))
+        const { error: ingError } = await supabase
+          .from('meal_plan_ingredients')
+          .insert(rows)
+        if (ingError) throw ingError
+      }
+
+      // If move, delete the original
+      if (move) {
+        const { error: deleteError } = await supabase
+          .from('meal_plans')
+          .delete()
+          .eq('id', meal.id)
+        if (deleteError) throw deleteError
+      }
+
+      return { householdId: meal.household_id }
+    },
+    onSuccess: ({ householdId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ['meal-plans', householdId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['plan-streak', householdId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['ingredient-usage-stats', householdId],
+      })
+    },
+  })
+}
+
 // ── Meal Plan Ingredients ────────────────────────────────────
 
 export function useSetMealIngredients() {
