@@ -142,8 +142,12 @@ export default function CopyMealTray({
               <button
                 key={dateStr}
                 type="button"
-                onClick={() => setSelectedDate(dateStr)}
-                disabled={isSource && !isMove}
+                onClick={() => {
+                  if (!isSource) {
+                    setSelectedDate(dateStr)
+                  }
+                }}
+                disabled={isSource}
                 className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
                   isSelected
                     ? 'bg-emerald-100 ring-2 ring-emerald-500'
