@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { HeaderOverrideProvider, useHeaderOverride } from '../../hooks/useHeaderOverride'
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
@@ -74,7 +75,11 @@ function createWrapper() {
     return createElement(
       MemoryRouter,
       null,
-      createElement(QueryClientProvider, { client: queryClient }, children),
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(HeaderOverrideProvider, null, children),
+      ),
     )
   }
 }
@@ -84,21 +89,47 @@ describe('AddMealView', () => {
     vi.clearAllMocks()
   })
 
-  it('renders the Add Meal title', () => {
+  it('sets Add Meal title via header override', () => {
+    const onRead = vi.fn()
+
+    function OverrideReader() {
+      const { override } = useHeaderOverride()
+      onRead(override)
+      return null
+    }
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+
     render(
-      createElement(AddMealView, {
-        householdId: 'h1',
-        date: '2026-04-06',
-        onBack: vi.fn(),
-        onSaved: vi.fn(),
-      }),
-      { wrapper: createWrapper() },
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(
+            HeaderOverrideProvider,
+            null,
+            createElement(AddMealView, {
+              householdId: 'h1',
+              date: '2026-04-06',
+              onBack: vi.fn(),
+              onSaved: vi.fn(),
+            }),
+            createElement(OverrideReader),
+          ),
+        ),
+      ),
     )
 
-    expect(screen.getByText('Add Meal')).toBeDefined()
+    const lastCall = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(lastCall).not.toBeNull()
+    expect(lastCall.title).toBe('Add Meal')
   })
 
-  it('renders Edit Meal title when existingMeal is provided', () => {
+  it('sets Edit Meal title via header override when existingMeal is provided', () => {
     const existingMeal = {
       id: 'meal-1',
       household_id: 'h1',
@@ -111,18 +142,44 @@ describe('AddMealView', () => {
       meal_plan_ingredients: [],
     }
 
+    const onRead = vi.fn()
+
+    function OverrideReader() {
+      const { override } = useHeaderOverride()
+      onRead(override)
+      return null
+    }
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+
     render(
-      createElement(AddMealView, {
-        householdId: 'h1',
-        date: '2026-04-06',
-        existingMeal,
-        onBack: vi.fn(),
-        onSaved: vi.fn(),
-      }),
-      { wrapper: createWrapper() },
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(
+            HeaderOverrideProvider,
+            null,
+            createElement(AddMealView, {
+              householdId: 'h1',
+              date: '2026-04-06',
+              existingMeal,
+              onBack: vi.fn(),
+              onSaved: vi.fn(),
+            }),
+            createElement(OverrideReader),
+          ),
+        ),
+      ),
     )
 
-    expect(screen.getByText('Edit Meal')).toBeDefined()
+    const lastCall = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(lastCall).not.toBeNull()
+    expect(lastCall.title).toBe('Edit Meal')
   })
 
   it('shows tappable field cards', () => {
@@ -351,19 +408,45 @@ describe('AddMealView', () => {
     expect(screen.getByText('Spaghetti Bolognese')).toBeDefined()
   })
 
-  it('calls onBack when back button is clicked', () => {
+  it('registers onBack via header override context', () => {
     const onBack = vi.fn()
+    const onRead = vi.fn()
+
+    function OverrideReader() {
+      const { override } = useHeaderOverride()
+      onRead(override)
+      return null
+    }
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+
     render(
-      createElement(AddMealView, {
-        householdId: 'h1',
-        date: '2026-04-06',
-        onBack,
-        onSaved: vi.fn(),
-      }),
-      { wrapper: createWrapper() },
+      createElement(
+        MemoryRouter,
+        null,
+        createElement(
+          QueryClientProvider,
+          { client: queryClient },
+          createElement(
+            HeaderOverrideProvider,
+            null,
+            createElement(AddMealView, {
+              householdId: 'h1',
+              date: '2026-04-06',
+              onBack,
+              onSaved: vi.fn(),
+            }),
+            createElement(OverrideReader),
+          ),
+        ),
+      ),
     )
 
-    fireEvent.click(screen.getByTestId('back-button'))
+    const lastCall = onRead.mock.calls[onRead.mock.calls.length - 1][0]
+    expect(lastCall).not.toBeNull()
+    lastCall.onBack()
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 })
