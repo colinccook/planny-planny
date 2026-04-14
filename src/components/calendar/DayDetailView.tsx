@@ -7,8 +7,10 @@ import {
   useDeleteMealPlan,
   useDeleteDayContext,
 } from '../../hooks/useMealPlans'
+import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
 import FullScreenView from '../ui/FullScreenView'
 import MealCard from './MealCard'
+import CopyMealTray from './CopyMealTray'
 import DayContextBadge from './DayContextBadge'
 import DayContextForm from './DayContextForm'
 import MealPromptGenerator from './MealPromptGenerator'
@@ -56,6 +58,7 @@ export default function DayDetailView({
   const [showAddEventForm, setShowAddEventForm] = useState(false)
   const [editingContextId, setEditingContextId] = useState<string | null>(null)
   const [showPromptTray, setShowPromptTray] = useState(false)
+  const [copyingMeal, setCopyingMeal] = useState<MealPlanWithIngredients | null>(null)
 
   const { data: meals = [], isLoading: mealsLoading } = useMealPlans(
     household.id,
@@ -197,6 +200,7 @@ export default function DayDetailView({
               canEdit={canEdit}
               onEdit={() => onEditMeal(meal.id)}
               onDelete={() => handleDeleteMeal(meal.id)}
+              onCopy={canEdit ? () => setCopyingMeal(meal) : undefined}
             />
           ))}
         </div>
@@ -211,6 +215,16 @@ export default function DayDetailView({
           >
             + Add meal
           </button>
+        )}
+
+        {/* Copy/Move meal tray */}
+        {copyingMeal && (
+          <CopyMealTray
+            isOpen={!!copyingMeal}
+            onClose={() => setCopyingMeal(null)}
+            meal={copyingMeal}
+            sourceDate={date}
+          />
         )}
       </div>
     </FullScreenView>
