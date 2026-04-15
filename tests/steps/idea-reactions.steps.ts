@@ -168,6 +168,13 @@ When(
   },
 )
 
+When('I open reactions from the pill for {string}', async ({ page }, ideaTitle: string) => {
+  const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
+    hasText: ideaTitle,
+  })
+  await ideaButton.locator('[data-testid^="idea-reaction-pill-"]').click()
+})
+
 Then('I should see {string} in the idea reactors list', async ({ page }, name: string) => {
   await page.getByTestId('idea-reactors-list').getByText(name).waitFor({ state: 'visible' })
 })
@@ -193,4 +200,9 @@ Then('the thumbs-up count should be bold for {string}', async ({ page }, ideaTit
   if (!klass?.includes('count-bold')) {
     throw new Error(`Expected bold count class, got "${klass}"`)
   }
+})
+
+Then('I should see the reaction picker', async ({ page }) => {
+  await page.locator('#reaction-picker-tray').waitFor({ state: 'visible' })
+  await page.getByTestId('thumbs-up-reaction-button').waitFor({ state: 'visible' })
 })

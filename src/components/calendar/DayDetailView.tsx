@@ -471,9 +471,14 @@ export default function DayDetailView({
               </div>
 
               {showReactionTray && (
-                <div className="space-y-3 border-t border-gray-200 pt-4">
+                <div
+                  className="space-y-3 border-t border-gray-200 pt-4"
+                  role="region"
+                  aria-labelledby="reaction-picker-heading"
+                  data-testid="reaction-picker-tray"
+                >
                   <div className="space-y-1">
-                    <h3 className="text-base font-semibold text-gray-900">React to this idea</h3>
+                    <h3 id="reaction-picker-heading" className="text-base font-semibold text-gray-900">React to this idea</h3>
                     <p className="text-sm text-gray-600">Choose an emoji reaction.</p>
                   </div>
 

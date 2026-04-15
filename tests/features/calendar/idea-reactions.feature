@@ -22,3 +22,9 @@ Feature: Meal ideas and reactions
     And I react to the idea "Nachos" with a thumbs up
     When I react to the idea "Nachos" with a thumbs up
     Then I should see the idea "Nachos" with a faded thumbs-up pill
+
+  Scenario: Open reaction picker from the idea pill
+    Given I open a day detail view with ideas support
+    And I add the idea "Tacos"
+    When I open reactions from the pill for "Tacos"
+    Then I should see the reaction picker

@@ -85,15 +85,17 @@ set search_path = public
 as $$
 begin
   delete from public.reactions
-  where target_type = 'meal_idea'
-    and target_id = old.id;
-  return old;
+  using deleted_meal_ideas
+  where reactions.target_type = 'meal_idea'
+    and reactions.target_id = deleted_meal_ideas.id;
+  return null;
 end;
 $$;
 
 create trigger cleanup_meal_idea_reactions
   after delete on public.meal_ideas
-  for each row
+  referencing old table as deleted_meal_ideas
+  for each statement
   execute function public.delete_meal_idea_reactions();
 
 -- Realtime
