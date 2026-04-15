@@ -76,6 +76,26 @@ create policy "Users can remove their own reactions"
     and user_id = auth.uid()
   );
 
+-- Cleanup polymorphic reactions when meal ideas are deleted
+create or replace function public.delete_meal_idea_reactions()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.reactions
+  where target_type = 'meal_idea'
+    and target_id = old.id;
+  return old;
+end;
+$$;
+
+create trigger cleanup_meal_idea_reactions
+  after delete on public.meal_ideas
+  for each row
+  execute function public.delete_meal_idea_reactions();
+
 -- Realtime
 alter publication supabase_realtime add table public.meal_ideas;
 alter publication supabase_realtime add table public.reactions;

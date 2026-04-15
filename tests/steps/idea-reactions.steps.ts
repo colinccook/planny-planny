@@ -11,7 +11,8 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
       <style>
         body { font-family: sans-serif; margin: 0; padding: 16px; }
         .hidden { display: none; }
-        .idea-card { display: flex; justify-content: space-between; padding: 10px; border-radius: 8px; background: #eef2ff; margin-top: 8px; border: 1px solid #c7d2fe; }
+        .idea-card { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 8px; background: #eef2ff; margin-top: 8px; border: 1px solid #c7d2fe; }
+        .idea-title { background: transparent; border: 0; text-align: left; flex: 1; font-size: 14px; padding: 0; }
         .pill { border-radius: 999px; padding: 4px 10px; border: 1px solid #d1d5db; background: white; color: #9ca3af; font-weight: 500; }
         .pill.active { border-color: #818cf8; background: #e0e7ff; color: #3730a3; font-weight: 700; }
         .count-bold { font-weight: 700; }
@@ -44,21 +45,22 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
           const list = document.getElementById('ideas-list');
           list.innerHTML = '';
           ideas.forEach((idea) => {
-            const el = document.createElement('button');
+            const el = document.createElement('div');
             el.className = 'idea-card';
             el.setAttribute('data-testid', 'idea-card-' + idea.id);
-            el.onclick = () => openIdea(idea.id);
-
-            const title = document.createElement('span');
+            const title = document.createElement('button');
+            title.type = 'button';
+            title.className = 'idea-title';
+            title.onclick = () => openIdea(idea.id);
             title.textContent = idea.title;
             el.appendChild(title);
 
             const pill = document.createElement('button');
+            pill.type = 'button';
             pill.className = idea.reactors.includes('You') ? 'pill active' : 'pill';
-            pill.setAttribute('data-testid', 'idea-thumbs-pill-' + idea.id);
+            pill.setAttribute('data-testid', 'idea-reaction-pill-' + idea.id);
             pill.textContent = '👍';
-            pill.onclick = (event) => {
-              event.stopPropagation();
+            pill.onclick = () => {
               openIdea(idea.id);
               openReactPicker();
             };
@@ -160,7 +162,7 @@ When(
     const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
       hasText: ideaTitle,
     })
-    await ideaButton.click()
+    await ideaButton.getByRole('button', { name: ideaTitle }).click()
     await page.getByTestId('open-react-to-idea-button').click()
     await page.getByTestId('thumbs-up-reaction-button').click()
   },
@@ -175,7 +177,7 @@ Then('I should see the idea {string} with a faded thumbs-up pill', async ({ page
     hasText: ideaTitle,
   })
   await ideaButton.waitFor({ state: 'visible' })
-  const pill = ideaButton.locator('[data-testid^="idea-thumbs-pill-"]')
+  const pill = ideaButton.locator('[data-testid^="idea-reaction-pill-"]')
   const klass = await pill.getAttribute('class')
   if (!klass?.includes('pill') || klass.includes('active')) {
     throw new Error(`Expected faded pill class, got "${klass}"`)

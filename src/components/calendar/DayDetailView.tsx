@@ -460,6 +460,7 @@ export default function DayDetailView({
                       ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
                       : 'border-gray-300 bg-white text-gray-500 ring-gray-200'
                   }`}
+                  aria-label={hasSelectedIdeaThumbed ? 'Change your thumbs up reaction' : 'Add a thumbs up reaction'}
                   data-testid="open-react-to-idea-button"
                 >
                   <span>👍</span>
@@ -468,6 +469,47 @@ export default function DayDetailView({
                   )}
                 </button>
               </div>
+
+              {showReactionTray && (
+                <div className="space-y-3 border-t border-gray-200 pt-4">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold text-gray-900">React to this idea</h3>
+                    <p className="text-sm text-gray-600">Choose an emoji reaction.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleToggleThumb(selectedIdea.id)}
+                    disabled={upsertReaction.isPending || removeReaction.isPending}
+                    className={`w-full rounded-full border px-4 py-3 text-left text-base ring-1 transition-colors disabled:opacity-50 ${
+                      hasSelectedIdeaThumbed
+                        ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
+                        : 'border-gray-300 bg-white text-gray-500 ring-gray-200 hover:bg-gray-50'
+                    }`}
+                    aria-label={hasSelectedIdeaThumbed ? 'Remove thumbs up reaction' : 'Add thumbs up reaction'}
+                    data-testid="thumbs-up-reaction-button"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <span>👍</span>
+                      <span>Thumbs up</span>
+                      {selectedIdeaThumbUsers.length > 0 && (
+                        <span className={hasSelectedIdeaThumbed ? 'font-bold' : ''}>
+                          {selectedIdeaThumbUsers.length}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowReactionTray(false)}
+                    className="w-full rounded-xl bg-gray-100 py-3 text-base font-semibold text-gray-700 transition-colors hover:bg-gray-200"
+                    data-testid="close-reaction-picker-button"
+                  >
+                    Done
+                  </button>
+                </div>
+              )}
 
               {canEdit && (
                 <button
@@ -481,38 +523,6 @@ export default function DayDetailView({
                 </button>
               )}
             </div>
-          )}
-        </Tray>
-
-        {/* Reaction picker tray */}
-        <Tray
-          isOpen={!!selectedIdea && showReactionTray}
-          onClose={() => setShowReactionTray(false)}
-          title="React to this idea"
-          description="Choose an emoji reaction"
-        >
-          {selectedIdea && (
-            <button
-              type="button"
-              onClick={() => handleToggleThumb(selectedIdea.id)}
-              disabled={upsertReaction.isPending || removeReaction.isPending}
-              className={`w-full rounded-full border px-4 py-3 text-left text-base ring-1 transition-colors disabled:opacity-50 ${
-                hasSelectedIdeaThumbed
-                  ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
-                  : 'border-gray-300 bg-white text-gray-500 ring-gray-200 hover:bg-gray-50'
-              }`}
-              data-testid="thumbs-up-reaction-button"
-            >
-              <span className="inline-flex items-center gap-2">
-                <span>👍</span>
-                <span>Thumbs up</span>
-                {selectedIdeaThumbUsers.length > 0 && (
-                  <span className={hasSelectedIdeaThumbed ? 'font-bold' : ''}>
-                    {selectedIdeaThumbUsers.length}
-                  </span>
-                )}
-              </span>
-            </button>
           )}
         </Tray>
       </div>
@@ -628,6 +638,7 @@ function IdeaCard({
             ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
             : 'border-gray-300 bg-white text-gray-500 ring-gray-200'
         }`}
+        aria-label={thumbsCount > 0 ? `Open thumbs up reactions, ${thumbsCount} votes` : 'Open thumbs up reactions'}
         data-testid={`idea-reaction-pill-${idea.id}`}
       >
         <span>👍</span>

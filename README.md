@@ -87,12 +87,12 @@ Inside day detail, ideas are listed between events and meal plans:
   - highlights when you’ve voted,
   - shows counts from all household members,
   - shows your selected reaction count in bold.
-- Tapping an idea shows reactor names and lets members delete the idea.
+- Tapping an idea shows reactor names, lets members delete the idea, and opens an inline **React to this idea** picker.
 
 <p align="center">
   <img src="docs/screenshots/11-ideas-reactions-list-mobile.png" alt="Ideas and reactions list (mobile)" width="280" />
   &nbsp;&nbsp;
-  <img src="docs/screenshots/12-ideas-reaction-picker-mobile.png" alt="Reaction picker tray (mobile)" width="280" />
+  <img src="docs/screenshots/13-ideas-inline-reaction-mobile.png" alt="Idea detail with inline reaction picker (mobile)" width="280" />
 </p>
 
 ---
