@@ -133,6 +133,16 @@ export default function DayDetailView({
     }
     return counts
   }, [ideaReactions])
+  const userThumbedIdeaIds = useMemo(() => {
+    if (!user) return new Set<string>()
+    const ids = new Set<string>()
+    for (const reaction of ideaReactions) {
+      if (reaction.emoji === '👍' && reaction.user_id === user.id) {
+        ids.add(reaction.target_id)
+      }
+    }
+    return ids
+  }, [ideaReactions, user])
 
   const [y, m, d] = date.split('-').map(Number)
   const dateObj = new Date(y, m - 1, d)
@@ -273,9 +283,14 @@ export default function DayDetailView({
                   key={idea.id}
                   idea={idea}
                   thumbsCount={thumbsCount}
+                  hasThumbed={userThumbedIdeaIds.has(idea.id)}
                   onOpen={() => {
                     setSelectedIdeaId(idea.id)
                     setShowReactionTray(false)
+                  }}
+                  onOpenReactions={() => {
+                    setSelectedIdeaId(idea.id)
+                    setShowReactionTray(true)
                   }}
                 />
               )
@@ -435,14 +450,24 @@ export default function DayDetailView({
                 </p>
               )}
 
-              <button
-                type="button"
-                onClick={() => setShowReactionTray(true)}
-                className="w-full rounded-xl bg-indigo-600 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
-                data-testid="open-react-to-idea-button"
-              >
-                React to this
-              </button>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reactions</p>
+                <button
+                  type="button"
+                  onClick={() => setShowReactionTray(true)}
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ring-1 ${
+                    hasSelectedIdeaThumbed
+                      ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
+                      : 'border-gray-300 bg-white text-gray-500 ring-gray-200'
+                  }`}
+                  data-testid="open-react-to-idea-button"
+                >
+                  <span>👍</span>
+                  {selectedIdeaThumbUsers.length > 0 && (
+                    <span>{selectedIdeaThumbUsers.length}</span>
+                  )}
+                </button>
+              </div>
 
               {canEdit && (
                 <button
@@ -471,10 +496,22 @@ export default function DayDetailView({
               type="button"
               onClick={() => handleToggleThumb(selectedIdea.id)}
               disabled={upsertReaction.isPending || removeReaction.isPending}
-              className="w-full rounded-xl bg-indigo-50 px-4 py-4 text-left text-base font-semibold text-indigo-700 ring-1 ring-indigo-100 transition-colors hover:bg-indigo-100 disabled:opacity-50"
+              className={`w-full rounded-full border px-4 py-3 text-left text-base ring-1 transition-colors disabled:opacity-50 ${
+                hasSelectedIdeaThumbed
+                  ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
+                  : 'border-gray-300 bg-white text-gray-500 ring-gray-200 hover:bg-gray-50'
+              }`}
               data-testid="thumbs-up-reaction-button"
             >
-              {hasSelectedIdeaThumbed ? 'Remove 👍' : '👍 Thumbs up'}
+              <span className="inline-flex items-center gap-2">
+                <span>👍</span>
+                <span>Thumbs up</span>
+                {selectedIdeaThumbUsers.length > 0 && (
+                  <span className={hasSelectedIdeaThumbed ? 'font-bold' : ''}>
+                    {selectedIdeaThumbUsers.length}
+                  </span>
+                )}
+              </span>
             </button>
           )}
         </Tray>
@@ -559,21 +596,47 @@ function EventCard({ context, canEdit, onEdit, onDelete }: EventCardProps) {
 interface IdeaCardProps {
   idea: MealIdea
   thumbsCount: number
+  hasThumbed: boolean
   onOpen: () => void
+  onOpenReactions: () => void
 }
 
-function IdeaCard({ idea, thumbsCount, onOpen }: IdeaCardProps) {
+function IdeaCard({
+  idea,
+  thumbsCount,
+  hasThumbed,
+  onOpen,
+  onOpenReactions,
+}: IdeaCardProps) {
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex w-full items-center justify-between gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-left ring-1 ring-indigo-100 transition-colors hover:bg-indigo-100"
+    <div
+      className="flex w-full items-center justify-between gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-left ring-1 ring-indigo-100"
       data-testid={`idea-card-${idea.id}`}
     >
-      <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">{idea.title}</p>
-      <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
-        👍 {thumbsCount}
-      </span>
-    </button>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="min-w-0 flex-1 text-left"
+      >
+        <p className="truncate text-sm font-medium text-gray-900">{idea.title}</p>
+      </button>
+      <button
+        type="button"
+        onClick={onOpenReactions}
+        className={`shrink-0 rounded-full border px-2 py-0.5 text-xs ring-1 ${
+          hasThumbed
+            ? 'border-indigo-400 bg-indigo-100 font-semibold text-indigo-800 ring-indigo-200'
+            : 'border-gray-300 bg-white text-gray-500 ring-gray-200'
+        }`}
+        data-testid={`idea-reaction-pill-${idea.id}`}
+      >
+        <span>👍</span>
+        {thumbsCount > 0 && (
+          <span className={`ml-1 ${hasThumbed ? 'font-bold' : ''}`}>
+            {thumbsCount}
+          </span>
+        )}
+      </button>
+    </div>
   )
 }

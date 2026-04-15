@@ -12,6 +12,9 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
         body { font-family: sans-serif; margin: 0; padding: 16px; }
         .hidden { display: none; }
         .idea-card { display: flex; justify-content: space-between; padding: 10px; border-radius: 8px; background: #eef2ff; margin-top: 8px; border: 1px solid #c7d2fe; }
+        .pill { border-radius: 999px; padding: 4px 10px; border: 1px solid #d1d5db; background: white; color: #9ca3af; font-weight: 500; }
+        .pill.active { border-color: #818cf8; background: #e0e7ff; color: #3730a3; font-weight: 700; }
+        .count-bold { font-weight: 700; }
       </style>
     </head>
     <body>
@@ -30,7 +33,7 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
       </div>
 
       <div id="reaction-picker-tray" class="hidden">
-        <button data-testid="thumbs-up-reaction-button" onclick="reactThumbsUp()">👍 Thumbs up</button>
+        <button class="pill" data-testid="thumbs-up-reaction-button" onclick="reactThumbsUp()">👍 Thumbs up <span data-testid="picker-thumbs-count"></span></button>
       </div>
 
       <script>
@@ -45,7 +48,30 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
             el.className = 'idea-card';
             el.setAttribute('data-testid', 'idea-card-' + idea.id);
             el.onclick = () => openIdea(idea.id);
-            el.innerHTML = '<span>' + idea.title + '</span><span data-testid="idea-thumbs-' + idea.id + '">👍 ' + idea.thumbs + '</span>';
+
+            const title = document.createElement('span');
+            title.textContent = idea.title;
+            el.appendChild(title);
+
+            const pill = document.createElement('button');
+            pill.className = idea.reactors.includes('You') ? 'pill active' : 'pill';
+            pill.setAttribute('data-testid', 'idea-thumbs-pill-' + idea.id);
+            pill.textContent = '👍';
+            pill.onclick = (event) => {
+              event.stopPropagation();
+              openIdea(idea.id);
+              openReactPicker();
+            };
+
+            if (idea.thumbs > 0) {
+              const countEl = document.createElement('span');
+              countEl.setAttribute('data-testid', 'idea-thumbs-count-' + idea.id);
+              countEl.className = idea.reactors.includes('You') ? 'count-bold' : '';
+              countEl.textContent = ' ' + idea.thumbs;
+              pill.appendChild(countEl);
+            }
+
+            el.appendChild(pill);
             list.appendChild(el);
           });
         }
@@ -78,6 +104,11 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
         }
 
         window.openReactPicker = function() {
+          const idea = ideas.find((i) => i.id === selectedIdeaId);
+          const pickerBtn = document.querySelector('[data-testid="thumbs-up-reaction-button"]');
+          const pickerCount = document.querySelector('[data-testid="picker-thumbs-count"]');
+          pickerBtn.className = idea && idea.reactors.includes('You') ? 'pill active' : 'pill';
+          pickerCount.textContent = idea && idea.thumbs > 0 ? String(idea.thumbs) : '';
           document.getElementById('reaction-picker-tray').classList.remove('hidden');
         }
 
@@ -87,6 +118,9 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
           if (!idea.reactors.includes('You')) {
             idea.thumbs += 1;
             idea.reactors.push('You');
+          } else {
+            idea.thumbs -= 1;
+            idea.reactors = idea.reactors.filter((name) => name !== 'You');
           }
           document.getElementById('reaction-picker-tray').classList.add('hidden');
           openIdea(idea.id);
@@ -107,9 +141,16 @@ When('I add the idea {string}', async ({ page }, ideaTitle: string) => {
 Then(
   'I should see the idea {string} with {string} thumbs up',
   async ({ page }, ideaTitle: string, count: string) => {
-    const card = page.getByText(ideaTitle)
-    await card.waitFor({ state: 'visible' })
-    await page.getByText(`👍 ${count}`).waitFor({ state: 'visible' })
+    const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
+      hasText: ideaTitle,
+    })
+    await ideaButton.waitFor({ state: 'visible' })
+    const countEl = ideaButton.locator('[data-testid^="idea-thumbs-count-"]')
+    await countEl.waitFor({ state: 'visible' })
+    const text = await countEl.textContent()
+    if (text?.trim() !== count) {
+      throw new Error(`Expected thumbs count ${count}, got ${text}`)
+    }
   },
 )
 
@@ -127,4 +168,27 @@ When(
 
 Then('I should see {string} in the idea reactors list', async ({ page }, name: string) => {
   await page.getByTestId('idea-reactors-list').getByText(name).waitFor({ state: 'visible' })
+})
+
+Then('I should see the idea {string} with a faded thumbs-up pill', async ({ page }, ideaTitle: string) => {
+  const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
+    hasText: ideaTitle,
+  })
+  await ideaButton.waitFor({ state: 'visible' })
+  const pill = ideaButton.locator('[data-testid^="idea-thumbs-pill-"]')
+  const klass = await pill.getAttribute('class')
+  if (!klass?.includes('pill') || klass.includes('active')) {
+    throw new Error(`Expected faded pill class, got "${klass}"`)
+  }
+})
+
+Then('the thumbs-up count should be bold for {string}', async ({ page }, ideaTitle: string) => {
+  const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
+    hasText: ideaTitle,
+  })
+  const countEl = ideaButton.locator('[data-testid^="idea-thumbs-count-"]')
+  const klass = await countEl.getAttribute('class')
+  if (!klass?.includes('count-bold')) {
+    throw new Error(`Expected bold count class, got "${klass}"`)
+  }
 })

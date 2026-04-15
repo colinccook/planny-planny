@@ -6,11 +6,19 @@ Feature: Meal ideas and reactions
   Scenario: Add an idea from a tray
     Given I open a day detail view with ideas support
     When I add the idea "Burgers"
-    Then I should see the idea "Burgers" with "0" thumbs up
+    Then I should see the idea "Burgers" with a faded thumbs-up pill
 
   Scenario: React to an idea with thumbs up
     Given I open a day detail view with ideas support
     And I add the idea "Fajitas"
     When I react to the idea "Fajitas" with a thumbs up
     Then I should see the idea "Fajitas" with "1" thumbs up
+    And the thumbs-up count should be bold for "Fajitas"
     And I should see "You" in the idea reactors list
+
+  Scenario: Toggle thumbs up off
+    Given I open a day detail view with ideas support
+    And I add the idea "Nachos"
+    And I react to the idea "Nachos" with a thumbs up
+    When I react to the idea "Nachos" with a thumbs up
+    Then I should see the idea "Nachos" with a faded thumbs-up pill

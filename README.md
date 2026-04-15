@@ -15,6 +15,7 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Public Sharing** — Share a read-only link to your meal plan so visiting family can see what's for dinner.
 - **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily.
 - **Guest Access** — Invite someone as a guest (view-only) or a full member (can edit).
+- **Meal Ideas & Reactions** — Add lightweight meal ideas per day, react with 👍, and see household vote counts and who voted.
 
 ## 🏗️ Tech Stack
 
@@ -74,6 +75,25 @@ Tap **+ Add meal** on any day to plan a new meal.
   <img src="docs/screenshots/08-calendar-desktop.png" alt="Calendar (desktop)" width="700" />
 </p>
 </details>
+
+---
+
+### 2b. Day Ideas & Reactions
+
+Inside day detail, ideas are listed between events and meal plans:
+- Add ideas quickly from the **Add idea** tray.
+- Each idea has a **reaction pill** (👍) that:
+  - is faded when you haven’t voted,
+  - highlights when you’ve voted,
+  - shows counts from all household members,
+  - shows your selected reaction count in bold.
+- Tapping an idea shows reactor names and lets members delete the idea.
+
+<p align="center">
+  <img src="docs/screenshots/11-ideas-reactions-list-mobile.png" alt="Ideas and reactions list (mobile)" width="280" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/12-ideas-reaction-picker-mobile.png" alt="Reaction picker tray (mobile)" width="280" />
+</p>
 
 ---
 
@@ -245,13 +265,15 @@ After authentication, all data flows through Supabase Realtime (WebSockets). Whe
 
 ### Database
 
-9 tables with Row-Level Security:
+11 tables with Row-Level Security:
 - `profiles` — User display info
 - `households` — Household settings and defaults
 - `household_members` — User ↔ household membership with roles
 - `household_invites` — Token-based invite links
 - `meal_plans` — Daily meal entries
+- `meal_ideas` — Lightweight daily idea entries
 - `meal_plan_ingredients` — Ingredients tagged to meals
+- `reactions` — Generic emoji reactions across household-scoped entities
 - `ingredients` — Household ingredient library
 - `day_placeholders` — Weekly recurring labels
 - `day_contexts` — Per-day events and visitor overrides
@@ -280,6 +302,7 @@ src/
 │   ├── useAuth.tsx                       # Auth context and provider
 │   ├── useHousehold.tsx                  # Household context, switching, realtime
 │   ├── useMealPlans.ts                   # Meal plan, day context, placeholder queries
+│   ├── useMealIdeas.ts                   # Meal ideas and reaction queries
 │   ├── useIngredients.ts                 # Ingredient CRUD queries
 │   └── useDayPlaceholders.ts             # Day placeholder queries
 ├── components/

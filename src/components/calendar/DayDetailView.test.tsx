@@ -169,7 +169,7 @@ describe('DayDetailView ideas and reactions', () => {
     expect(screen.getByText('Ideas')).toBeDefined()
     expect(screen.getByText('Meal plans')).toBeDefined()
     expect(screen.getByText('Burgers')).toBeDefined()
-    expect(screen.getByText('👍 1')).toBeDefined()
+    expect(screen.getByTestId('idea-reaction-pill-idea-1').textContent).toContain('1')
   })
 
   it('adds a meal idea from the tray', async () => {
@@ -211,7 +211,7 @@ describe('DayDetailView ideas and reactions', () => {
       }),
     )
 
-    fireEvent.click(screen.getByTestId('idea-card-idea-1'))
+    fireEvent.click(screen.getByText('Burgers'))
 
     expect(screen.getByText('Thumbed up by')).toBeDefined()
     expect(screen.getByText('Casey')).toBeDefined()
@@ -238,7 +238,7 @@ describe('DayDetailView ideas and reactions', () => {
       }),
     )
 
-    fireEvent.click(screen.getByTestId('idea-card-idea-1'))
+    fireEvent.click(screen.getByText('Burgers'))
     fireEvent.click(screen.getByTestId('open-react-to-idea-button'))
     fireEvent.click(screen.getByTestId('thumbs-up-reaction-button'))
 
@@ -249,6 +249,48 @@ describe('DayDetailView ideas and reactions', () => {
         target_id: 'idea-1',
         emoji: '👍',
         user_id: 'u-1',
+      })
+    })
+  })
+
+  it('removes thumbs-up when the current user already reacted', async () => {
+    mockUseReactions.mockReturnValue({
+      data: [
+        {
+          id: 'r-1',
+          household_id: 'hh-1',
+          target_type: 'meal_idea',
+          target_id: 'idea-1',
+          emoji: '👍',
+          user_id: 'u-1',
+          created_at: '2026-04-20T11:00:00Z',
+          profiles: { display_name: 'You', avatar_url: null },
+        },
+      ],
+    })
+
+    render(
+      createElement(DayDetailView, {
+        date: '2026-04-20',
+        household,
+        currentRole: 'member',
+        onBack: vi.fn(),
+        onAddMeal: vi.fn(),
+        onEditMeal: vi.fn(),
+      }),
+    )
+
+    fireEvent.click(screen.getByText('Burgers'))
+    fireEvent.click(screen.getByTestId('open-react-to-idea-button'))
+    fireEvent.click(screen.getByTestId('thumbs-up-reaction-button'))
+
+    await waitFor(() => {
+      expect(deleteReactionMutateAsync).toHaveBeenCalledWith({
+        householdId: 'hh-1',
+        targetType: 'meal_idea',
+        targetId: 'idea-1',
+        emoji: '👍',
+        userId: 'u-1',
       })
     })
   })
