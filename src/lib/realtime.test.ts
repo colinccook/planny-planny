@@ -58,9 +58,9 @@ describe('HouseholdRealtimeManager', () => {
       expect(manager.householdId).toBe('hh-1')
     })
 
-    it('creates 7 channels (5 household tables + households + meal_plan_ingredients)', () => {
+    it('creates 9 channels (7 household tables + households + meal_plan_ingredients)', () => {
       manager.subscribe('hh-1')
-      expect(mockSupabase.client.channel).toHaveBeenCalledTimes(7)
+      expect(mockSupabase.client.channel).toHaveBeenCalledTimes(9)
     })
 
     it('creates channels with correct names', () => {
@@ -70,6 +70,8 @@ describe('HouseholdRealtimeManager', () => {
       )
 
       expect(channelNames).toContain('meal_plans-hh-1')
+      expect(channelNames).toContain('meal_ideas-hh-1')
+      expect(channelNames).toContain('reactions-hh-1')
       expect(channelNames).toContain('day_contexts-hh-1')
       expect(channelNames).toContain('ingredients-hh-1')
       expect(channelNames).toContain('day_placeholders-hh-1')

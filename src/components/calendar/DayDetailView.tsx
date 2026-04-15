@@ -8,6 +8,14 @@ import {
   useDeleteDayContext,
 } from '../../hooks/useMealPlans'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
+import {
+  useMealIdeas,
+  useCreateMealIdea,
+  useDeleteMealIdea,
+  useReactions,
+  useUpsertReaction,
+  useDeleteReaction,
+} from '../../hooks/useMealIdeas'
 import FullScreenView from '../ui/FullScreenView'
 import MealCard from './MealCard'
 import CopyMealTray from './CopyMealTray'
@@ -15,9 +23,11 @@ import DayContextBadge from './DayContextBadge'
 import DayContextForm from './DayContextForm'
 import MealPromptGenerator from './MealPromptGenerator'
 import Tray from '../ui/Tray'
+import { useAuth } from '../../hooks/useAuth'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
+type MealIdea = Database['public']['Tables']['meal_ideas']['Row']
 
 interface DayDetailViewProps {
   date: string
@@ -59,6 +69,10 @@ export default function DayDetailView({
   const [editingContextId, setEditingContextId] = useState<string | null>(null)
   const [showPromptTray, setShowPromptTray] = useState(false)
   const [copyingMeal, setCopyingMeal] = useState<MealPlanWithIngredients | null>(null)
+  const [showAddIdeaTray, setShowAddIdeaTray] = useState(false)
+  const [ideaTitle, setIdeaTitle] = useState('')
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null)
+  const [showReactionTray, setShowReactionTray] = useState(false)
 
   const { data: meals = [], isLoading: mealsLoading } = useMealPlans(
     household.id,
@@ -67,9 +81,32 @@ export default function DayDetailView({
   )
   const { data: contexts = [] } = useDayContexts(household.id, date, date)
   const { data: placeholders = [] } = useDayPlaceholders(household.id)
+  const { data: ideas = [] } = useMealIdeas(household.id, date, date)
+  const { user } = useAuth()
   const deleteMeal = useDeleteMealPlan()
   const deleteCtx = useDeleteDayContext()
+  const createIdea = useCreateMealIdea()
+  const deleteIdea = useDeleteMealIdea()
+  const upsertReaction = useUpsertReaction()
+  const removeReaction = useDeleteReaction()
   const canEdit = currentRole === 'owner' || currentRole === 'member'
+  const ideaIds = ideas.map((idea) => idea.id)
+  const { data: ideaReactions = [] } = useReactions(
+    household.id,
+    'meal_idea',
+    ideaIds,
+  )
+  const selectedIdea = ideas.find((idea) => idea.id === selectedIdeaId) ?? null
+  const selectedIdeaReactions =
+    selectedIdeaId === null
+      ? []
+      : ideaReactions.filter((reaction) => reaction.target_id === selectedIdeaId)
+  const selectedIdeaThumbUsers = selectedIdeaReactions.filter(
+    (reaction) => reaction.emoji === '👍',
+  )
+  const hasSelectedIdeaThumbed =
+    !!user &&
+    selectedIdeaThumbUsers.some((reaction) => reaction.user_id === user.id)
 
   const [y, m, d] = date.split('-').map(Number)
   const dateObj = new Date(y, m - 1, d)
@@ -82,6 +119,54 @@ export default function DayDetailView({
 
   const handleDeleteContext = (ctxId: string) => {
     deleteCtx.mutate({ id: ctxId, householdId: household.id })
+  }
+
+  const handleAddIdea = async () => {
+    const trimmedTitle = ideaTitle.trim()
+    if (!trimmedTitle) return
+    await createIdea.mutateAsync({
+      household_id: household.id,
+      date,
+      title: trimmedTitle,
+    })
+    setIdeaTitle('')
+    setShowAddIdeaTray(false)
+  }
+
+  const handleDeleteIdea = async (ideaId: string) => {
+    await deleteIdea.mutateAsync({ id: ideaId, householdId: household.id })
+    if (selectedIdeaId === ideaId) {
+      setSelectedIdeaId(null)
+      setShowReactionTray(false)
+    }
+  }
+
+  const handleToggleThumb = async (ideaId: string) => {
+    if (!user) return
+    const hasThumbed = ideaReactions.some(
+      (reaction) =>
+        reaction.target_id === ideaId &&
+        reaction.emoji === '👍' &&
+        reaction.user_id === user.id,
+    )
+    if (hasThumbed) {
+      await removeReaction.mutateAsync({
+        householdId: household.id,
+        targetType: 'meal_idea',
+        targetId: ideaId,
+        emoji: '👍',
+        userId: user.id,
+      })
+    } else {
+      await upsertReaction.mutateAsync({
+        household_id: household.id,
+        target_type: 'meal_idea',
+        target_id: ideaId,
+        emoji: '👍',
+        user_id: user.id,
+      })
+    }
+    setShowReactionTray(false)
   }
 
   return (
@@ -151,6 +236,42 @@ export default function DayDetailView({
           </button>
         )}
 
+        {/* Ideas list */}
+        {ideas.length > 0 && (
+          <div className="space-y-2" data-testid="ideas-list">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ideas</h4>
+            {ideas.map((idea) => {
+              const thumbsCount = ideaReactions.filter(
+                (reaction) =>
+                  reaction.target_id === idea.id && reaction.emoji === '👍',
+              ).length
+              return (
+                <IdeaCard
+                  key={idea.id}
+                  idea={idea}
+                  thumbsCount={thumbsCount}
+                  onOpen={() => {
+                    setSelectedIdeaId(idea.id)
+                    setShowReactionTray(false)
+                  }}
+                />
+              )
+            })}
+          </div>
+        )}
+
+        {/* Add idea button */}
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => setShowAddIdeaTray(true)}
+            className="w-full rounded-lg border-2 border-dashed border-indigo-200 py-2.5 text-sm font-medium text-indigo-600 transition-colors hover:border-indigo-400 hover:bg-indigo-50"
+            data-testid="add-idea-button"
+          >
+            + Add idea
+          </button>
+        )}
+
         {/* Loading state */}
         {mealsLoading && (
           <div className="flex justify-center py-8">
@@ -193,6 +314,7 @@ export default function DayDetailView({
 
         {/* Meals list */}
         <div className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Meal plans</h4>
           {meals.map((meal) => (
             <MealCard
               key={meal.id}
@@ -226,6 +348,113 @@ export default function DayDetailView({
             sourceDate={date}
           />
         )}
+
+        {/* Add idea tray */}
+        <Tray
+          isOpen={showAddIdeaTray}
+          onClose={() => setShowAddIdeaTray(false)}
+          title="Add an idea"
+          description="Capture a meal idea for this day"
+        >
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={ideaTitle}
+              onChange={(e) => setIdeaTitle(e.target.value)}
+              placeholder="e.g. Burgers"
+              className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              autoFocus
+              data-testid="meal-idea-input"
+            />
+            <button
+              type="button"
+              onClick={handleAddIdea}
+              disabled={createIdea.isPending || !ideaTitle.trim()}
+              className="w-full rounded-xl bg-indigo-600 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+              data-testid="save-idea-button"
+            >
+              {createIdea.isPending ? 'Saving…' : 'Save idea'}
+            </button>
+          </div>
+        </Tray>
+
+        {/* Idea detail tray */}
+        <Tray
+          isOpen={!!selectedIdea}
+          onClose={() => {
+            setSelectedIdeaId(null)
+            setShowReactionTray(false)
+          }}
+          title={selectedIdea?.title ?? 'Idea'}
+          description="See reactions from your household"
+        >
+          {selectedIdea && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-indigo-50 px-3 py-2 ring-1 ring-indigo-100">
+                <p className="text-sm font-medium text-indigo-900">👍 {selectedIdeaThumbUsers.length}</p>
+              </div>
+
+              {selectedIdeaThumbUsers.length > 0 ? (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Thumbed up by</p>
+                  <ul className="space-y-1 text-sm text-gray-700" data-testid="idea-reactors-list">
+                    {selectedIdeaThumbUsers.map((reaction) => (
+                      <li key={reaction.id}>
+                        {reaction.profiles?.display_name ?? 'Household member'}
+                        {reaction.user_id === user?.id ? ' (you)' : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500" data-testid="idea-reactors-empty">
+                  No thumbs up yet.
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowReactionTray(true)}
+                className="w-full rounded-xl bg-indigo-600 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
+                data-testid="open-react-to-idea-button"
+              >
+                React to this
+              </button>
+
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteIdea(selectedIdea.id)}
+                  disabled={deleteIdea.isPending}
+                  className="w-full rounded-xl bg-red-50 py-3 text-base font-semibold text-red-600 ring-1 ring-red-100 transition-colors hover:bg-red-100 disabled:opacity-50"
+                  data-testid="delete-idea-button"
+                >
+                  Delete idea
+                </button>
+              )}
+            </div>
+          )}
+        </Tray>
+
+        {/* Reaction picker tray */}
+        <Tray
+          isOpen={!!selectedIdea && showReactionTray}
+          onClose={() => setShowReactionTray(false)}
+          title="React to this idea"
+          description="Choose an emoji reaction"
+        >
+          {selectedIdea && (
+            <button
+              type="button"
+              onClick={() => handleToggleThumb(selectedIdea.id)}
+              disabled={upsertReaction.isPending || removeReaction.isPending}
+              className="w-full rounded-xl bg-indigo-50 px-4 py-4 text-left text-base font-semibold text-indigo-700 ring-1 ring-indigo-100 transition-colors hover:bg-indigo-100 disabled:opacity-50"
+              data-testid="thumbs-up-reaction-button"
+            >
+              {hasSelectedIdeaThumbed ? 'Remove 👍' : '👍 Thumbs up'}
+            </button>
+          )}
+        </Tray>
       </div>
     </FullScreenView>
   )
@@ -299,5 +528,29 @@ function EventCard({ context, canEdit, onEdit, onDelete }: EventCardProps) {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Idea Card ──────────────────────────────────────────────
+
+interface IdeaCardProps {
+  idea: MealIdea
+  thumbsCount: number
+  onOpen: () => void
+}
+
+function IdeaCard({ idea, thumbsCount, onOpen }: IdeaCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-center justify-between gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-left ring-1 ring-indigo-100 transition-colors hover:bg-indigo-100"
+      data-testid={`idea-card-${idea.id}`}
+    >
+      <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">{idea.title}</p>
+      <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-200">
+        👍 {thumbsCount}
+      </span>
+    </button>
   )
 }
