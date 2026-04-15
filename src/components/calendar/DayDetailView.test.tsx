@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { createElement } from 'react'
-import DayDetailView from './DayDetailView'
+import { createElement, type ReactNode } from 'react'
 
 const mockUseMealPlans = vi.fn()
 const mockUseDayContexts = vi.fn()
@@ -38,6 +37,17 @@ const mockUseAuth = vi.fn()
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: (...args: unknown[]) => mockUseAuth(...args),
 }))
+
+vi.mock('./MealPromptGenerator', () => ({
+  default: () => null,
+}))
+
+vi.mock('../ui/FullScreenView', () => ({
+  default: ({ children }: { children?: ReactNode }) =>
+    createElement('div', null, children),
+}))
+
+import DayDetailView from './DayDetailView'
 
 describe('DayDetailView ideas and reactions', () => {
   const household = {

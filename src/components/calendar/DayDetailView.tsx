@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Database } from '../../types/database'
 import {
   useMealPlans,
@@ -90,23 +90,49 @@ export default function DayDetailView({
   const upsertReaction = useUpsertReaction()
   const removeReaction = useDeleteReaction()
   const canEdit = currentRole === 'owner' || currentRole === 'member'
-  const ideaIds = ideas.map((idea) => idea.id)
+  const ideaIdsKey = ideas.map((idea) => idea.id).join('|')
+  const ideaIds = useMemo(
+    () => (ideaIdsKey ? ideaIdsKey.split('|') : []),
+    [ideaIdsKey],
+  )
   const { data: ideaReactions = [] } = useReactions(
     household.id,
     'meal_idea',
     ideaIds,
   )
   const selectedIdea = ideas.find((idea) => idea.id === selectedIdeaId) ?? null
-  const selectedIdeaReactions =
-    selectedIdeaId === null
-      ? []
-      : ideaReactions.filter((reaction) => reaction.target_id === selectedIdeaId)
-  const selectedIdeaThumbUsers = selectedIdeaReactions.filter(
-    (reaction) => reaction.emoji === '👍',
+  const reactionsByIdeaId = useMemo(() => {
+    const byIdeaId = new Map<string, typeof ideaReactions>()
+    for (const reaction of ideaReactions) {
+      const current = byIdeaId.get(reaction.target_id) ?? []
+      current.push(reaction)
+      byIdeaId.set(reaction.target_id, current)
+    }
+    return byIdeaId
+  }, [ideaReactions])
+  const selectedIdeaReactions = useMemo(
+    () =>
+      selectedIdeaId === null ? [] : (reactionsByIdeaId.get(selectedIdeaId) ?? []),
+    [reactionsByIdeaId, selectedIdeaId],
   )
-  const hasSelectedIdeaThumbed =
-    !!user &&
-    selectedIdeaThumbUsers.some((reaction) => reaction.user_id === user.id)
+  const selectedIdeaThumbUsers = useMemo(
+    () => selectedIdeaReactions.filter((reaction) => reaction.emoji === '👍'),
+    [selectedIdeaReactions],
+  )
+  const hasSelectedIdeaThumbed = useMemo(
+    () =>
+      !!user &&
+      selectedIdeaThumbUsers.some((reaction) => reaction.user_id === user.id),
+    [selectedIdeaThumbUsers, user],
+  )
+  const thumbsByIdeaId = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const reaction of ideaReactions) {
+      if (reaction.emoji !== '👍') continue
+      counts.set(reaction.target_id, (counts.get(reaction.target_id) ?? 0) + 1)
+    }
+    return counts
+  }, [ideaReactions])
 
   const [y, m, d] = date.split('-').map(Number)
   const dateObj = new Date(y, m - 1, d)
@@ -241,10 +267,7 @@ export default function DayDetailView({
           <div className="space-y-2" data-testid="ideas-list">
             <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Ideas</h4>
             {ideas.map((idea) => {
-              const thumbsCount = ideaReactions.filter(
-                (reaction) =>
-                  reaction.target_id === idea.id && reaction.emoji === '👍',
-              ).length
+              const thumbsCount = thumbsByIdeaId.get(idea.id) ?? 0
               return (
                 <IdeaCard
                   key={idea.id}

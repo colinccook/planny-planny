@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
@@ -85,16 +86,21 @@ export function useReactions(
   targetType: string,
   targetIds: string[],
 ) {
+  const stableTargetIds = useMemo(
+    () => [...targetIds].sort((a, b) => a.localeCompare(b)),
+    [targetIds],
+  )
+
   return useQuery({
-    queryKey: ['reactions', householdId, targetType, ...targetIds],
+    queryKey: ['reactions', householdId, targetType, ...stableTargetIds],
     queryFn: async () => {
-      if (!householdId || targetIds.length === 0) return []
+      if (!householdId || stableTargetIds.length === 0) return []
       const { data, error } = await supabase
         .from('reactions')
         .select('*, profiles(display_name, avatar_url)')
         .eq('household_id', householdId)
         .eq('target_type', targetType)
-        .in('target_id', targetIds)
+        .in('target_id', stableTargetIds)
         .order('created_at', { ascending: true })
 
       if (error) throw error

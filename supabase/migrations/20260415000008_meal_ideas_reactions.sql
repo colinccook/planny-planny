@@ -33,6 +33,8 @@ create index reactions_household_target_idx
 alter table public.reactions enable row level security;
 
 -- Allow viewing co-member profiles (needed for reaction member lists)
+drop policy if exists "Members can view co-member profiles" on public.profiles;
+
 create policy "Members can view co-member profiles"
   on public.profiles for select
   using (
