@@ -249,6 +249,63 @@ export interface Database {
         }
         Relationships: []
       }
+      meal_ideas: {
+        Row: {
+          id: string
+          household_id: string
+          date: string
+          title: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          date: string
+          title: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          date?: string
+          title?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      reactions: {
+        Row: {
+          id: string
+          household_id: string
+          target_type: string
+          target_id: string
+          emoji: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          target_type: string
+          target_id: string
+          emoji: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          target_type?: string
+          target_id?: string
+          emoji?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

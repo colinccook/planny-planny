@@ -7,6 +7,7 @@ All new functionality **must** be covered by appropriate tests:
 1. **BDD End-to-End Tests** (preferred): Write Gherkin `.feature` files in `tests/features/` with step definitions in `tests/steps/`. Use Playwright + playwright-bdd.
 2. **Unit Tests**: For pure logic (utilities, computations), unit tests with Vitest are acceptable.
 3. **All tests must build and pass** before a PR can be merged.
+4. **README update check is required**: for any user-facing functionality change, review `README.md` and update it when needed.
 
 ## Tech Stack
 
@@ -43,6 +44,7 @@ All new functionality **must** be covered by appropriate tests:
 - **Always branch from the latest `main`** — run `git fetch origin main` and create your branch from `origin/main` to avoid stale bases.
 - **Create a Pull Request** for every change. Push the branch and open a PR against `main`.
 - **Screenshots are required** for any PR that adds or changes UI functionality. Capture at mobile viewport (390×844) using Playwright or browser dev tools.
+- **Always include screenshots in the PR description** when UI changes are present.
 - Use the PR template at `.github/PULL_REQUEST_TEMPLATE.md`.
 - Include a Screenshots section with images showing the new/changed views.
 - **Verify CI passes** — after pushing, poll the PR's check runs (lint, test) until they complete. If any check fails, read the job logs, fix the issue, and push again. Do not consider the task done until all checks are green.
