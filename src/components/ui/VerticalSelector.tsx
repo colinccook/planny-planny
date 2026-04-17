@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useCallback, useId, useRef } from 'react'
 
 export interface VerticalSelectorOption<T extends string> {
   value: T
@@ -8,9 +8,19 @@ export interface VerticalSelectorOption<T extends string> {
   disabled?: boolean
 }
 
-interface VerticalSelectorProps<T extends string> {
-  /** Accessible label describing what is being chosen. */
-  label?: string
+type AccessibleNameProps =
+  | {
+      /** Visible label rendered above the radiogroup. */
+      label: string
+      ariaLabel?: string
+    }
+  | {
+      label?: undefined
+      /** Accessible label applied to the radiogroup when no visible label is shown. */
+      ariaLabel: string
+    }
+
+type VerticalSelectorProps<T extends string> = AccessibleNameProps & {
   options: VerticalSelectorOption<T>[]
   value: T
   onChange: (value: T) => void
@@ -19,28 +29,91 @@ interface VerticalSelectorProps<T extends string> {
    * Each option row gets `data-testid={`${testId}-option-${value}`}`.
    */
   testId?: string
-  /** Accessible label for the radiogroup if no visible label is shown. */
-  ariaLabel?: string
 }
 
 /**
  * A mobile-first vertical list selector. Options stack top-to-bottom and
- * each row is a large tap target (min height 44px), making it easier to
+ * each row is a large tap target (min height 48px), making it easier to
  * use on touch devices than a native `<select>` dropdown.
  *
- * Rendered as a radiogroup for accessibility.
+ * Rendered as a WAI-ARIA radiogroup: only the currently selected option
+ * (or the first enabled option if none is selected) is in the tab order,
+ * and Arrow / Home / End / Space / Enter keys work as expected.
+ *
+ * An accessible name is required — provide either a visible `label`
+ * or an `ariaLabel`.
  */
 export default function VerticalSelector<T extends string>({
   label,
+  ariaLabel,
   options,
   value,
   onChange,
   testId,
-  ariaLabel,
 }: VerticalSelectorProps<T>) {
   const reactId = useId()
   const groupId = testId ?? `vertical-selector-${reactId}`
   const labelId = label ? `${groupId}-label` : undefined
+
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+
+  const enabledOptions = options.filter((o) => !o.disabled)
+  const firstEnabledValue = enabledOptions[0]?.value
+  const selectedIsEnabled = enabledOptions.some((o) => o.value === value)
+  // The single option in the tab order (roving tabindex).
+  const tabStopValue: T | undefined = selectedIsEnabled ? value : firstEnabledValue
+
+  const focusAndSelect = useCallback(
+    (target: T) => {
+      const btn = buttonRefs.current[target]
+      btn?.focus()
+      if (target !== value) onChange(target)
+    },
+    [onChange, value],
+  )
+
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLButtonElement>,
+    optValue: T,
+  ) => {
+    if (enabledOptions.length === 0) return
+    const currentIdx = enabledOptions.findIndex((o) => o.value === optValue)
+    const startIdx = currentIdx === -1 ? 0 : currentIdx
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'ArrowRight': {
+        e.preventDefault()
+        const next = enabledOptions[(startIdx + 1) % enabledOptions.length].value
+        focusAndSelect(next)
+        return
+      }
+      case 'ArrowUp':
+      case 'ArrowLeft': {
+        e.preventDefault()
+        const prev =
+          enabledOptions[(startIdx - 1 + enabledOptions.length) % enabledOptions.length].value
+        focusAndSelect(prev)
+        return
+      }
+      case 'Home': {
+        e.preventDefault()
+        focusAndSelect(enabledOptions[0].value)
+        return
+      }
+      case 'End': {
+        e.preventDefault()
+        focusAndSelect(enabledOptions[enabledOptions.length - 1].value)
+        return
+      }
+      case ' ':
+      case 'Enter': {
+        e.preventDefault()
+        if (optValue !== value) onChange(optValue)
+        return
+      }
+    }
+  }
 
   return (
     <div data-testid={testId}>
@@ -62,6 +135,7 @@ export default function VerticalSelector<T extends string>({
           const isSelected = opt.value === value
           const isDisabled = !!opt.disabled
           const optionTestId = testId ? `${testId}-option-${opt.value}` : undefined
+          const isTabStop = !isDisabled && opt.value === tabStopValue
 
           const baseClass =
             'flex min-h-[48px] w-full items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500'
@@ -75,13 +149,20 @@ export default function VerticalSelector<T extends string>({
           return (
             <button
               key={opt.value}
+              ref={(el) => {
+                buttonRefs.current[opt.value] = el
+              }}
               type="button"
               role="radio"
               aria-checked={isSelected}
               aria-disabled={isDisabled || undefined}
               disabled={isDisabled}
+              tabIndex={isTabStop ? 0 : -1}
               onClick={() => {
                 if (!isDisabled && !isSelected) onChange(opt.value)
+              }}
+              onKeyDown={(e) => {
+                if (!isDisabled) handleKeyDown(e, opt.value)
               }}
               className={`${baseClass} ${stateClass} ${disabledClass}`}
               data-testid={optionTestId}

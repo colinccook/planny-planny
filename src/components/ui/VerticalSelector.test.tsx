@@ -126,4 +126,176 @@ describe('VerticalSelector', () => {
     const btn = screen.getByTestId('ideas-option-none')
     expect(btn.className).toContain('min-h-[48px]')
   })
+
+  it('renders a description under the label when provided', () => {
+    const optionsWithDesc = [
+      { value: 'all' as Mode, label: 'Include all ideas' },
+      {
+        value: 'thumbed' as Mode,
+        label: 'Only include thumbed up ideas',
+        disabled: true,
+        description: 'Thumbs up an idea to enable this option',
+      },
+    ]
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: optionsWithDesc,
+        value: 'all',
+        onChange: vi.fn(),
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const disabledOption = screen.getByTestId('ideas-option-thumbed')
+    expect(disabledOption.textContent).toContain('Only include thumbed up ideas')
+    expect(disabledOption.textContent).toContain('Thumbs up an idea to enable this option')
+  })
+
+  it('renders an icon when provided', () => {
+    const optionsWithIcon = [
+      { value: 'all' as Mode, label: 'Include all ideas', icon: '💡' },
+    ]
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: optionsWithIcon,
+        value: 'all',
+        onChange: vi.fn(),
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    expect(screen.getByTestId('ideas-option-all').textContent).toContain('💡')
+  })
+
+  it('uses a roving tab index so only one option is tabbable', () => {
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: OPTIONS,
+        value: 'all',
+        onChange: vi.fn(),
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const tabIndexes = OPTIONS.map((o) =>
+      screen.getByTestId(`ideas-option-${o.value}`).getAttribute('tabindex'),
+    )
+    expect(tabIndexes.filter((t) => t === '0')).toHaveLength(1)
+    expect(screen.getByTestId('ideas-option-all').getAttribute('tabindex')).toBe('0')
+  })
+
+  it('falls back to the first enabled option as the tab stop when nothing is selected', () => {
+    const optionsWithDisabled = [
+      { value: 'none' as Mode, label: 'First', disabled: true },
+      { value: 'all' as Mode, label: 'Second' },
+      { value: 'thumbed' as Mode, label: 'Third' },
+    ]
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: optionsWithDisabled,
+        // current value is a disabled option — no selected tab stop
+        value: 'none',
+        onChange: vi.fn(),
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    expect(screen.getByTestId('ideas-option-none').getAttribute('tabindex')).toBe('-1')
+    expect(screen.getByTestId('ideas-option-all').getAttribute('tabindex')).toBe('0')
+    expect(screen.getByTestId('ideas-option-thumbed').getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('ArrowDown moves focus to the next enabled option and selects it', () => {
+    const onChange = vi.fn()
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: OPTIONS,
+        value: 'all',
+        onChange,
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const current = screen.getByTestId('ideas-option-all')
+    current.focus()
+    fireEvent.keyDown(current, { key: 'ArrowDown' })
+    expect(onChange).toHaveBeenCalledWith('thumbed')
+    expect(document.activeElement).toBe(screen.getByTestId('ideas-option-thumbed'))
+  })
+
+  it('ArrowUp wraps to the last enabled option', () => {
+    const onChange = vi.fn()
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: OPTIONS,
+        value: 'none',
+        onChange,
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const current = screen.getByTestId('ideas-option-none')
+    current.focus()
+    fireEvent.keyDown(current, { key: 'ArrowUp' })
+    expect(onChange).toHaveBeenCalledWith('thumbed')
+  })
+
+  it('ArrowDown skips disabled options', () => {
+    const onChange = vi.fn()
+    const optionsWithDisabled = [
+      { value: 'none' as Mode, label: 'First' },
+      { value: 'all' as Mode, label: 'Second', disabled: true },
+      { value: 'thumbed' as Mode, label: 'Third' },
+    ]
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: optionsWithDisabled,
+        value: 'none',
+        onChange,
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const current = screen.getByTestId('ideas-option-none')
+    current.focus()
+    fireEvent.keyDown(current, { key: 'ArrowDown' })
+    expect(onChange).toHaveBeenCalledWith('thumbed')
+  })
+
+  it('Home and End move to first and last enabled options', () => {
+    const onChange = vi.fn()
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: OPTIONS,
+        value: 'all',
+        onChange,
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    const current = screen.getByTestId('ideas-option-all')
+    current.focus()
+    fireEvent.keyDown(current, { key: 'End' })
+    expect(onChange).toHaveBeenLastCalledWith('thumbed')
+    fireEvent.keyDown(screen.getByTestId('ideas-option-thumbed'), { key: 'Home' })
+    expect(onChange).toHaveBeenLastCalledWith('none')
+  })
+
+  it('Space on a focused unselected option selects it', () => {
+    const onChange = vi.fn()
+    render(
+      createElement(VerticalSelector<Mode>, {
+        options: OPTIONS,
+        value: 'all',
+        onChange,
+        testId: 'ideas',
+        ariaLabel: 'Ideas mode',
+      }),
+    )
+    // Tab would land on the selected one; simulate user arrowing then pressing space.
+    const current = screen.getByTestId('ideas-option-none')
+    current.focus()
+    fireEvent.keyDown(current, { key: ' ' })
+    expect(onChange).toHaveBeenCalledWith('none')
+  })
 })
