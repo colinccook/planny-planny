@@ -83,7 +83,7 @@ export default function InviteManager() {
         <select
           value={inviteRole}
           onChange={(e) => setInviteRole(e.target.value as 'member' | 'guest')}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          className="min-h-[44px] rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
         >
           <option value="member">Member</option>
           <option value="guest">Guest</option>
@@ -91,7 +91,7 @@ export default function InviteManager() {
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          className="min-h-[44px] rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
         >
           {creating ? 'Creating…' : 'Generate invite'}
         </button>

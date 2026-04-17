@@ -5,6 +5,7 @@ import { buildPrompt } from '../../lib/buildPrompt'
 import { copyToClipboard } from '../../lib/clipboard'
 import { useToast } from '../../hooks/useToast'
 import type { Complexity, IdeasMode, PromptIdea } from '../../lib/buildPrompt'
+import VerticalSelector from '../ui/VerticalSelector'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
@@ -107,7 +108,7 @@ export default function MealPromptGenerator({
           <button
             type="button"
             onClick={() => handleComplexityChange('easy')}
-            className={`flex-1 rounded-l-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-l-lg px-3 py-3 text-sm font-medium transition-colors ${
               complexity === 'easy'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -119,7 +120,7 @@ export default function MealPromptGenerator({
           <button
             type="button"
             onClick={() => handleComplexityChange('complicated')}
-            className={`flex-1 rounded-r-lg px-3 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 rounded-r-lg px-3 py-3 text-sm font-medium transition-colors ${
               complexity === 'complicated'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -134,38 +135,39 @@ export default function MealPromptGenerator({
       {/* Day theme checkbox */}
       {dayTheme && (
         <label
-          className="flex items-center gap-2 text-sm text-gray-700"
+          className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
           data-testid="theme-toggle"
         >
           <input
             type="checkbox"
             checked={includeTheme}
             onChange={handleThemeToggle}
-            className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+            className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
           />
-          Include day theme: &ldquo;{dayTheme}&rdquo;
+          <span>Include day theme: &ldquo;{dayTheme}&rdquo;</span>
         </label>
       )}
 
       {/* Ideas selector */}
       {ideas.length > 0 && (
-        <div data-testid="ideas-mode-selector">
-          <label className="mb-1.5 block text-xs font-semibold text-gray-600">
-            Include household ideas?
-          </label>
-          <select
-            value={ideasMode}
-            onChange={(e) => handleIdeasModeChange(e.target.value as IdeasMode)}
-            className="w-full rounded-lg border border-gray-200 p-2 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-            data-testid="ideas-mode-select"
-          >
-            <option value="none">Don&rsquo;t include ideas</option>
-            <option value="all">Include all ideas</option>
-            <option value="thumbed" disabled={!hasThumbed}>
-              Only include thumbed up ideas
-            </option>
-          </select>
-        </div>
+        <VerticalSelector<IdeasMode>
+          label="Include household ideas?"
+          testId="ideas-mode-selector"
+          value={ideasMode}
+          onChange={handleIdeasModeChange}
+          options={[
+            { value: 'none', label: "Don\u2019t include ideas" },
+            { value: 'all', label: 'Include all ideas' },
+            {
+              value: 'thumbed',
+              label: 'Only include thumbed up ideas',
+              disabled: !hasThumbed,
+              description: !hasThumbed
+                ? 'Thumbs up an idea to enable this option'
+                : undefined,
+            },
+          ]}
+        />
       )}
 
       {/* Editable prompt */}

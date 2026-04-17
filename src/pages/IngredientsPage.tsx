@@ -48,7 +48,7 @@ export default function IngredientsPage() {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
           aria-label="Sort ingredients"
-          className="rounded-md border border-gray-300 py-1.5 pl-3 pr-8 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          className="min-h-[44px] rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
         >
           {SORT_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
