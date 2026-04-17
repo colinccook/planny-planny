@@ -118,20 +118,27 @@ describe('DayDetailView ideas and reactions', () => {
         },
       ],
     })
-    mockUseReactions.mockReturnValue({
-      data: [
-        {
-          id: 'r-1',
-          household_id: 'hh-1',
-          target_type: 'meal_idea',
-          target_id: 'idea-1',
-          emoji: '👍',
-          user_id: 'u-2',
-          created_at: '2026-04-20T11:00:00Z',
-          profiles: { display_name: 'Casey', avatar_url: null },
-        },
-      ],
-    })
+    mockUseReactions.mockImplementation(
+      (_householdId: string | undefined, targetType: string) => {
+        if (targetType === 'meal_idea') {
+          return {
+            data: [
+              {
+                id: 'r-1',
+                household_id: 'hh-1',
+                target_type: 'meal_idea',
+                target_id: 'idea-1',
+                emoji: '👍',
+                user_id: 'u-2',
+                created_at: '2026-04-20T11:00:00Z',
+                profiles: { display_name: 'Casey', avatar_url: null },
+              },
+            ],
+          }
+        }
+        return { data: [] }
+      },
+    )
     mockUseCreateMealIdea.mockReturnValue({
       mutateAsync: createIdeaMutateAsync,
       isPending: false,
@@ -169,7 +176,7 @@ describe('DayDetailView ideas and reactions', () => {
     expect(screen.getByText('Ideas')).toBeDefined()
     expect(screen.getByText('Meal plans')).toBeDefined()
     expect(screen.getByText('Burgers')).toBeDefined()
-    expect(screen.getByTestId('idea-reaction-pill-idea-1').textContent).toContain('1')
+    expect(screen.getByTestId('idea-reaction-idea-1').textContent).toContain('1')
   })
 
   it('adds a meal idea from the tray', async () => {
@@ -199,7 +206,7 @@ describe('DayDetailView ideas and reactions', () => {
     })
   })
 
-  it('shows reactors and supports deleting an idea from idea detail tray', async () => {
+  it('shows delete action from idea detail tray', async () => {
     render(
       createElement(DayDetailView, {
         date: '2026-04-20',
@@ -212,9 +219,6 @@ describe('DayDetailView ideas and reactions', () => {
     )
 
     fireEvent.click(screen.getByText('Burgers'))
-
-    expect(screen.getByText('Thumbed up by')).toBeDefined()
-    expect(screen.getByText('Casey')).toBeDefined()
 
     fireEvent.click(screen.getByTestId('delete-idea-button'))
 
@@ -226,7 +230,7 @@ describe('DayDetailView ideas and reactions', () => {
     })
   })
 
-  it('opens reaction picker and adds a thumbs-up reaction', async () => {
+  it('adds a thumbs-up reaction to an idea via the card reaction button', async () => {
     render(
       createElement(DayDetailView, {
         date: '2026-04-20',
@@ -238,9 +242,7 @@ describe('DayDetailView ideas and reactions', () => {
       }),
     )
 
-    fireEvent.click(screen.getByText('Burgers'))
-    fireEvent.click(screen.getByTestId('open-react-to-idea-button'))
-    fireEvent.click(screen.getByTestId('thumbs-up-reaction-button'))
+    fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
 
     await waitFor(() => {
       expect(upsertReactionMutateAsync).toHaveBeenCalledWith({
@@ -253,21 +255,28 @@ describe('DayDetailView ideas and reactions', () => {
     })
   })
 
-  it('removes thumbs-up when the current user already reacted', async () => {
-    mockUseReactions.mockReturnValue({
-      data: [
-        {
-          id: 'r-1',
-          household_id: 'hh-1',
-          target_type: 'meal_idea',
-          target_id: 'idea-1',
-          emoji: '👍',
-          user_id: 'u-1',
-          created_at: '2026-04-20T11:00:00Z',
-          profiles: { display_name: 'You', avatar_url: null },
-        },
-      ],
-    })
+  it('removes thumbs-up from an idea when the current user already reacted', async () => {
+    mockUseReactions.mockImplementation(
+      (_householdId: string | undefined, targetType: string) => {
+        if (targetType === 'meal_idea') {
+          return {
+            data: [
+              {
+                id: 'r-1',
+                household_id: 'hh-1',
+                target_type: 'meal_idea',
+                target_id: 'idea-1',
+                emoji: '👍',
+                user_id: 'u-1',
+                created_at: '2026-04-20T11:00:00Z',
+                profiles: { display_name: 'You', avatar_url: null },
+              },
+            ],
+          }
+        }
+        return { data: [] }
+      },
+    )
 
     render(
       createElement(DayDetailView, {
@@ -280,9 +289,7 @@ describe('DayDetailView ideas and reactions', () => {
       }),
     )
 
-    fireEvent.click(screen.getByText('Burgers'))
-    fireEvent.click(screen.getByTestId('open-react-to-idea-button'))
-    fireEvent.click(screen.getByTestId('thumbs-up-reaction-button'))
+    fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
 
     await waitFor(() => {
       expect(deleteReactionMutateAsync).toHaveBeenCalledWith({
@@ -293,5 +300,92 @@ describe('DayDetailView ideas and reactions', () => {
         userId: 'u-1',
       })
     })
+  })
+
+  it('adds a thumbs-up reaction to a meal via the meal card reaction button', async () => {
+    render(
+      createElement(DayDetailView, {
+        date: '2026-04-20',
+        household,
+        currentRole: 'member',
+        onBack: vi.fn(),
+        onAddMeal: vi.fn(),
+        onEditMeal: vi.fn(),
+      }),
+    )
+
+    fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
+
+    await waitFor(() => {
+      expect(upsertReactionMutateAsync).toHaveBeenCalledWith({
+        household_id: 'hh-1',
+        target_type: 'meal_plan',
+        target_id: 'meal-1',
+        emoji: '👍',
+        user_id: 'u-1',
+      })
+    })
+  })
+
+  it('removes a thumbs-up from a meal when the current user already reacted', async () => {
+    mockUseReactions.mockImplementation(
+      (_householdId: string | undefined, targetType: string) => {
+        if (targetType === 'meal_plan') {
+          return {
+            data: [
+              {
+                id: 'mr-1',
+                household_id: 'hh-1',
+                target_type: 'meal_plan',
+                target_id: 'meal-1',
+                emoji: '👍',
+                user_id: 'u-1',
+                created_at: '2026-04-20T12:00:00Z',
+                profiles: { display_name: 'You', avatar_url: null },
+              },
+            ],
+          }
+        }
+        return { data: [] }
+      },
+    )
+
+    render(
+      createElement(DayDetailView, {
+        date: '2026-04-20',
+        household,
+        currentRole: 'member',
+        onBack: vi.fn(),
+        onAddMeal: vi.fn(),
+        onEditMeal: vi.fn(),
+      }),
+    )
+
+    fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
+
+    await waitFor(() => {
+      expect(deleteReactionMutateAsync).toHaveBeenCalledWith({
+        householdId: 'hh-1',
+        targetType: 'meal_plan',
+        targetId: 'meal-1',
+        emoji: '👍',
+        userId: 'u-1',
+      })
+    })
+  })
+
+  it('does not render meal reaction button for guests', () => {
+    render(
+      createElement(DayDetailView, {
+        date: '2026-04-20',
+        household,
+        currentRole: 'guest',
+        onBack: vi.fn(),
+        onAddMeal: vi.fn(),
+        onEditMeal: vi.fn(),
+      }),
+    )
+
+    expect(screen.queryByTestId('meal-reaction-meal-1')).toBeNull()
   })
 })
