@@ -347,6 +347,10 @@ export default function DayDetailView({
             date={date}
             contexts={contexts}
             dayTheme={placeholder?.label ?? null}
+            ideas={ideas.map((idea) => ({
+              title: idea.title,
+              thumbsUp: thumbsByIdeaId.get(idea.id) ?? 0,
+            }))}
           />
         </Tray>
 

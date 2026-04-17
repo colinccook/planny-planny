@@ -4,7 +4,7 @@ import { useIngredients, useIngredientUsageStats } from '../../hooks/useIngredie
 import { buildPrompt } from '../../lib/buildPrompt'
 import { copyToClipboard } from '../../lib/clipboard'
 import { useToast } from '../../hooks/useToast'
-import type { Complexity } from '../../lib/buildPrompt'
+import type { Complexity, IdeasMode, PromptIdea } from '../../lib/buildPrompt'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
@@ -14,6 +14,7 @@ interface MealPromptGeneratorProps {
   date: string
   contexts: DayContext[]
   dayTheme: string | null
+  ideas?: PromptIdea[]
 }
 
 export default function MealPromptGenerator({
@@ -21,9 +22,14 @@ export default function MealPromptGenerator({
   date,
   contexts,
   dayTheme,
+  ideas = [],
 }: MealPromptGeneratorProps) {
   const [complexity, setComplexity] = useState<Complexity>('easy')
   const [includeTheme, setIncludeTheme] = useState(true)
+  const hasThumbed = useMemo(() => ideas.some((idea) => idea.thumbsUp > 0), [ideas])
+  const defaultIdeasMode: IdeasMode = hasThumbed ? 'thumbed' : 'all'
+  const [ideasModeOverride, setIdeasModeOverride] = useState<IdeasMode | null>(null)
+  const ideasMode = ideasModeOverride ?? defaultIdeasMode
   const [promptOverride, setPromptOverride] = useState<string | null>(null)
   const { showToast } = useToast()
 
@@ -56,8 +62,10 @@ export default function MealPromptGenerator({
         complexity,
         includeTheme,
         suggestedIngredients,
+        ideas,
+        ideasMode,
       }),
-    [household, date, contexts, dayTheme, complexity, includeTheme, suggestedIngredients],
+    [household, date, contexts, dayTheme, complexity, includeTheme, suggestedIngredients, ideas, ideasMode],
   )
 
   const displayPrompt = promptOverride ?? generatedPrompt
@@ -75,6 +83,11 @@ export default function MealPromptGenerator({
 
   const handleThemeToggle = () => {
     setIncludeTheme((prev) => !prev)
+    setPromptOverride(null)
+  }
+
+  const handleIdeasModeChange = (mode: IdeasMode) => {
+    setIdeasModeOverride(mode)
     setPromptOverride(null)
   }
 
@@ -132,6 +145,27 @@ export default function MealPromptGenerator({
           />
           Include day theme: &ldquo;{dayTheme}&rdquo;
         </label>
+      )}
+
+      {/* Ideas selector */}
+      {ideas.length > 0 && (
+        <div data-testid="ideas-mode-selector">
+          <label className="mb-1.5 block text-xs font-semibold text-gray-600">
+            Include household ideas?
+          </label>
+          <select
+            value={ideasMode}
+            onChange={(e) => handleIdeasModeChange(e.target.value as IdeasMode)}
+            className="w-full rounded-lg border border-gray-200 p-2 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            data-testid="ideas-mode-select"
+          >
+            <option value="none">Don&rsquo;t include ideas</option>
+            <option value="all">Include all ideas</option>
+            <option value="thumbed" disabled={!hasThumbed}>
+              Only include thumbed up ideas
+            </option>
+          </select>
+        </div>
       )}
 
       {/* Editable prompt */}

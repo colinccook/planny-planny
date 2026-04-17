@@ -5,6 +5,13 @@ type DayContext = Database['public']['Tables']['day_contexts']['Row']
 
 export type Complexity = 'easy' | 'complicated'
 
+export type IdeasMode = 'none' | 'all' | 'thumbed'
+
+export interface PromptIdea {
+  title: string
+  thumbsUp: number
+}
+
 export interface BuildPromptArgs {
   household: Household
   date: string
@@ -13,6 +20,8 @@ export interface BuildPromptArgs {
   complexity: Complexity
   includeTheme: boolean
   suggestedIngredients: string[]
+  ideas?: PromptIdea[]
+  ideasMode?: IdeasMode
 }
 
 export function buildPrompt({
@@ -23,6 +32,8 @@ export function buildPrompt({
   complexity,
   includeTheme,
   suggestedIngredients,
+  ideas = [],
+  ideasMode = 'none',
 }: BuildPromptArgs): string {
   const [y, m, d] = date.split('-').map(Number)
   const dateObj = new Date(y, m - 1, d)
@@ -88,8 +99,42 @@ export function buildPrompt({
     lines.push('But any other whole ingredients can be used too, so long as they are appropriate for the household members at the time.')
   }
 
+  // Ideas from the household
+  const selectedIdeas =
+    ideasMode === 'all'
+      ? ideas
+      : ideasMode === 'thumbed'
+        ? ideas.filter((idea) => idea.thumbsUp > 0)
+        : []
+
+  let closingLine = 'Please suggest 2–3 meal ideas with a brief description and key ingredients for each.'
+
+  if (selectedIdeas.length > 0) {
+    lines.push('')
+    if (ideasMode === 'thumbed') {
+      if (selectedIdeas.length === 1) {
+        lines.push(
+          `The household has thumbed up this meal idea: ${selectedIdeas[0].title}. Please build on it.`,
+        )
+        closingLine = `Please suggest 2–3 recipes for "${selectedIdeas[0].title}" with a brief description and key ingredients for each.`
+      } else {
+        const titles = selectedIdeas.map((idea) => idea.title)
+        lines.push(
+          `The household has thumbed up these meal ideas: ${titles.join(', ')}.`,
+        )
+        closingLine =
+          'Please suggest three different recipes per idea, with a brief description and key ingredients for each.'
+      }
+    } else {
+      const titles = selectedIdeas.map((idea) => idea.title)
+      lines.push(
+        `The household has suggested these meal ideas: ${titles.join(', ')}. Please take these into account.`,
+      )
+    }
+  }
+
   lines.push('')
-  lines.push('Please suggest 2–3 meal ideas with a brief description and key ingredients for each.')
+  lines.push(closingLine)
 
   return lines.join('\n')
 }
