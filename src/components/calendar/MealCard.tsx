@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
 import IngredientTag from '../ingredients/IngredientTag'
+import ReactionButton, {
+  type Reactor,
+  type ReactionOption,
+} from '../ui/ReactionButton'
+
+const THUMB_OPTIONS: ReactionOption[] = [{ emoji: '👍', label: 'Thumbs up' }]
 
 interface MealCardProps {
   meal: MealPlanWithIngredients
@@ -8,9 +14,25 @@ interface MealCardProps {
   onEdit: () => void
   onDelete: () => void
   onCopy?: () => void
+  reactors?: Reactor[]
+  currentUserEmoji?: string | null
+  onReact?: (emoji: string) => void | Promise<void>
+  onUnreact?: () => void | Promise<void>
+  canReact?: boolean
 }
 
-export default function MealCard({ meal, canEdit, onEdit, onDelete, onCopy }: MealCardProps) {
+export default function MealCard({
+  meal,
+  canEdit,
+  onEdit,
+  onDelete,
+  onCopy,
+  reactors,
+  currentUserEmoji,
+  onReact,
+  onUnreact,
+  canReact,
+}: MealCardProps) {
   const [confirming, setConfirming] = useState(false)
 
   const handleDelete = () => {
@@ -116,6 +138,21 @@ export default function MealCard({ meal, canEdit, onEdit, onDelete, onCopy }: Me
               warning={ing.ingredients?.warning}
             />
           ))}
+        </div>
+      )}
+
+      {canReact && onReact && onUnreact && (
+        <div className="mt-2">
+          <ReactionButton
+            options={THUMB_OPTIONS}
+            reactors={reactors ?? []}
+            currentUserEmoji={currentUserEmoji ?? null}
+            onReact={onReact}
+            onUnreact={onUnreact}
+            size="sm"
+            targetLabel={meal.title}
+            testId={`meal-reaction-${meal.id}`}
+          />
         </div>
       )}
     </div>

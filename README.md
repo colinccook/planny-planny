@@ -15,7 +15,7 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Public Sharing** — Share a read-only link to your meal plan so visiting family can see what's for dinner.
 - **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily.
 - **Guest Access** — Invite someone as a guest (view-only) or a full member (can edit).
-- **Meal Ideas & Reactions** — Add lightweight meal ideas per day, react with 👍, and see household vote counts and who voted.
+- **Meal Ideas, Meals & Reactions** — Add lightweight meal ideas per day and react to ideas or meal plans with 👍. Tap the reaction button to like/unlike; long press to see who reacted.
 - **AI Meal Suggestions (Magic Wand)** — Generate a tailored prompt to paste into ChatGPT. Pulls in household headcount, events, day theme, suggested ingredients, and household meal ideas. Choose to exclude ideas, include all, or only thumbed-up ones — multiple thumbs-up ideas ask the AI for three recipes per idea.
 
 ## 🏗️ Tech Stack
@@ -79,16 +79,19 @@ Tap **+ Add meal** on any day to plan a new meal.
 
 ---
 
-### 2b. Day Ideas & Reactions
+### 2b. Day Ideas, Meals & Reactions
 
-Inside day detail, ideas are listed between events and meal plans:
-- Add ideas quickly from the **Add idea** tray.
-- Each idea has a **reaction pill** (👍) that:
-  - is faded when you haven’t voted,
-  - highlights when you’ve voted,
-  - shows counts from all household members,
-  - shows your selected reaction count in bold.
-- Tapping an idea shows reactor names, lets members delete the idea, and opens an inline **React to this idea** picker.
+Inside day detail, ideas are listed between events and meal plans. Both ideas and meal plans expose a **reusable reaction button**:
+- **Unreacted** state: greyscale fill with a dashed border — an obvious "tap to react" affordance.
+- **Reacted** state: filled indigo with a solid border and bold count.
+- **Tap**: instantly likes (or unlikes if you already reacted). If a reaction kind has multiple emoji options, a small inline picker opens instead.
+- **Long press** (500 ms): opens a tray listing who reacted and with which emoji.
+
+Currently only 👍 is wired up, but the component is generic and ready for more reactions.
+
+<p align="center">
+  <img src="docs/screenshots/14-reaction-button-states-mobile.png" alt="Reaction button states (mobile)" width="280" />
+</p>
 
 <p align="center">
   <img src="docs/screenshots/11-ideas-reactions-list-mobile.png" alt="Ideas and reactions list (mobile)" width="280" />

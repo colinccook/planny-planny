@@ -13,9 +13,10 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
         .hidden { display: none; }
         .idea-card { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-radius: 8px; background: #eef2ff; margin-top: 8px; border: 1px solid #c7d2fe; }
         .idea-title { background: transparent; border: 0; text-align: left; flex: 1; font-size: 14px; padding: 0; }
-        .pill { border-radius: 999px; padding: 4px 10px; border: 1px solid #d1d5db; background: white; color: #9ca3af; font-weight: 500; }
-        .pill.active { border-color: #818cf8; background: #e0e7ff; color: #3730a3; font-weight: 700; }
+        .pill { border-radius: 999px; padding: 4px 10px; border: 1px dashed #d1d5db; background: #f9fafb; color: #9ca3af; font-weight: 500; filter: grayscale(1); }
+        .pill.active { border-style: solid; border-color: #818cf8; background: #e0e7ff; color: #3730a3; font-weight: 700; filter: none; }
         .count-bold { font-weight: 700; }
+        .tray { position: fixed; left: 0; right: 0; bottom: 0; background: white; border-top: 1px solid #e5e7eb; padding: 16px; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); }
       </style>
     </head>
     <body>
@@ -28,18 +29,16 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
 
       <div id="ideas-list" data-testid="ideas-list"></div>
 
-      <div id="idea-detail-tray" class="hidden">
-        <button data-testid="open-react-to-idea-button" onclick="openReactPicker()">React to this</button>
-        <ul data-testid="idea-reactors-list"></ul>
-      </div>
-
-      <div id="reaction-picker-tray" class="hidden">
-        <button class="pill" data-testid="thumbs-up-reaction-button" onclick="reactThumbsUp()">👍 Thumbs up <span data-testid="picker-thumbs-count"></span></button>
+      <div id="reactors-tray" class="tray hidden" data-testid="reactors-tray">
+        <h3>Reactions</h3>
+        <ul data-testid="idea-reactors-list" id="reactors-list"></ul>
+        <button onclick="closeReactorsTray()">Close</button>
       </div>
 
       <script>
         let ideas = [];
-        let selectedIdeaId = null;
+        let longPressTimer = null;
+        let longPressFired = false;
 
         function renderIdeas() {
           const list = document.getElementById('ideas-list');
@@ -48,10 +47,10 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
             const el = document.createElement('div');
             el.className = 'idea-card';
             el.setAttribute('data-testid', 'idea-card-' + idea.id);
+
             const title = document.createElement('button');
             title.type = 'button';
             title.className = 'idea-title';
-            title.onclick = () => openIdea(idea.id);
             title.textContent = idea.title;
             el.appendChild(title);
 
@@ -60,10 +59,21 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
             pill.className = idea.reactors.includes('You') ? 'pill active' : 'pill';
             pill.setAttribute('data-testid', 'idea-reaction-pill-' + idea.id);
             pill.textContent = '👍';
-            pill.onclick = () => {
-              openIdea(idea.id);
-              openReactPicker();
-            };
+
+            pill.addEventListener('pointerdown', () => {
+              longPressFired = false;
+              clearTimeout(longPressTimer);
+              longPressTimer = setTimeout(() => {
+                longPressFired = true;
+                openReactorsTray(idea.id);
+              }, 500);
+            });
+            pill.addEventListener('pointerup', () => clearTimeout(longPressTimer));
+            pill.addEventListener('pointerleave', () => clearTimeout(longPressTimer));
+            pill.addEventListener('click', () => {
+              if (longPressFired) { longPressFired = false; return; }
+              toggleThumb(idea.id);
+            });
 
             if (idea.thumbs > 0) {
               const countEl = document.createElement('span');
@@ -92,41 +102,32 @@ Given('I open a day detail view with ideas support', async ({ page }) => {
           renderIdeas();
         }
 
-        window.openIdea = function(id) {
-          selectedIdeaId = id;
+        function toggleThumb(id) {
           const idea = ideas.find((i) => i.id === id);
-          const reactors = document.querySelector('[data-testid="idea-reactors-list"]');
-          reactors.innerHTML = '';
-          idea.reactors.forEach((name) => {
-            const item = document.createElement('li');
-            item.textContent = name;
-            reactors.appendChild(item);
-          });
-          document.getElementById('idea-detail-tray').classList.remove('hidden');
-        }
-
-        window.openReactPicker = function() {
-          const idea = ideas.find((i) => i.id === selectedIdeaId);
-          const pickerBtn = document.querySelector('[data-testid="thumbs-up-reaction-button"]');
-          const pickerCount = document.querySelector('[data-testid="picker-thumbs-count"]');
-          pickerBtn.className = idea && idea.reactors.includes('You') ? 'pill active' : 'pill';
-          pickerCount.textContent = idea && idea.thumbs > 0 ? String(idea.thumbs) : '';
-          document.getElementById('reaction-picker-tray').classList.remove('hidden');
-        }
-
-        window.reactThumbsUp = function() {
-          const idea = ideas.find((i) => i.id === selectedIdeaId);
           if (!idea) return;
-          if (!idea.reactors.includes('You')) {
+          if (idea.reactors.includes('You')) {
+            idea.thumbs -= 1;
+            idea.reactors = idea.reactors.filter((n) => n !== 'You');
+          } else {
             idea.thumbs += 1;
             idea.reactors.push('You');
-          } else {
-            idea.thumbs -= 1;
-            idea.reactors = idea.reactors.filter((name) => name !== 'You');
           }
-          document.getElementById('reaction-picker-tray').classList.add('hidden');
-          openIdea(idea.id);
           renderIdeas();
+        }
+
+        function openReactorsTray(id) {
+          const idea = ideas.find((i) => i.id === id);
+          const list = document.getElementById('reactors-list');
+          list.innerHTML = '';
+          idea.reactors.forEach((name) => {
+            const li = document.createElement('li');
+            li.textContent = name;
+            list.appendChild(li);
+          });
+          document.getElementById('reactors-tray').classList.remove('hidden');
+        }
+        window.closeReactorsTray = function() {
+          document.getElementById('reactors-tray').classList.add('hidden');
         }
       </script>
     </body>
@@ -162,18 +163,27 @@ When(
     const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
       hasText: ideaTitle,
     })
-    await ideaButton.getByRole('button', { name: ideaTitle }).click()
-    await page.getByTestId('open-react-to-idea-button').click()
-    await page.getByTestId('thumbs-up-reaction-button').click()
+    await ideaButton.locator('[data-testid^="idea-reaction-pill-"]').click()
   },
 )
 
-When('I open reactions from the pill for {string}', async ({ page }, ideaTitle: string) => {
-  const ideaButton = page.locator(`[data-testid^="idea-card-"]`).filter({
-    hasText: ideaTitle,
-  })
-  await ideaButton.locator('[data-testid^="idea-reaction-pill-"]').click()
-})
+When(
+  'I long press the reaction pill for {string}',
+  async ({ page }, ideaTitle: string) => {
+    const ideaCard = page.locator(`[data-testid^="idea-card-"]`).filter({
+      hasText: ideaTitle,
+    })
+    const pill = ideaCard.locator('[data-testid^="idea-reaction-pill-"]')
+    const box = await pill.boundingBox()
+    if (!box) throw new Error('pill not visible')
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.waitForTimeout(700)
+    await page.mouse.up()
+  },
+)
 
 Then('I should see {string} in the idea reactors list', async ({ page }, name: string) => {
   await page.getByTestId('idea-reactors-list').getByText(name).waitFor({ state: 'visible' })
@@ -202,7 +212,3 @@ Then('the thumbs-up count should be bold for {string}', async ({ page }, ideaTit
   }
 })
 
-Then('I should see the reaction picker', async ({ page }) => {
-  await page.locator('#reaction-picker-tray').waitFor({ state: 'visible' })
-  await page.getByTestId('thumbs-up-reaction-button').waitFor({ state: 'visible' })
-})
