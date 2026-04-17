@@ -16,6 +16,7 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily.
 - **Guest Access** — Invite someone as a guest (view-only) or a full member (can edit).
 - **Meal Ideas & Reactions** — Add lightweight meal ideas per day, react with 👍, and see household vote counts and who voted.
+- **AI Meal Suggestions (Magic Wand)** — Generate a tailored prompt to paste into ChatGPT. Pulls in household headcount, events, day theme, suggested ingredients, and household meal ideas. Choose to exclude ideas, include all, or only thumbed-up ones — multiple thumbs-up ideas ask the AI for three recipes per idea.
 
 ## 🏗️ Tech Stack
 

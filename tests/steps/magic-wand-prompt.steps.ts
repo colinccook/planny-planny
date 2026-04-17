@@ -15,6 +15,11 @@ interface EventState {
   extraAdults: number
 }
 
+interface IdeaState {
+  title: string
+  thumbsUp: number
+}
+
 let household: HouseholdState = { adults: 2, children: 0, babies: 0 }
 let dateLabel = 'Monday, 14 April'
 let dayTheme: string | null = null
@@ -22,6 +27,7 @@ let event: EventState | null = null
 let suggestedIngredients: string[] = []
 let isGuest = false
 let hasMeals = true
+let ideas: IdeaState[] = []
 
 function resetState() {
   household = { adults: 2, children: 0, babies: 0 }
@@ -31,9 +37,17 @@ function resetState() {
   suggestedIngredients = []
   isGuest = false
   hasMeals = true
+  ideas = []
 }
 
-function buildPromptText(): string {
+type IdeasMode = 'none' | 'all' | 'thumbed'
+
+function defaultIdeasMode(): IdeasMode {
+  if (ideas.length === 0) return 'none'
+  return ideas.some((i) => i.thumbsUp > 0) ? 'thumbed' : 'all'
+}
+
+function buildPromptText(ideasMode: IdeasMode = defaultIdeasMode()): string {
   const totalAdults = household.adults + (event?.extraAdults ?? 0)
   const lines: string[] = []
 
@@ -68,15 +82,42 @@ function buildPromptText(): string {
     lines.push('But any other whole ingredients can be used too, so long as they are appropriate for the household members at the time.')
   }
 
+  const selectedIdeas =
+    ideasMode === 'all'
+      ? ideas
+      : ideasMode === 'thumbed'
+        ? ideas.filter((i) => i.thumbsUp > 0)
+        : []
+
+  let closingLine = 'Please suggest 2–3 meal ideas with a brief description and key ingredients for each.'
+
+  if (selectedIdeas.length > 0) {
+    lines.push('')
+    if (ideasMode === 'thumbed') {
+      if (selectedIdeas.length === 1) {
+        lines.push(`The household has thumbed up this meal idea: ${selectedIdeas[0].title}. Please build on it.`)
+        closingLine = `Please suggest 2–3 recipes for "${selectedIdeas[0].title}" with a brief description and key ingredients for each.`
+      } else {
+        lines.push(`The household has thumbed up these meal ideas: ${selectedIdeas.map((i) => i.title).join(', ')}.`)
+        closingLine = 'Please suggest three different recipes per idea, with a brief description and key ingredients for each.'
+      }
+    } else {
+      lines.push(`The household has suggested these meal ideas: ${selectedIdeas.map((i) => i.title).join(', ')}. Please take these into account.`)
+    }
+  }
+
   lines.push('')
-  lines.push('Please suggest 2–3 meal ideas with a brief description and key ingredients for each.')
+  lines.push(closingLine)
 
   return lines.join('\n')
 }
 
 function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): string {
   const canEdit = !isGuest
-  const promptText = buildPromptText()
+  const currentIdeasMode = defaultIdeasMode()
+  const promptText = buildPromptText(currentIdeasMode)
+  const hasThumbed = ideas.some((i) => i.thumbsUp > 0)
+  const ideasJson = JSON.stringify(ideas)
 
   const themeHtml = dayTheme
     ? `<label data-testid="theme-toggle" style="display:flex;align-items:center;gap:8px;font-size:14px;color:#374151;">
@@ -148,6 +189,16 @@ function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): strin
       </div>
 
       ${themeHtml}
+      ${ideas.length > 0 ? `
+      <div data-testid="ideas-mode-selector" style="margin-top:12px;">
+        <label style="margin:0 0 4px 0;">Include household ideas?</label>
+        <select data-testid="ideas-mode-select" onchange="handleIdeasModeChange(this.value)" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+          <option value="none" ${currentIdeasMode === 'none' ? 'selected' : ''}>Don&rsquo;t include ideas</option>
+          <option value="all" ${currentIdeasMode === 'all' ? 'selected' : ''}>Include all ideas</option>
+          <option value="thumbed" ${currentIdeasMode === 'thumbed' ? 'selected' : ''} ${hasThumbed ? '' : 'disabled'}>Only include thumbed up ideas</option>
+        </select>
+      </div>
+      ` : ''}
       ${ingredientsNote}
 
       <label style="margin-top:12px;">Your AI prompt</label>
@@ -158,6 +209,16 @@ function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): strin
   </div>
 
   <script>
+    const __ideas = ${ideasJson};
+    const __prompts = {
+      none: ${JSON.stringify(buildPromptText('none'))},
+      all: ${JSON.stringify(buildPromptText('all'))},
+      thumbed: ${JSON.stringify(buildPromptText('thumbed'))},
+    };
+    function handleIdeasModeChange(mode) {
+      const ta = document.querySelector('[data-testid="prompt-textarea"]');
+      ta.value = __prompts[mode];
+    }
     function openTray() {
       document.querySelector('.tray-backdrop').classList.add('open');
       document.querySelector('.tray').classList.add('open');
@@ -262,6 +323,14 @@ Given('the user is a guest', async () => {
   isGuest = true
 })
 
+Given(
+  'the day has an idea {string} with {int} thumbs up',
+  // eslint-disable-next-line no-empty-pattern
+  async ({}, title: string, thumbsUp: number) => {
+    ideas.push({ title, thumbsUp })
+  },
+)
+
 // ── When steps ───────────────────────────────────────────────
 
 When('I view the day detail', async ({ page }) => {
@@ -276,6 +345,11 @@ When('I tap the magic wand button', async ({ page }) => {
 When('I select the complicated option', async ({ page }) => {
   const btn = page.locator('[data-testid="complexity-complicated"]')
   await btn.click()
+})
+
+When('I choose the ideas mode {string}', async ({ page }, mode: string) => {
+  const select = page.locator('[data-testid="ideas-mode-select"]')
+  await select.selectOption(mode)
 })
 
 When('I uncheck the theme checkbox', async ({ page }) => {
@@ -351,4 +425,24 @@ Then('a toast should show {string}', async ({ page }, text: string) => {
   const toast = page.locator('[data-testid="toast"]')
   await expect(toast).toBeVisible()
   await expect(toast).toContainText(text)
+})
+
+Then('the ideas mode selector should be visible', async ({ page }) => {
+  const selector = page.locator('[data-testid="ideas-mode-selector"]')
+  await expect(selector).toBeVisible()
+})
+
+Then('the ideas mode selector should not be visible', async ({ page }) => {
+  const selector = page.locator('[data-testid="ideas-mode-selector"]')
+  await expect(selector).toHaveCount(0)
+})
+
+Then('the ideas mode should be {string}', async ({ page }, mode: string) => {
+  const select = page.locator('[data-testid="ideas-mode-select"]')
+  await expect(select).toHaveValue(mode)
+})
+
+Then('the thumbed up ideas option should be disabled', async ({ page }) => {
+  const option = page.locator('[data-testid="ideas-mode-select"] option[value="thumbed"]')
+  await expect(option).toBeDisabled()
 })

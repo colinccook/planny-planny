@@ -182,4 +182,85 @@ describe('buildPrompt', () => {
     const result = buildPrompt(baseArgs)
     expect(result).toContain('2–3 meal ideas')
   })
+
+  describe('ideas', () => {
+    it('omits ideas when ideasMode is none', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [
+          { title: 'Fajitas', thumbsUp: 2 },
+          { title: 'Burgers', thumbsUp: 0 },
+        ],
+        ideasMode: 'none',
+      })
+      expect(result).not.toContain('Fajitas')
+      expect(result).not.toContain('Burgers')
+      expect(result).not.toContain('thumbed up')
+      expect(result).toContain('2–3 meal ideas')
+    })
+
+    it('includes all idea titles when ideasMode is all', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [
+          { title: 'Fajitas', thumbsUp: 0 },
+          { title: 'Burgers', thumbsUp: 0 },
+        ],
+        ideasMode: 'all',
+      })
+      expect(result).toContain('suggested these meal ideas')
+      expect(result).toContain('Fajitas')
+      expect(result).toContain('Burgers')
+    })
+
+    it('includes only thumbed-up ideas when ideasMode is thumbed', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [
+          { title: 'Fajitas', thumbsUp: 2 },
+          { title: 'Burgers', thumbsUp: 0 },
+        ],
+        ideasMode: 'thumbed',
+      })
+      expect(result).toContain('thumbed up')
+      expect(result).toContain('Fajitas')
+      expect(result).not.toContain('Burgers')
+    })
+
+    it('asks for three recipes per idea when multiple ideas are thumbed up', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [
+          { title: 'Fajitas', thumbsUp: 1 },
+          { title: 'Pizza', thumbsUp: 2 },
+        ],
+        ideasMode: 'thumbed',
+      })
+      expect(result).toContain('three different recipes per idea')
+      expect(result).not.toContain('2–3 meal ideas')
+    })
+
+    it('asks for recipes for the single thumbed-up idea', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [
+          { title: 'Fajitas', thumbsUp: 1 },
+          { title: 'Burgers', thumbsUp: 0 },
+        ],
+        ideasMode: 'thumbed',
+      })
+      expect(result).toContain('2–3 recipes for "Fajitas"')
+      expect(result).not.toContain('three different recipes per idea')
+    })
+
+    it('defaults to the standard suggestion when ideasMode is thumbed but nothing thumbed', () => {
+      const result = buildPrompt({
+        ...baseArgs,
+        ideas: [{ title: 'Fajitas', thumbsUp: 0 }],
+        ideasMode: 'thumbed',
+      })
+      expect(result).not.toContain('thumbed up')
+      expect(result).toContain('2–3 meal ideas')
+    })
+  })
 })

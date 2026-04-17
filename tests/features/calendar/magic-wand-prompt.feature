@@ -104,3 +104,60 @@ Feature: Magic Wand AI Prompt Generator
     And the user is a guest
     When I view the day detail
     Then I should not see the magic wand button
+
+  Scenario: Ideas selector is hidden when no ideas exist
+    Given the day has no meals planned
+    When I view the day detail
+    And I tap the magic wand button
+    Then the ideas mode selector should not be visible
+
+  Scenario: Ideas selector defaults to "all" when no ideas are thumbed up
+    Given the day has no meals planned
+    And the day has an idea "Fajitas" with 0 thumbs up
+    And the day has an idea "Burgers" with 0 thumbs up
+    When I view the day detail
+    And I tap the magic wand button
+    Then the ideas mode selector should be visible
+    And the ideas mode should be "all"
+    And the thumbed up ideas option should be disabled
+    And the prompt should mention "Fajitas"
+    And the prompt should mention "Burgers"
+
+  Scenario: Ideas selector defaults to "thumbed" when an idea is thumbed up
+    Given the day has no meals planned
+    And the day has an idea "Fajitas" with 2 thumbs up
+    And the day has an idea "Burgers" with 0 thumbs up
+    When I view the day detail
+    And I tap the magic wand button
+    Then the ideas mode should be "thumbed"
+    And the prompt should mention "thumbed up"
+    And the prompt should mention "Fajitas"
+    And the prompt should not mention "Burgers"
+
+  Scenario: Choosing "Don't include ideas" omits ideas from the prompt
+    Given the day has no meals planned
+    And the day has an idea "Fajitas" with 2 thumbs up
+    When I view the day detail
+    And I tap the magic wand button
+    And I choose the ideas mode "none"
+    Then the prompt should not mention "Fajitas"
+    And the prompt should not mention "thumbed up"
+
+  Scenario: Multiple thumbed up ideas ask for three recipes per idea
+    Given the day has no meals planned
+    And the day has an idea "Fajitas" with 1 thumbs up
+    And the day has an idea "Pizza" with 2 thumbs up
+    When I view the day detail
+    And I tap the magic wand button
+    Then the ideas mode should be "thumbed"
+    And the prompt should mention "three different recipes per idea"
+    And the prompt should mention "Fajitas"
+    And the prompt should mention "Pizza"
+
+  Scenario: Single thumbed up idea asks for recipes for that idea
+    Given the day has no meals planned
+    And the day has an idea "Fajitas" with 1 thumbs up
+    When I view the day detail
+    And I tap the magic wand button
+    Then the prompt should mention "2–3 recipes for \"Fajitas\""
+    And the prompt should not mention "three different recipes per idea"
