@@ -191,12 +191,12 @@ function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): strin
       ${themeHtml}
       ${ideas.length > 0 ? `
       <div data-testid="ideas-mode-selector" style="margin-top:12px;">
-        <label style="margin:0 0 4px 0;">Include household ideas?</label>
-        <select data-testid="ideas-mode-select" onchange="handleIdeasModeChange(this.value)" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
-          <option value="none" ${currentIdeasMode === 'none' ? 'selected' : ''}>Don&rsquo;t include ideas</option>
-          <option value="all" ${currentIdeasMode === 'all' ? 'selected' : ''}>Include all ideas</option>
-          <option value="thumbed" ${currentIdeasMode === 'thumbed' ? 'selected' : ''} ${hasThumbed ? '' : 'disabled'}>Only include thumbed up ideas</option>
-        </select>
+        <div style="font-size:12px;font-weight:600;color:#4b5563;margin-bottom:6px;">Include household ideas?</div>
+        <div role="radiogroup" aria-label="Include household ideas?" style="display:flex;flex-direction:column;gap:8px;">
+          <button type="button" role="radio" data-testid="ideas-mode-selector-option-none" data-value="none" data-selected="${currentIdeasMode === 'none'}" aria-checked="${currentIdeasMode === 'none'}" onclick="handleIdeasModeChange('none')" style="min-height:48px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid ${currentIdeasMode === 'none' ? '#059669' : '#e5e7eb'};background:${currentIdeasMode === 'none' ? '#ecfdf5' : 'white'};border-radius:8px;text-align:left;font-size:14px;cursor:pointer;">Don&rsquo;t include ideas</button>
+          <button type="button" role="radio" data-testid="ideas-mode-selector-option-all" data-value="all" data-selected="${currentIdeasMode === 'all'}" aria-checked="${currentIdeasMode === 'all'}" onclick="handleIdeasModeChange('all')" style="min-height:48px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid ${currentIdeasMode === 'all' ? '#059669' : '#e5e7eb'};background:${currentIdeasMode === 'all' ? '#ecfdf5' : 'white'};border-radius:8px;text-align:left;font-size:14px;cursor:pointer;">Include all ideas</button>
+          <button type="button" role="radio" data-testid="ideas-mode-selector-option-thumbed" data-value="thumbed" data-selected="${currentIdeasMode === 'thumbed'}" aria-checked="${currentIdeasMode === 'thumbed'}" ${hasThumbed ? '' : 'disabled aria-disabled="true"'} onclick="handleIdeasModeChange('thumbed')" style="min-height:48px;display:flex;align-items:center;gap:12px;padding:12px;border:1px solid ${currentIdeasMode === 'thumbed' ? '#059669' : '#e5e7eb'};background:${currentIdeasMode === 'thumbed' ? '#ecfdf5' : 'white'};border-radius:8px;text-align:left;font-size:14px;${hasThumbed ? 'cursor:pointer;' : 'cursor:not-allowed;opacity:0.5;'}">Only include thumbed up ideas</button>
+        </div>
       </div>
       ` : ''}
       ${ingredientsNote}
@@ -218,6 +218,14 @@ function buildPageHtml(opts: { trayOpen: boolean } = { trayOpen: false }): strin
     function handleIdeasModeChange(mode) {
       const ta = document.querySelector('[data-testid="prompt-textarea"]');
       ta.value = __prompts[mode];
+      const buttons = document.querySelectorAll('[data-testid^="ideas-mode-selector-option-"]');
+      buttons.forEach((b) => {
+        const selected = b.getAttribute('data-value') === mode;
+        b.setAttribute('data-selected', selected ? 'true' : 'false');
+        b.setAttribute('aria-checked', selected ? 'true' : 'false');
+        b.style.borderColor = selected ? '#059669' : '#e5e7eb';
+        b.style.background = selected ? '#ecfdf5' : 'white';
+      });
     }
     function openTray() {
       document.querySelector('.tray-backdrop').classList.add('open');
@@ -348,8 +356,8 @@ When('I select the complicated option', async ({ page }) => {
 })
 
 When('I choose the ideas mode {string}', async ({ page }, mode: string) => {
-  const select = page.locator('[data-testid="ideas-mode-select"]')
-  await select.selectOption(mode)
+  const option = page.locator(`[data-testid="ideas-mode-selector-option-${mode}"]`)
+  await option.click()
 })
 
 When('I uncheck the theme checkbox', async ({ page }) => {
@@ -438,11 +446,11 @@ Then('the ideas mode selector should not be visible', async ({ page }) => {
 })
 
 Then('the ideas mode should be {string}', async ({ page }, mode: string) => {
-  const select = page.locator('[data-testid="ideas-mode-select"]')
-  await expect(select).toHaveValue(mode)
+  const option = page.locator(`[data-testid="ideas-mode-selector-option-${mode}"]`)
+  await expect(option).toHaveAttribute('data-selected', 'true')
 })
 
 Then('the thumbed up ideas option should be disabled', async ({ page }) => {
-  const option = page.locator('[data-testid="ideas-mode-select"] option[value="thumbed"]')
+  const option = page.locator('[data-testid="ideas-mode-selector-option-thumbed"]')
   await expect(option).toBeDisabled()
 })
