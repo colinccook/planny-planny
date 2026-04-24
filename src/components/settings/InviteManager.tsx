@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
-import { buildInviteUrl } from '../../lib/inviteUrl'
+import { buildInviteUrl } from '../../lib/appUrl'
 import { useToast } from '../../hooks/useToast'
 import RoleBadge from './RoleBadge'
 

@@ -77,6 +77,7 @@ describe('Store Cupboard localStorage logic', () => {
     writeState('user-1', { dismissedIngredientIds: ['ing-1'] })
     const raw = localStorage.getItem('cupboard:user-1')
     expect(raw).not.toBeNull()
-    expect(JSON.parse(raw!)).toEqual({ dismissedIngredientIds: ['ing-1'] })
+    if (raw === null) throw new Error('Expected stored value')
+    expect(JSON.parse(raw)).toEqual({ dismissedIngredientIds: ['ing-1'] })
   })
 })

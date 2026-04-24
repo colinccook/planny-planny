@@ -96,7 +96,8 @@ describe('VerticalSelector', () => {
     const group = screen.getByRole('radiogroup')
     const labelledBy = group.getAttribute('aria-labelledby')
     expect(labelledBy).toBeTruthy()
-    expect(document.getElementById(labelledBy!)?.textContent).toContain('Include household ideas?')
+    if (!labelledBy) throw new Error('Expected aria-labelledby attribute')
+    expect(document.getElementById(labelledBy)?.textContent).toContain('Include household ideas?')
   })
 
   it('falls back to aria-label when no visible label is provided', () => {

@@ -16,7 +16,12 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          // %BASE_URL% is replaced by Vite at build time and matches the
+          // configured `base` (e.g. `/planny-planny/` on GitHub Pages, `/` at
+          // an apex domain). Keeping the SW URL and scope aligned with the app
+          // base means the share/invite links and offline cache always live
+          // under the same origin path.
+          navigator.serviceWorker.register('%BASE_URL%sw.js', { scope: '%BASE_URL%' })
         })
       }
     </script>

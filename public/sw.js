@@ -1,10 +1,14 @@
 const CACHE_NAME = 'planny-v1'
+// Paths are resolved relative to this service worker's location, which the
+// browser sets to the SW registration URL (e.g. `/planny-planny/sw.js` on
+// GitHub Pages, `/sw.js` at an apex domain). Keeping these relative means the
+// cache works regardless of the deploy base path.
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/pwa-192x192.svg',
-  '/pwa-512x512.svg',
+  './',
+  './index.html',
+  './manifest.json',
+  './pwa-192x192.svg',
+  './pwa-512x512.svg',
 ]
 
 self.addEventListener('install', (event) => {

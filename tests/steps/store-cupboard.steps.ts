@@ -12,7 +12,7 @@ interface IngredientDef {
   mealCount: number
   warning: boolean
   starred: boolean
-  meals: Array<{ name: string; date: string }>
+  meals: { name: string; date: string }[]
 }
 
 let ingredients: IngredientDef[] = []

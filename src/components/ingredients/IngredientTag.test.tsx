@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement } from 'react'
 import IngredientTag from './IngredientTag'
@@ -11,16 +11,18 @@ describe('IngredientTag', () => {
 
   it('applies emerald styles by default', () => {
     render(createElement(IngredientTag, { name: 'Tomato' }))
-    const tag = screen.getByText('Tomato').parentElement!
-    expect(tag.className).toContain('bg-emerald-100')
-    expect(tag.className).toContain('text-emerald-800')
+    const tag = screen.getByText('Tomato').parentElement
+    expect(tag).not.toBeNull()
+    expect(tag?.className).toContain('bg-emerald-100')
+    expect(tag?.className).toContain('text-emerald-800')
   })
 
   it('applies orange styles when warning is set', () => {
     render(createElement(IngredientTag, { name: 'Peanuts', warning: true }))
-    const tag = screen.getByText('Peanuts').parentElement!
-    expect(tag.className).toContain('bg-orange-100')
-    expect(tag.className).toContain('text-orange-800')
+    const tag = screen.getByText('Peanuts').parentElement
+    expect(tag).not.toBeNull()
+    expect(tag?.className).toContain('bg-orange-100')
+    expect(tag?.className).toContain('text-orange-800')
   })
 
   it('shows star icon when starred', () => {
@@ -39,13 +41,13 @@ describe('IngredientTag', () => {
   })
 
   it('shows remove button for removable variant', () => {
-    const onRemove = () => {}
+    const onRemove = vi.fn()
     render(createElement(IngredientTag, { name: 'Rice', variant: 'removable', onRemove }))
     expect(screen.getByLabelText('Remove Rice')).toBeDefined()
   })
 
   it('shows add button for addable variant', () => {
-    const onAdd = () => {}
+    const onAdd = vi.fn()
     render(createElement(IngredientTag, { name: 'Pasta', variant: 'addable', onAdd }))
     expect(screen.getByLabelText('Add Pasta')).toBeDefined()
   })
