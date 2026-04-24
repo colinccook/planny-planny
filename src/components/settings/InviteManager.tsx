@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
+import { buildInviteUrl } from '../../lib/inviteUrl'
 import { useToast } from '../../hooks/useToast'
 import RoleBadge from './RoleBadge'
 
@@ -68,7 +69,7 @@ export default function InviteManager() {
   }
 
   const copyLink = async (token: string, id: string) => {
-    const url = `${window.location.origin}/invite/${token}`
+    const url = buildInviteUrl(token)
     await copyToClipboard(url)
     setCopiedId(id)
     showToast('Copied invite link to clipboard')
