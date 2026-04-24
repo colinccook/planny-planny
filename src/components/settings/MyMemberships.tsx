@@ -48,8 +48,15 @@ export default function MyMemberships() {
     setConfirmingId(null)
 
     if (deleteError) {
+      // The `enforce_household_owner_present` trigger raises with
+      // SQLSTATE P0001 when removing this row would leave the
+      // household with no owners. Match on the code so the
+      // friendly message survives the wording being tweaked.
+      const isLastOwner =
+        deleteError.code === 'P0001' ||
+        /last owner/i.test(deleteError.message)
       setError(
-        deleteError.message.includes('last owner')
+        isLastOwner
           ? "You're the only owner of this household. Promote someone else first."
           : deleteError.message,
       )

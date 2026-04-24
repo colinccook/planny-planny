@@ -6,7 +6,7 @@ import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
 import { buildInviteUrl } from '../../lib/appUrl'
 import { useToast } from '../../hooks/useToast'
-import { canInviteMembers, INVITABLE_ROLES, type InvitableRole } from '../../lib/permissions'
+import { canInviteMembers, INVITABLE_ROLES, roleLabel, type InvitableRole } from '../../lib/permissions'
 import RoleBadge from './RoleBadge'
 import AccessLevelsLink from './AccessLevelsLink'
 
@@ -129,11 +129,7 @@ export default function InviteManager() {
           >
             {INVITABLE_ROLES.map((role) => (
               <option key={role} value={role}>
-                {role === 'member'
-                  ? 'Member'
-                  : role === 'honoured_guest'
-                    ? 'Honoured Guest'
-                    : 'Voting Guest'}
+                {roleLabel(role)}
               </option>
             ))}
           </select>
