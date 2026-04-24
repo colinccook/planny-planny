@@ -85,8 +85,8 @@ describe('MemberList', () => {
     const bob = await screen.findByText('Bob')
     expect(bob).toBeDefined()
 
-    expect(screen.getByText('owner')).toBeDefined()
-    expect(screen.getByText('member')).toBeDefined()
+    expect(screen.getByText('Owner')).toBeDefined()
+    expect(screen.getByText('Member')).toBeDefined()
   })
 
   it('shows (you) marker for current user', async () => {

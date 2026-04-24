@@ -89,6 +89,6 @@ describe('HouseholdSwitcher', () => {
     })
 
     render(createElement(HouseholdSwitcher), { wrapper: createWrapper() })
-    expect(screen.getByText('owner')).toBeDefined()
+    expect(screen.getByText('Owner')).toBeDefined()
   })
 })

@@ -62,10 +62,9 @@ describe('PublicHouseholdPage', () => {
     ]
 
     let callCount = 0
-    mockFrom.mockImplementation(() => {
+    mockFrom.mockImplementation((table: string) => {
       callCount++
-      if (callCount === 1) {
-        // households query
+      if (table === 'households') {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
@@ -74,15 +73,43 @@ describe('PublicHouseholdPage', () => {
           }),
         }
       }
-      // meal_plans query
-      return {
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            gte: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({ data: mockPlans, error: null }),
+      if (table === 'meal_plans') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({ data: mockPlans, error: null }),
+                }),
               }),
             }),
+          }),
+        }
+      }
+      if (table === 'meal_ideas') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({
+                data: [
+                  { id: 'idea1', household_id: 'h1', title: 'Lasagne', created_by: 'u1', created_at: '' },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        }
+      }
+      // reactions
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            data: [
+              { target_type: 'meal_plan', target_id: 'mp1' },
+              { target_type: 'meal_plan', target_id: 'mp1' },
+              { target_type: 'meal_idea', target_id: 'idea1' },
+            ],
+            error: null,
           }),
         }),
       }
@@ -94,5 +121,16 @@ describe('PublicHouseholdPage', () => {
     const plan = await screen.findByText('Christmas Dinner')
     expect(plan).toBeDefined()
     expect(screen.getByText('Turkey and stuffing')).toBeDefined()
+
+    // Public viewers see ideas + vote totals.
+    expect(await screen.findByText('Lasagne')).toBeDefined()
+    expect(screen.getByTestId('public-meal-votes-mp1').textContent).toContain('2')
+    expect(screen.getByTestId('public-idea-votes-idea1').textContent).toContain('1')
+
+    // Public viewers do NOT see events or voter names anywhere.
+    expect(screen.queryByText(/visitors/i)).toBeNull()
+
+    // The unused callCount avoids a lint warning.
+    expect(callCount).toBeGreaterThan(0)
   })
 })
