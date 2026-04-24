@@ -141,13 +141,13 @@ describe('permissions', () => {
     it('honoured guest description mentions inability to invite', () => {
       const honoured = ACCESS_LEVELS.find((l) => l.key === 'honoured_guest')
       expect(honoured).toBeDefined()
-      expect(honoured!.cannot.join(' ')).toMatch(/invite/i)
+      expect((honoured?.cannot ?? []).join(' ')).toMatch(/invite/i)
     })
 
     it('member description mentions ability to invite', () => {
       const member = ACCESS_LEVELS.find((l) => l.key === 'member')
       expect(member).toBeDefined()
-      expect(member!.can.join(' ')).toMatch(/invite/i)
+      expect((member?.can ?? []).join(' ')).toMatch(/invite/i)
     })
   })
 })

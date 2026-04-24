@@ -49,6 +49,19 @@ All new functionality **must** be covered by appropriate tests:
 - Include a Screenshots section with images showing the new/changed views.
 - **Verify CI passes** — after pushing, poll the PR's check runs (lint, test) until they complete. If any check fails, read the job logs, fix the issue, and push again. Do not consider the task done until all checks are green.
 
+## Permissions / Access Levels
+
+This app has **five access levels**: Owner, Member, Honoured Guest, Voting Guest, and Public. The full architecture — TypeScript module, React patterns, RLS layer — is documented in [`docs/permissions.md`](../docs/permissions.md). **Read it before adding any new feature.**
+
+For every new feature request you must:
+
+1. **Summarise the access levels** in the PR description and decide, for each of the five audiences, whether the feature is allowed.
+2. **Use the predicates in `src/lib/permissions.ts`** (e.g. `canEditMeals`, `canVote`, `canInviteMembers`) — never compare role strings inline. Add a new predicate if no existing one fits.
+3. **Update the explainer content** in `ACCESS_LEVELS` (in `src/lib/permissions.ts`) so the "What do these levels mean?" tray reflects the new capability.
+4. **Update the BDD matrix** at `tests/features/permissions/role-capability-matrix.feature` with a row per role for the new capability.
+5. **Update RLS** in a new `supabase/migrations/*.sql` file if the feature touches data — the predicates and the policies must agree.
+6. **Add BDD scenarios** verifying the right roles can do the new thing and the wrong roles cannot.
+
 ## Conventions
 
 - Mobile-first design: always design for small screens first, then add breakpoints for larger ones.

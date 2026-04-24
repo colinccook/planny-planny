@@ -196,3 +196,10 @@ export function canInviteMembers(audience: Audience): boolean {
 export function canManageMembers(audience: Audience): boolean {
   return audience === 'owner'
 }
+
+/** Anyone who has any view of the household can see vote totals.
+ *  Public share viewers see counts but not voter names — see
+ *  `canSeeVoters`. */
+export function canSeeVoteCounts(audience: Audience): boolean {
+  return audience !== null
+}

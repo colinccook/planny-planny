@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import AccessLevelsLink from '../components/settings/AccessLevelsLink'
 
 type Household = Database['public']['Tables']['households']['Row']
 type MealPlan = Database['public']['Tables']['meal_plans']['Row']
@@ -103,6 +104,9 @@ export default function PublicHouseholdPage() {
         <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow">
           <h2 className="mb-2 text-lg font-bold text-gray-900">Not Found</h2>
           <p className="text-sm text-gray-500">{error}</p>
+          <div className="mt-4 flex justify-center">
+            <AccessLevelsLink />
+          </div>
         </div>
       </div>
     )
@@ -115,9 +119,12 @@ export default function PublicHouseholdPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-emerald-600 px-4 py-3">
-        <h1 className="text-lg font-bold text-white">{household.name}</h1>
-        <p className="text-sm text-emerald-100">Shared meal plan</p>
+      <header className="flex items-start justify-between gap-2 bg-emerald-600 px-4 py-3">
+        <div>
+          <h1 className="text-lg font-bold text-white">{household.name}</h1>
+          <p className="text-sm text-emerald-100">Shared meal plan</p>
+        </div>
+        <AccessLevelsLink className="text-emerald-50 hover:text-white" />
       </header>
 
       <main className="mx-auto max-w-sm space-y-6 p-4">

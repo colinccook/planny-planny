@@ -8,11 +8,15 @@ interface AccessLevelsLinkProps {
   /** Visual style of the trigger. `link` is an inline text link
    *  (default), `button` is a small pill-style button. */
   variant?: 'link' | 'button'
+  /** Optional extra classes appended to the trigger — useful for
+   *  recolouring the link when it sits on a coloured surface. */
+  className?: string
 }
 
 export default function AccessLevelsLink({
   label = 'What do these levels mean?',
   variant = 'link',
+  className = '',
 }: AccessLevelsLinkProps) {
   const [open, setOpen] = useState(false)
 
@@ -26,7 +30,7 @@ export default function AccessLevelsLink({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={triggerClasses}
+        className={`${triggerClasses} ${className}`.trim()}
         data-testid="access-levels-link"
       >
         <span aria-hidden>ℹ️</span>
