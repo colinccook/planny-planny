@@ -374,12 +374,12 @@ describe('DayDetailView ideas and reactions', () => {
     })
   })
 
-  it('does not render meal reaction button for guests', () => {
+  it('does not render meal reaction button when current user has no role', () => {
     render(
       createElement(DayDetailView, {
         date: '2026-04-20',
         household,
-        currentRole: 'guest',
+        currentRole: null,
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),

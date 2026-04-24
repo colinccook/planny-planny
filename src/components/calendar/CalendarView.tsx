@@ -7,13 +7,14 @@ import {
 } from '../../hooks/useMealPlans'
 import { generateDateRange, generateBackwardDateRange } from '../../lib/dates'
 import { useCalendarDirection } from '../../hooks/useCalendarDirection'
+import type { Audience } from '../../lib/permissions'
 import DayRow from './DayRow'
 
 type Household = Database['public']['Tables']['households']['Row']
 
 interface CalendarViewProps {
   household: Household
-  currentRole: 'owner' | 'member' | 'guest' | null
+  currentRole: Audience
 }
 
 const INITIAL_DAYS = 14
@@ -41,7 +42,7 @@ interface CalendarViewInnerProps {
   infoDismissed: boolean
   dismissInfo: () => void
   household: Household
-  currentRole: 'owner' | 'member' | 'guest' | null
+  currentRole: Audience
 }
 
 function CalendarViewInner({

@@ -52,7 +52,8 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
     summary: 'Full control of the household.',
     can: [
       'Everything a member can do',
-      'Invite and remove people',
+      'Remove other members',
+      'Change anyone\u2019s access level',
       'Toggle the public share link',
     ],
     cannot: [],
@@ -67,23 +68,22 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add and edit events (visitors etc.)',
       'Propose ideas and vote',
       'See who voted',
+      'Invite new members',
     ],
-    cannot: ['Remove other members'],
+    cannot: ['Remove other members', 'Change other people\u2019s access levels'],
   },
   {
     key: 'honoured_guest',
     label: 'Honoured Guest',
-    summary: 'Trusted enough to suggest meals and vote.',
+    summary: 'Like a member, but can\u2019t invite new people.',
     can: [
       'See everything',
-      'Propose meal ideas',
-      'Vote on meals and ideas',
+      'Add, move and delete meals',
+      'Add and edit events (visitors etc.)',
+      'Propose ideas and vote',
       'See who voted',
     ],
-    cannot: [
-      'Add, move or delete meals',
-      'Add or edit events',
-    ],
+    cannot: ['Invite new members'],
   },
   {
     key: 'voting_guest',
@@ -98,12 +98,13 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Propose meal ideas',
       'Add, move or delete meals',
       'Add or edit events',
+      'Invite new members',
     ],
   },
   {
     key: 'public',
     label: 'Public Link',
-    summary: 'Anyone with the share link — no account needed.',
+    summary: 'Anyone with the share link \u2014 no account needed.',
     can: [
       'See upcoming meals',
       'See meal ideas',
@@ -136,21 +137,22 @@ export function roleLabel(role: Audience | string | undefined): string {
 // policies are defined in supabase/migrations.
 // --------------------------------------------------------------
 
-/** Owner / member — i.e. the people who can change the plan. */
+/** Owner / member / honoured guest — i.e. the people who can
+ *  change the plan. Honoured guests are trusted family members
+ *  too; they just can't invite new people in. */
 export function canEditMeals(audience: Audience): boolean {
-  return audience === 'owner' || audience === 'member'
+  return audience === 'owner' || audience === 'member' || audience === 'honoured_guest'
 }
 
 /** Same audience as meal editing today, kept distinct so that
- *  future tweaks (e.g. allowing honoured guests to edit events)
- *  only need to change one predicate. */
+ *  future tweaks only need to change one predicate. */
 export function canManageEvents(audience: Audience): boolean {
   return canEditMeals(audience)
 }
 
 /** Owner / member / honoured guest. */
 export function canProposeIdeas(audience: Audience): boolean {
-  return canEditMeals(audience) || audience === 'honoured_guest'
+  return canEditMeals(audience)
 }
 
 /** Owner / member / honoured guest / voting guest. */
@@ -182,7 +184,15 @@ export function canSeeIdeas(audience: Audience): boolean {
   return audience !== null
 }
 
-/** Owner only — managing other members in the list. */
+/** Owners and members can issue invite links. Honoured guests
+ *  cannot — bringing new people into the household is reserved
+ *  for owners and full members. */
+export function canInviteMembers(audience: Audience): boolean {
+  return audience === 'owner' || audience === 'member'
+}
+
+/** Owner only — removing other members or changing access
+ *  levels in the member list. */
 export function canManageMembers(audience: Audience): boolean {
   return audience === 'owner'
 }

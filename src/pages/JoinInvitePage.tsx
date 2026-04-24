@@ -6,8 +6,9 @@ import RoleBadge from '../components/settings/RoleBadge'
 
 interface InviteInfo {
   id: string
-  role: 'member' | 'guest'
+  role: 'member' | 'honoured_guest' | 'voting_guest'
   household_id: string
+  email: string | null
   households: { name: string } | null
 }
 
@@ -27,12 +28,12 @@ export default function JoinInvitePage() {
     const fetchInvite = async () => {
       const { data, error: fetchError } = await supabase
         .from('household_invites')
-        .select('id, role, household_id, households(name)')
+        .select('id, role, household_id, email, households(name)')
         .eq('token', token)
         .single()
 
       if (fetchError || !data) {
-        setError('Invite not found or has expired.')
+        setError('Invite not found or has already been used.')
       } else {
         setInvite(data as unknown as InviteInfo)
       }
@@ -48,8 +49,16 @@ export default function JoinInvitePage() {
     }
   }, [authLoading, user, token, navigate])
 
+  // Once we know the invite + the user, check the email matches.
+  const emailMismatch =
+    !!invite &&
+    !!invite.email &&
+    !!user?.email &&
+    invite.email.toLowerCase() !== user.email.toLowerCase()
+
   const handleJoin = async () => {
     if (!user || !invite) return
+    if (emailMismatch) return
     setJoining(true)
     setError(null)
 
@@ -62,13 +71,16 @@ export default function JoinInvitePage() {
 
       if (memberError) {
         if (memberError.code === '23505') {
-          // Already a member — just redirect
+          // Already a member — just redirect (the invite has
+          // probably already been consumed by the trigger).
           navigate('/calendar', { replace: true })
           return
         }
         throw memberError
       }
 
+      // The DB trigger consume_invite_on_join cleans up the
+      // matching invite row automatically.
       navigate('/calendar', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join household')
@@ -113,15 +125,33 @@ export default function JoinInvitePage() {
         </p>
 
         <div className="mb-4 flex justify-center">
-          <RoleBadge role={invite?.role ?? 'guest'} />
+          <RoleBadge role={invite?.role ?? 'honoured_guest'} />
         </div>
+
+        {emailMismatch && (
+          <div
+            className="mb-3 rounded-md bg-amber-50 p-3 text-left text-xs text-amber-800"
+            role="alert"
+            data-testid="invite-email-mismatch"
+          >
+            <p className="font-semibold">This invite isn&apos;t for you.</p>
+            <p className="mt-1">
+              It was sent to <span className="font-medium">{invite?.email}</span>{' '}
+              but you&apos;re signed in as{' '}
+              <span className="font-medium">{user?.email}</span>. Sign out and
+              sign in with the invited email, or ask the inviter to send a new
+              link.
+            </p>
+          </div>
+        )}
 
         {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
         <button
           onClick={handleJoin}
-          disabled={joining}
+          disabled={joining || emailMismatch}
           className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          data-testid="join-household-button"
         >
           {joining ? 'Joining…' : 'Join household'}
         </button>

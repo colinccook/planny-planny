@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ACCESS_LEVELS,
   canEditMeals,
+  canInviteMembers,
   canManageEvents,
   canManageMembers,
   canProposeIdeas,
@@ -26,16 +27,28 @@ const AUDIENCES: Audience[] = [
 // (audience, predicate) => expected. Acts as a single, exhaustive
 // access-control matrix. Every permission predicate the app uses
 // must appear here for every audience.
-type Row = [Audience, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean]
+type Row = [
+  Audience,
+  boolean, // canEditMeals
+  boolean, // canManageEvents
+  boolean, // canProposeIdeas
+  boolean, // canVote
+  boolean, // canSeeVoters
+  boolean, // canSeeEvents
+  boolean, // canSeeMeals
+  boolean, // canSeeIdeas
+  boolean, // canInviteMembers
+  boolean, // canManageMembers
+]
 
-// columns:                         edit  events  propose  vote  seeVoters seeEvents seeMeals seeIdeas manage
 const MATRIX: Row[] = [
-  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true],
-  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  false],
-  ['honoured_guest', false, false, true,  true,  true,  true,  true,  true,  false],
-  ['voting_guest',   false, false, false, true,  true,  true,  true,  true,  false],
-  ['public',         false, false, false, false, false, false, true,  true,  false],
-  [null,             false, false, false, false, false, false, false, false, false],
+  // audience       edit  events propose vote seeVoters seeEvents seeMeals seeIdeas invite manage
+  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  false],
+  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  false, false],
+  ['voting_guest',   false, false, false, true,  true,  true,  true,  true,  false, false],
+  ['public',         false, false, false, false, false, false, true,  true,  false, false],
+  [null,             false, false, false, false, false, false, false, false, false, false],
 ]
 
 describe('permissions', () => {
@@ -51,6 +64,7 @@ describe('permissions', () => {
       seeEvents,
       seeMeals,
       seeIdeas,
+      invite,
       manage,
     ) => {
       it(`canEditMeals = ${edit}`, () => {
@@ -76,6 +90,9 @@ describe('permissions', () => {
       })
       it(`canSeeIdeas = ${seeIdeas}`, () => {
         expect(canSeeIdeas(audience)).toBe(seeIdeas)
+      })
+      it(`canInviteMembers = ${invite}`, () => {
+        expect(canInviteMembers(audience)).toBe(invite)
       })
       it(`canManageMembers = ${manage}`, () => {
         expect(canManageMembers(audience)).toBe(manage)
@@ -119,6 +136,18 @@ describe('permissions', () => {
         expect(level.can.length).toBeGreaterThan(0)
         expect(level.summary).not.toBe('')
       }
+    })
+
+    it('honoured guest description mentions inability to invite', () => {
+      const honoured = ACCESS_LEVELS.find((l) => l.key === 'honoured_guest')
+      expect(honoured).toBeDefined()
+      expect(honoured!.cannot.join(' ')).toMatch(/invite/i)
+    })
+
+    it('member description mentions ability to invite', () => {
+      const member = ACCESS_LEVELS.find((l) => l.key === 'member')
+      expect(member).toBeDefined()
+      expect(member!.can.join(' ')).toMatch(/invite/i)
     })
   })
 })

@@ -41,10 +41,10 @@ describe('PublicShareToggle', () => {
     vi.clearAllMocks()
   })
 
-  it('renders nothing for guests', () => {
+  it('renders nothing for honoured guests (cannot manage public link)', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: { id: 'h1', public_share_token: null },
-      currentRole: 'guest',
+      currentRole: 'honoured_guest',
     })
 
     const { container } = render(createElement(PublicShareToggle), { wrapper: createWrapper() })

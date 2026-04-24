@@ -4,9 +4,9 @@ import { supabase } from '../lib/supabase'
 import { HouseholdRealtimeManager } from '../lib/realtime'
 import { useAuth } from './useAuth'
 import type { Database } from '../types/database'
+import type { Role } from '../lib/permissions'
 
 type Household = Database['public']['Tables']['households']['Row']
-type HouseholdMember = Database['public']['Tables']['household_members']['Row']
 
 interface MembershipWithHousehold {
   household_id: string
@@ -16,8 +16,10 @@ interface MembershipWithHousehold {
 
 interface HouseholdContextType {
   households: Household[]
+  /** All memberships the current user has (one per household). */
+  memberships: { household: Household; role: Role }[]
   currentHousehold: Household | null
-  currentRole: HouseholdMember['role'] | null
+  currentRole: Role | null
   switchHousehold: (householdId: string) => void
   isLoading: boolean
 }
@@ -58,13 +60,17 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     .map((m) => m.households)
     .filter((h): h is Household => h !== null)
 
+  const allMemberships = memberships
+    .filter((m): m is MembershipWithHousehold & { households: Household } => m.households !== null)
+    .map((m) => ({ household: m.households, role: m.role as Role }))
+
   const currentHousehold =
     households.find((h) => h.id === currentHouseholdId) ?? households[0] ?? null
 
   const currentMembership = memberships.find(
     (m) => m.households?.id === currentHousehold?.id
   )
-  const currentRole = (currentMembership?.role as HouseholdMember['role']) ?? null
+  const currentRole = (currentMembership?.role as Role) ?? null
 
   // Auto-select first household
   if (currentHousehold && !currentHouseholdId) {
@@ -89,6 +95,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     <HouseholdContext.Provider
       value={{
         households,
+        memberships: allMemberships,
         currentHousehold,
         currentRole,
         switchHousehold,

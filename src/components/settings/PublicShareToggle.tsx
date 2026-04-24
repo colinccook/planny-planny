@@ -5,6 +5,7 @@ import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
 import { buildShareUrl } from '../../lib/appUrl'
 import { useToast } from '../../hooks/useToast'
+import { canInviteMembers } from '../../lib/permissions'
 
 export default function PublicShareToggle() {
   const { currentHousehold, currentRole } = useHousehold()
@@ -13,7 +14,9 @@ export default function PublicShareToggle() {
   const [copied, setCopied] = useState(false)
   const { showToast } = useToast()
 
-  if (!currentHousehold || (currentRole !== 'owner' && currentRole !== 'member')) {
+  // Toggling the public share link is treated as an invite-style
+  // action — only owners and full members can do it.
+  if (!currentHousehold || !canInviteMembers(currentRole)) {
     return null
   }
 

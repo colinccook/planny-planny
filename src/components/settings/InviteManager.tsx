@@ -6,15 +6,21 @@ import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
 import { buildInviteUrl } from '../../lib/appUrl'
 import { useToast } from '../../hooks/useToast'
+import { canInviteMembers, INVITABLE_ROLES, type InvitableRole } from '../../lib/permissions'
 import RoleBadge from './RoleBadge'
+import AccessLevelsLink from './AccessLevelsLink'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function InviteManager() {
   const { user } = useAuth()
   const { currentHousehold, currentRole } = useHousehold()
   const queryClient = useQueryClient()
-  const [inviteRole, setInviteRole] = useState<'member' | 'guest'>('member')
+  const [inviteRole, setInviteRole] = useState<InvitableRole>('member')
+  const [inviteEmail, setInviteEmail] = useState('')
   const [creating, setCreating] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const { showToast } = useToast()
 
   const { data: invites = [], isLoading } = useQuery({
@@ -33,22 +39,37 @@ export default function InviteManager() {
     enabled: !!currentHousehold,
   })
 
-  if (!currentHousehold || (currentRole !== 'owner' && currentRole !== 'member')) {
+  // Owners and members can issue invites; honoured guests
+  // explicitly cannot (only members and above can bring new
+  // people into the household).
+  if (!currentHousehold || !canInviteMembers(currentRole)) {
     return null
   }
 
   const handleCreate = async () => {
     if (!user || !currentHousehold) return
+    setError(null)
+
+    const email = inviteEmail.trim().toLowerCase()
+    if (!EMAIL_RE.test(email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
     setCreating(true)
 
     try {
-      const { error } = await supabase.from('household_invites').insert({
+      const { error: insertError } = await supabase.from('household_invites').insert({
         household_id: currentHousehold.id,
         role: inviteRole,
+        email,
         created_by: user.id,
       })
 
-      if (!error) {
+      if (insertError) {
+        setError(insertError.message)
+      } else {
+        setInviteEmail('')
         await queryClient.invalidateQueries({
           queryKey: ['household-invites', currentHousehold.id],
         })
@@ -78,25 +99,60 @@ export default function InviteManager() {
 
   return (
     <div className="rounded-lg bg-white p-4 shadow">
-      <h3 className="mb-3 text-sm font-semibold text-gray-900">Invite Links</h3>
-
-      <div className="mb-3 flex items-center gap-2">
-        <select
-          value={inviteRole}
-          onChange={(e) => setInviteRole(e.target.value as 'member' | 'guest')}
-          className="min-h-[44px] rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-        >
-          <option value="member">Member</option>
-          <option value="guest">Guest</option>
-        </select>
-        <button
-          onClick={handleCreate}
-          disabled={creating}
-          className="min-h-[44px] rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {creating ? 'Creating…' : 'Generate invite'}
-        </button>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-gray-900">Invite Links</h3>
+        <AccessLevelsLink />
       </div>
+
+      <p className="mb-3 text-xs text-gray-500">
+        Invite links are tied to a specific email address and stop
+        working once that person has joined.
+      </p>
+
+      <div className="mb-2 space-y-2">
+        <input
+          type="email"
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          placeholder="friend@example.com"
+          aria-label="Recipient email"
+          data-testid="invite-email-input"
+          className="w-full min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+        />
+        <div className="flex items-center gap-2">
+          <select
+            value={inviteRole}
+            onChange={(e) => setInviteRole(e.target.value as InvitableRole)}
+            aria-label="Invite role"
+            data-testid="invite-role-select"
+            className="min-h-[44px] flex-1 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          >
+            {INVITABLE_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role === 'member'
+                  ? 'Member'
+                  : role === 'honoured_guest'
+                    ? 'Honoured Guest'
+                    : 'Voting Guest'}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleCreate}
+            disabled={creating || !inviteEmail.trim()}
+            data-testid="generate-invite-button"
+            className="min-h-[44px] rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {creating ? 'Creating…' : 'Generate invite'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <p className="mb-2 text-xs text-red-600" role="alert" data-testid="invite-error">
+          {error}
+        </p>
+      )}
 
       {isLoading ? (
         <div className="h-8 animate-pulse rounded bg-gray-100" />
@@ -108,9 +164,15 @@ export default function InviteManager() {
             <li
               key={invite.id}
               className="flex items-center justify-between rounded-md border border-gray-100 p-2"
+              data-testid={`invite-row-${invite.id}`}
             >
-              <div className="flex items-center gap-2 overflow-hidden">
-                <RoleBadge role={invite.role} />
+              <div className="flex flex-col gap-1 overflow-hidden">
+                <div className="flex items-center gap-2">
+                  <RoleBadge role={invite.role} />
+                  <span className="truncate text-xs font-medium text-gray-700">
+                    {invite.email ?? 'Anyone with link'}
+                  </span>
+                </div>
                 <code className="truncate text-xs text-gray-500">
                   /invite/{invite.token}
                 </code>
