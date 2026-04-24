@@ -90,3 +90,30 @@ describe('buildShareUrl', () => {
     expect(url).not.toMatch(/github\.io\/shared\//)
   })
 })
+
+describe('default-argument behaviour', () => {
+  // These tests call the helpers with no overrides, exercising the real
+  // `window.location.origin` (jsdom default `http://localhost:3000`) and
+  // `import.meta.env.BASE_URL` (Vite default `/` in the test environment).
+  // This pins down that the defaults wire through correctly so a regression
+  // in the helper signature can't silently break production callers.
+  const token = 'abc-123'
+
+  it('buildAppUrl uses window.location.origin and import.meta.env.BASE_URL by default', () => {
+    const url = buildAppUrl(`invite/${token}`)
+    expect(url.startsWith(window.location.origin)).toBe(true)
+    expect(url.endsWith(`${import.meta.env.BASE_URL}invite/${token}`)).toBe(true)
+  })
+
+  it('buildInviteUrl uses defaults when called with just a token', () => {
+    const url = buildInviteUrl(token)
+    expect(url.startsWith(window.location.origin)).toBe(true)
+    expect(url.endsWith(`/invite/${token}`)).toBe(true)
+  })
+
+  it('buildShareUrl uses defaults when called with just a token', () => {
+    const url = buildShareUrl(token)
+    expect(url.startsWith(window.location.origin)).toBe(true)
+    expect(url.endsWith(`/shared/${token}`)).toBe(true)
+  })
+})
