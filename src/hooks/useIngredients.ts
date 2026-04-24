@@ -44,7 +44,7 @@ export function useIngredientUsageStats(householdId: string | undefined) {
 
       if (error) throw error
 
-      type MpiRow = { ingredient_id: string; meal_plans: { date: string } }
+      interface MpiRow { ingredient_id: string; meal_plans: { date: string } }
       const rows = (data ?? []) as unknown as MpiRow[]
       const statsMap = new Map<string, { count: number; lastDate: string | null }>()
 

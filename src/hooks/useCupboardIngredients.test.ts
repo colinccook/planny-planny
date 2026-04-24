@@ -113,9 +113,10 @@ describe('Cupboard ingredients deduplication', () => {
     const result = deduplicateIngredients(plans)
     expect(result).toHaveLength(3)
 
-    const chicken = result.find((r) => r.name === 'Chicken')!
-    expect(chicken.mealCount).toBe(2)
-    expect(chicken.meals).toEqual([
+    const chicken = result.find((r) => r.name === 'Chicken')
+    expect(chicken).toBeDefined()
+    expect(chicken?.mealCount).toBe(2)
+    expect(chicken?.meals).toEqual([
       { name: 'Stir Fry', date: '2026-04-15' },
       { name: 'Curry', date: '2026-04-16' },
     ])

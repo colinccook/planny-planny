@@ -54,7 +54,9 @@ export default function DayRow({
   const totalAdults = Math.max(0, household.default_adults + extraAdults)
   const totalChildren = Math.max(0, household.default_children + extraChildren)
   const totalBabies = Math.max(0, household.default_babies + extraBabies)
-  const events = contexts.filter((c) => c.event_name).map((c) => c.event_name!)
+  const events = contexts
+    .map((c) => c.event_name)
+    .filter((name): name is string => !!name)
 
   return (
     <div

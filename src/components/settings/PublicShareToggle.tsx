@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useHousehold } from '../../hooks/useHousehold'
 import { copyToClipboard } from '../../lib/clipboard'
+import { buildShareUrl } from '../../lib/appUrl'
 import { useToast } from '../../hooks/useToast'
 
 export default function PublicShareToggle() {
@@ -39,7 +40,7 @@ export default function PublicShareToggle() {
 
   const copyLink = async () => {
     if (!currentHousehold.public_share_token) return
-    const url = `${window.location.origin}/shared/${currentHousehold.public_share_token}`
+    const url = buildShareUrl(currentHousehold.public_share_token)
     await copyToClipboard(url)
     setCopied(true)
     showToast('Copied share link to clipboard')
@@ -76,7 +77,7 @@ export default function PublicShareToggle() {
       {isEnabled && currentHousehold.public_share_token && (
         <div className="mt-3 flex items-center gap-2 rounded-md border border-gray-100 p-2">
           <code className="flex-1 truncate text-xs text-gray-500">
-            {window.location.origin}/shared/{currentHousehold.public_share_token}
+            {buildShareUrl(currentHousehold.public_share_token)}
           </code>
           <button
             onClick={copyLink}

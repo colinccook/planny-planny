@@ -74,8 +74,14 @@ export default function DayPlaceholders() {
     })
 
     setLocalEdits((prev) => {
-      const next = { ...prev }
-      delete next[dayOfWeek]
+      // Build a new object excluding the deleted key (avoids dynamic delete).
+      const next: Record<number, string> = {}
+      for (const key of Object.keys(prev)) {
+        const numericKey = Number(key)
+        if (numericKey !== dayOfWeek) {
+          next[numericKey] = prev[numericKey]
+        }
+      }
       return next
     })
   }

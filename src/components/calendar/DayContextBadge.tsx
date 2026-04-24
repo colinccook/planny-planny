@@ -23,7 +23,9 @@ export default function DayContextBadge({
   const totalAdults = Math.max(0, defaultAdults + extraAdults)
   const totalChildren = Math.max(0, defaultChildren + extraChildren)
   const totalBabies = Math.max(0, defaultBabies + extraBabies)
-  const events = contexts.filter((c) => c.event_name).map((c) => c.event_name!)
+  const events = contexts
+    .map((c) => c.event_name)
+    .filter((name): name is string => !!name)
 
   const content = (
     <>

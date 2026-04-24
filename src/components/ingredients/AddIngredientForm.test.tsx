@@ -82,7 +82,9 @@ describe('AddIngredientForm', () => {
     render(createElement(AddIngredientForm, baseProps), { wrapper: createWrapper() })
     const input = screen.getByLabelText('Add ingredient')
     fireEvent.change(input, { target: { value: 'Beef' } })
-    fireEvent.submit(screen.getByRole('button', { name: /Add/i }).closest('form')!)
+    const form = screen.getByRole('button', { name: /Add/i }).closest('form')
+    if (!form) throw new Error('Expected to find a parent form element')
+    fireEvent.submit(form)
     expect(mockMutate).toHaveBeenCalledWith(
       { household_id: 'h1', name: 'Beef', starred: false, warning: false },
       expect.any(Object)
@@ -99,7 +101,9 @@ describe('AddIngredientForm', () => {
     fireEvent.click(starCheckbox)
     fireEvent.click(warningCheckbox)
 
-    fireEvent.submit(screen.getByRole('button', { name: /Add/i }).closest('form')!)
+    const form = screen.getByRole('button', { name: /Add/i }).closest('form')
+    if (!form) throw new Error('Expected to find a parent form element')
+    fireEvent.submit(form)
     expect(mockMutate).toHaveBeenCalledWith(
       { household_id: 'h1', name: 'Tofu', starred: true, warning: true },
       expect.any(Object)

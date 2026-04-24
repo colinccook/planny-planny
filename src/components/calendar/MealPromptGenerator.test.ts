@@ -52,7 +52,8 @@ describe('buildPrompt', () => {
     })
     expect(result).toContain('3 adults')
     // Headcount line should not mention children or babies
-    const cookingLine = result.split('\n').find((l) => l.startsWith("I'm cooking for"))!
+    const cookingLine = result.split('\n').find((l) => l.startsWith("I'm cooking for"))
+    expect(cookingLine).toBeDefined()
     expect(cookingLine).not.toContain('children')
     expect(cookingLine).not.toContain('bab')
   })

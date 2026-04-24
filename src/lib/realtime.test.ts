@@ -91,7 +91,7 @@ describe('HouseholdRealtimeManager', () => {
         (call) => call[1]?.table === 'meal_plans'
       )
       expect(mealPlansCall).toBeDefined()
-      expect(mealPlansCall![1]).toMatchObject({
+      expect(mealPlansCall?.[1]).toMatchObject({
         event: '*',
         schema: 'public',
         table: 'meal_plans',
@@ -110,7 +110,7 @@ describe('HouseholdRealtimeManager', () => {
         (call) => call[1]?.table === 'households'
       )
       expect(householdsCall).toBeDefined()
-      expect(householdsCall![1]).toMatchObject({
+      expect(householdsCall?.[1]).toMatchObject({
         event: 'UPDATE',
         schema: 'public',
         table: 'households',
@@ -129,12 +129,12 @@ describe('HouseholdRealtimeManager', () => {
         (call) => call[1]?.table === 'meal_plan_ingredients'
       )
       expect(mpiCall).toBeDefined()
-      expect(mpiCall![1]).toMatchObject({
+      expect(mpiCall?.[1]).toMatchObject({
         event: '*',
         schema: 'public',
         table: 'meal_plan_ingredients',
       })
-      expect(mpiCall![1].filter).toBeUndefined()
+      expect(mpiCall?.[1].filter).toBeUndefined()
     })
 
     it('calls subscribe() on each channel', () => {
@@ -203,7 +203,8 @@ describe('HouseholdRealtimeManager', () => {
       const mealPlansChannel = mockSupabase.channels.find((_ch, idx) => {
         const call = (mockSupabase.client.channel as ReturnType<typeof vi.fn>).mock.calls[idx]
         return call[0] === 'meal_plans-hh-1'
-      })!
+      })
+      if (!mealPlansChannel) throw new Error('meal_plans channel not found')
       const onCall = (mealPlansChannel.on as ReturnType<typeof vi.fn>).mock.calls[0]
       const callback = onCall[2] as () => void
 
@@ -220,7 +221,8 @@ describe('HouseholdRealtimeManager', () => {
       const householdsChannel = mockSupabase.channels.find((_ch, idx) => {
         const call = (mockSupabase.client.channel as ReturnType<typeof vi.fn>).mock.calls[idx]
         return call[0] === 'households-hh-1'
-      })!
+      })
+      if (!householdsChannel) throw new Error('households channel not found')
       const onCall = (householdsChannel.on as ReturnType<typeof vi.fn>).mock.calls[0]
       const callback = onCall[2] as () => void
 
@@ -237,7 +239,8 @@ describe('HouseholdRealtimeManager', () => {
       const mpiChannel = mockSupabase.channels.find((_ch, idx) => {
         const call = (mockSupabase.client.channel as ReturnType<typeof vi.fn>).mock.calls[idx]
         return call[0] === 'meal-plan-ingredients-hh-1'
-      })!
+      })
+      if (!mpiChannel) throw new Error('meal-plan-ingredients channel not found')
       const onCall = (mpiChannel.on as ReturnType<typeof vi.fn>).mock.calls[0]
       const callback = onCall[2] as () => void
 

@@ -10,11 +10,11 @@ interface HeadcountState {
   defaultAdults: number
   defaultChildren: number
   defaultBabies: number
-  contexts: Array<{
+  contexts: {
     extra_adults: number
     extra_children: number
     extra_babies: number
-  }>
+  }[]
 }
 
 let state: HeadcountState = {
