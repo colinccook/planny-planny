@@ -73,19 +73,19 @@ export interface Database {
         Row: {
           household_id: string
           user_id: string
-          role: 'owner' | 'member' | 'guest'
+          role: 'owner' | 'member' | 'honoured_guest' | 'voting_guest'
           joined_at: string
         }
         Insert: {
           household_id: string
           user_id: string
-          role: 'owner' | 'member' | 'guest'
+          role: 'owner' | 'member' | 'honoured_guest' | 'voting_guest'
           joined_at?: string
         }
         Update: {
           household_id?: string
           user_id?: string
-          role?: 'owner' | 'member' | 'guest'
+          role?: 'owner' | 'member' | 'honoured_guest' | 'voting_guest'
           joined_at?: string
         }
         Relationships: []
@@ -95,7 +95,7 @@ export interface Database {
           id: string
           household_id: string
           token: string
-          role: 'member' | 'guest'
+          role: 'member' | 'honoured_guest' | 'voting_guest'
           created_by: string | null
           expires_at: string | null
           created_at: string
@@ -104,7 +104,7 @@ export interface Database {
           id?: string
           household_id: string
           token?: string
-          role?: 'member' | 'guest'
+          role?: 'member' | 'honoured_guest' | 'voting_guest'
           created_by?: string | null
           expires_at?: string | null
           created_at?: string
@@ -113,7 +113,7 @@ export interface Database {
           id?: string
           household_id?: string
           token?: string
-          role?: 'member' | 'guest'
+          role?: 'member' | 'honoured_guest' | 'voting_guest'
           created_by?: string | null
           expires_at?: string | null
           created_at?: string
