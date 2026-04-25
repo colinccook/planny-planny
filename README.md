@@ -210,6 +210,10 @@ npm run test:e2e
 npm run test:e2e:ui
 ```
 
+For a deep dive into how the BDD suite works — what runs against the real
+React app + local Supabase container, where the in-step HTML harnesses come
+from, and how to add a new test — see [`docs/bdd-testing.md`](docs/bdd-testing.md).
+
 ## 🌍 Deployment
 
 ### How It Works
