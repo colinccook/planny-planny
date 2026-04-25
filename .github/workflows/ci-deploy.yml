@@ -38,6 +38,38 @@ jobs:
       - name: Type check
         run: npx tsc -b --noEmit
 
+  component-tests:
+    # Harness-only BDD tests. They drive `page.setContent` fixtures and never
+    # talk to Supabase, so this job intentionally skips the Supabase boot
+    # cost — broken UI contracts fail in seconds, not minutes.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run component BDD tests
+        run: npm run test:component
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-component
+          path: playwright-report/
+          retention-days: 7
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -81,11 +113,8 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Generate BDD test files
-        run: npx bddgen
-
-      - name: Run BDD E2E tests
-        run: npx playwright test
+      - name: Run BDD integration tests
+        run: npm run test:integration
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
@@ -99,7 +128,7 @@ jobs:
           retention-days: 7
 
   migrate:
-    needs: [lint, test]
+    needs: [lint, component-tests, test]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
