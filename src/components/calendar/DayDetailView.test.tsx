@@ -94,6 +94,7 @@ describe('DayDetailView ideas and reactions', () => {
           id: 'ctx-1',
           household_id: 'hh-1',
           date: '2026-04-20',
+          end_date: null,
           event_name: 'Football night',
           extra_adults: 1,
           extra_children: 0,

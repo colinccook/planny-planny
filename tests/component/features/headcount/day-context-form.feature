@@ -10,6 +10,10 @@ Feature: Day context form with stepper controls for headcount adjustments
     And I should see an extra children stepper
     And I should see an extra babies stepper
 
+  Scenario: Day context form has an optional end date field
+    Given the day context form is rendered for a new entry
+    Then I should see an end date field
+
   Scenario: Increment extra adults via stepper
     Given the day context form is rendered for a new entry
     When I click the increment button for extra adults

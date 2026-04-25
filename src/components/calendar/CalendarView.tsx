@@ -133,12 +133,19 @@ function CalendarViewInner({
     mealsByDate.set(meal.date, existing)
   }
 
-  // Group contexts by date
+  // Group contexts by date — multi-day events appear on every date in their range
   const contextsByDate = new Map<string, typeof contexts>()
   for (const ctx of contexts) {
-    const existing = contextsByDate.get(ctx.date) ?? []
-    existing.push(ctx)
-    contextsByDate.set(ctx.date, existing)
+    const effectiveEnd = ctx.end_date ?? ctx.date
+    // Walk through every day in [ctx.date, effectiveEnd] that falls within
+    // the currently-rendered date window so the event badge shows on each day.
+    for (const day of dates) {
+      if (day >= ctx.date && day <= effectiveEnd) {
+        const existing = contextsByDate.get(day) ?? []
+        existing.push(ctx)
+        contextsByDate.set(day, existing)
+      }
+    }
   }
 
   // Map placeholders by day of week (0=Sunday, 6=Saturday)

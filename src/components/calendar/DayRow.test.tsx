@@ -186,6 +186,7 @@ describe('DayRow', () => {
       id: 'ctx1',
       household_id: 'h1',
       date: '2024-06-15',
+      end_date: null,
       event_name: 'Mum visiting',
       extra_adults: 1,
       extra_children: 0,

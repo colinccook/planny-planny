@@ -65,10 +65,40 @@ describe('DayContextForm', () => {
     )
 
     expect(screen.getByLabelText('Event')).toBeDefined()
+    expect(screen.getByLabelText(/End date/)).toBeDefined()
     expect(screen.getByText('Extra adults')).toBeDefined()
     expect(screen.getByText('Extra children')).toBeDefined()
     expect(screen.getByText('Extra babies')).toBeDefined()
     expect(screen.getByText('Add context')).toBeDefined()
+  })
+
+  it('submits with end_date when provided', async () => {
+    const onClose = vi.fn()
+    render(
+      createElement(DayContextForm, {
+        householdId: 'h1',
+        date: '2024-06-15',
+        household: mockHousehold,
+        onClose,
+      }),
+      { wrapper: createWrapper() }
+    )
+
+    fireEvent.change(screen.getByLabelText('Event'), { target: { value: 'Holiday' } })
+    fireEvent.change(screen.getByLabelText(/End date/), { target: { value: '2024-06-20' } })
+    fireEvent.click(screen.getByText('Add context'))
+
+    await waitFor(() => {
+      expect(mockCreateMutateAsync).toHaveBeenCalledWith({
+        household_id: 'h1',
+        date: '2024-06-15',
+        event_name: 'Holiday',
+        end_date: '2024-06-20',
+        extra_adults: 0,
+        extra_children: 0,
+        extra_babies: 0,
+      })
+    })
   })
 
   it('renders form with existing values', () => {
@@ -76,6 +106,7 @@ describe('DayContextForm', () => {
       id: 'ctx1',
       household_id: 'h1',
       date: '2024-06-15',
+      end_date: null,
       event_name: 'Party',
       extra_adults: 3,
       extra_children: 2,
@@ -125,6 +156,7 @@ describe('DayContextForm', () => {
         household_id: 'h1',
         date: '2024-06-15',
         event_name: null,
+        end_date: null,
         extra_adults: 2,
         extra_children: 0,
         extra_babies: 0,
@@ -167,6 +199,7 @@ describe('DayContextForm', () => {
       id: 'ctx1',
       household_id: 'h1',
       date: '2024-06-15',
+      end_date: null,
       event_name: 'Party',
       extra_adults: 0,
       extra_children: 0,
@@ -193,6 +226,7 @@ describe('DayContextForm', () => {
       id: 'ctx1',
       household_id: 'h1',
       date: '2024-06-15',
+      end_date: null,
       event_name: 'Party',
       extra_adults: 0,
       extra_children: 0,

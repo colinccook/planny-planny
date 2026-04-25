@@ -26,6 +26,7 @@ export default function DayContextForm({
   onClose,
 }: DayContextFormProps) {
   const [eventName, setEventName] = useState(existing?.event_name ?? '')
+  const [endDate, setEndDate] = useState(existing?.end_date ?? '')
   const [extraAdults, setExtraAdults] = useState(existing?.extra_adults ?? 0)
   const [extraChildren, setExtraChildren] = useState(existing?.extra_children ?? 0)
   const [extraBabies, setExtraBabies] = useState(existing?.extra_babies ?? 0)
@@ -39,11 +40,14 @@ export default function DayContextForm({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
+    const end_date = endDate.trim() || null
+
     if (existing) {
       await updateCtx.mutateAsync({
         id: existing.id,
         householdId,
         event_name: eventName.trim() || null,
+        end_date,
         extra_adults: extraAdults,
         extra_children: extraChildren,
         extra_babies: extraBabies,
@@ -53,6 +57,7 @@ export default function DayContextForm({
         household_id: householdId,
         date,
         event_name: eventName.trim() || null,
+        end_date,
         extra_adults: extraAdults,
         extra_children: extraChildren,
         extra_babies: extraBabies,
@@ -85,6 +90,20 @@ export default function DayContextForm({
             onChange={(e) => setEventName(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             autoFocus
+          />
+        </div>
+
+        <div>
+          <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
+            End date <span className="font-normal text-gray-400">(optional – leave blank for single day)</span>
+          </label>
+          <input
+            id="end-date"
+            type="date"
+            min={date}
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           />
         </div>
 
