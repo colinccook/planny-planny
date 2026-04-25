@@ -22,9 +22,14 @@ html {
 
 /* Safe area inset utilities for iPhone notch and home indicator */
 .safe-area-top {
-  padding-top: env(safe-area-inset-top);
+  padding-top: calc(env(safe-area-inset-top) + 0.75rem);
 }
 
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Main content bottom padding: tab bar height (4rem) + iOS home indicator */
+.pb-safe-tab-bar {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);
 }

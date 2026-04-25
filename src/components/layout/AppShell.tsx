@@ -24,7 +24,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="safe-area-top flex items-center gap-3 bg-emerald-600 px-4 py-3">
+      <header className="safe-area-top sticky top-0 z-10 flex items-center gap-3 bg-emerald-600 px-4 pb-3">
         {override ? (
           <>
             <button
@@ -61,7 +61,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 pb-16">{children}</main>
+      <main className="flex-1 pb-safe-tab-bar">{children}</main>
 
       <TabBar />
     </div>
