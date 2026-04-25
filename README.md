@@ -203,12 +203,22 @@ npm test
 # Run unit tests in watch mode
 npm run test:watch
 
-# Run BDD end-to-end tests (Playwright + playwright-bdd)
+# Run BDD tests (full suite — needs `supabase start`)
 npm run test:e2e
 
-# Run e2e tests with Playwright UI
+# Run only the component BDD suite (in-step HTML harnesses, no Supabase)
+npm run test:component
+
+# Run only the integration BDD suite (real app + local Supabase)
+npm run test:integration
+
+# Run BDD tests with the Playwright UI
 npm run test:e2e:ui
 ```
+
+For a deep dive into how the BDD suite works — the two suites (real-app
+**integration** vs. in-step HTML **component** harnesses), what each one
+guarantees, and how to add a new test — see [`docs/bdd-testing.md`](docs/bdd-testing.md).
 
 ## 🌍 Deployment
 
