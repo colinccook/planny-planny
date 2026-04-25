@@ -72,7 +72,7 @@ Then(
     const predicate = CAPABILITIES[capability]
     if (!predicate) {
       throw new Error(
-        `Unknown capability "${capability}". Register it in tests/steps/role-capability.steps.ts`,
+        `Unknown capability "${capability}". Register it in tests/component/steps/role-capability.steps.ts`,
       )
     }
     let expected: boolean
