@@ -30,3 +30,27 @@ export function generateBackwardDateRange(start: Date, count: number): string[] 
   }
   return dates
 }
+
+/**
+ * Return the YYYY-MM-DD string `offset` days away from `dateStr`.
+ * `offset` may be negative (previous day) or positive (next day).
+ * The input is parsed in local time so DST transitions don't shift the result.
+ */
+export function getAdjacentDate(dateStr: string, offset: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() + offset)
+  return toDateString(date)
+}
+
+/**
+ * Number of whole calendar days between two YYYY-MM-DD strings, in local time.
+ * Returns `to - from` so a future `to` yields a positive number.
+ */
+export function daysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = from.split('-').map(Number)
+  const [ty, tm, td] = to.split('-').map(Number)
+  const a = new Date(fy, fm - 1, fd).getTime()
+  const b = new Date(ty, tm - 1, td).getTime()
+  return Math.round((b - a) / (1000 * 60 * 60 * 24))
+}

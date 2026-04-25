@@ -6,7 +6,8 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 
 ## ✨ Features
 
-- **Perpetual Calendar** — A scrolling, mobile-first calendar starting from today. See your meal plan at a glance, plan as far ahead as you like.
+- **Perpetual Calendar** — A scrolling, mobile-first calendar starting from today. See your meal plan at a glance, plan as far ahead as you like. Your scroll position is remembered when you dip into a day, and a "Return to today" button appears once you've scrolled far ahead so you can jump straight back.
+- **Swipe Between Days** — On the day view, swipe left for the next day and right for the previous day, with a smooth slide transition. Swiping a meal card scrolls between meals on the same day instead of changing the day.
 - **Collaborative Households** — Create a household, invite your partner or family. Both can add and edit meals. Changes appear instantly via WebSockets.
 - **Smart Context** — Each day shows how many adults and children you're cooking for. Add events like "Mum visiting" to adjust the count.
 - **Day Placeholders** — Set themes for each day of the week: "Oily Fish Monday", "Veggie Thursday", "Sunday Roast".
@@ -69,7 +70,11 @@ Tap **+ Add meal** on any day to plan a new meal.
 
 <p align="center">
   <img src="docs/screenshots/05-calendar-mobile.png" alt="Calendar (mobile)" width="280" />
+  <img src="docs/screenshots/return-to-today-mobile.png" alt="Return to today button (mobile)" width="280" />
+  <img src="docs/screenshots/day-swipe-mobile.png" alt="Day view with swipe transition (mobile)" width="280" />
 </p>
+
+Scroll position is remembered when you tap into a day and come back, so a long planning session doesn't whisk you back to today every time. Once you've scrolled far enough into the future, a **Return to today** button appears at the bottom — tap it to spring back to the top. On the day view itself, swipe left/right to move between days; swiping a meal card scrolls between meals on the same day.
 
 <details>
 <summary>Desktop view</summary>

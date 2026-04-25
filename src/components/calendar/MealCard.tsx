@@ -45,7 +45,12 @@ export default function MealCard({
   }
 
   return (
-    <div className="group rounded-lg bg-emerald-50/60 px-3 py-2.5" data-testid="meal-card">
+    <div
+      className="group rounded-lg bg-emerald-50/60 px-3 py-2.5 transition-shadow"
+      data-testid="meal-card"
+      data-meal-card="true"
+      data-meal-id={meal.id}
+    >
       <div className="flex items-start justify-between gap-2">
         <button
           type="button"

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Database } from '../../types/database'
 import {
   useMealPlans,
@@ -22,6 +22,7 @@ import CopyMealTray from './CopyMealTray'
 import DayContextBadge from './DayContextBadge'
 import DayContextForm from './DayContextForm'
 import MealPromptGenerator from './MealPromptGenerator'
+import SwipeableDay from './SwipeableDay'
 import Tray from '../ui/Tray'
 import ReactionButton, {
   type Reactor,
@@ -56,6 +57,12 @@ interface DayDetailViewProps {
   onBack: () => void
   onAddMeal: () => void
   onEditMeal: (mealId: string) => void
+  /** Navigate to the previous day with a "slide in from left" animation. */
+  onPrevDay?: () => void
+  /** Navigate to the next day with a "slide in from right" animation. */
+  onNextDay?: () => void
+  /** Direction the day view should slide in from on mount. */
+  enterFrom?: 'left' | 'right' | null
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -84,6 +91,9 @@ export default function DayDetailView({
   onBack,
   onAddMeal,
   onEditMeal,
+  onPrevDay,
+  onNextDay,
+  enterFrom = null,
 }: DayDetailViewProps) {
   const [showAddEventForm, setShowAddEventForm] = useState(false)
   const [editingContextId, setEditingContextId] = useState<string | null>(null)
@@ -239,8 +249,43 @@ export default function DayDetailView({
     })
   }
 
+  const handleMealSwipe = useCallback(
+    (direction: 'left' | 'right', mealId: string) => {
+      const mealEls = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-meal-card="true"]'),
+      )
+      const idx = mealEls.findIndex((el) => el.dataset.mealId === mealId)
+      if (idx === -1) return
+      const targetIdx = direction === 'left' ? idx + 1 : idx - 1
+      const target = mealEls[targetIdx]
+      if (!target) return
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.classList.add('ring-2', 'ring-emerald-300')
+      window.setTimeout(() => {
+        target.classList.remove('ring-2', 'ring-emerald-300')
+      }, 700)
+    },
+    [],
+  )
+
+  // Keep the latest navigation callbacks in a ref so SwipeableDay
+  // doesn't need to re-bind listeners every render.
+  const onPrevRef = useRef(onPrevDay)
+  const onNextRef = useRef(onNextDay)
+  useEffect(() => {
+    onPrevRef.current = onPrevDay
+    onNextRef.current = onNextDay
+  }, [onPrevDay, onNextDay])
+
   return (
     <FullScreenView title={formatDateLabel(date)} onBack={onBack}>
+      <SwipeableDay
+        date={date}
+        enterFrom={enterFrom}
+        onSwipeLeft={() => onNextRef.current?.()}
+        onSwipeRight={() => onPrevRef.current?.()}
+        onMealSwipe={handleMealSwipe}
+      >
       <div className="space-y-4 p-4">
         {/* Context badge and placeholder */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -505,6 +550,7 @@ export default function DayDetailView({
           )}
         </Tray>
       </div>
+      </SwipeableDay>
     </FullScreenView>
   )
 }

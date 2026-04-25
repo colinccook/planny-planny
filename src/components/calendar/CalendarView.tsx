@@ -7,6 +7,10 @@ import {
 } from '../../hooks/useMealPlans'
 import { generateDateRange, generateBackwardDateRange } from '../../lib/dates'
 import { useCalendarDirection } from '../../hooks/useCalendarDirection'
+import {
+  useCalendarScrollMemory,
+  clearCalendarScrollMemory,
+} from '../../hooks/useCalendarScrollMemory'
 import type { Audience } from '../../lib/permissions'
 import DayRow from './DayRow'
 
@@ -19,6 +23,9 @@ interface CalendarViewProps {
 
 const INITIAL_DAYS = 14
 const LOAD_MORE_DAYS = 14
+// Show the "Return to today" button after the user has scrolled this many
+// pixels — far enough that "today" is well off-screen.
+const RETURN_TO_TODAY_THRESHOLD_PX = 800
 
 export default function CalendarView({ household, currentRole }: CalendarViewProps) {
   const { direction, toggleDirection, infoDismissed, dismissInfo } = useCalendarDirection()
@@ -61,6 +68,7 @@ function CalendarViewInner({
 
   const [dayCount, setDayCount] = useState(INITIAL_DAYS)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const [showReturnToToday, setShowReturnToToday] = useState(false)
 
   const dates =
     direction === 'forward'
@@ -83,6 +91,39 @@ function CalendarViewInner({
     endDate
   )
   const { data: placeholders = [] } = useDayPlaceholders(household.id)
+
+  const isLoading = mealsLoading || contextsLoading
+
+  // Scroll memory only applies in forward mode — backward mode is a
+  // transient "let me peek at last week" view; restoring its scroll on
+  // return would feel surprising. We also wait for data to load before
+  // restoring so the rendered rows have settled heights — otherwise we
+  // could scroll past the bottom of an empty skeleton. Returning from a
+  // day view typically hits the TanStack Query cache, so `isLoading` is
+  // false on the very first render and restore is effectively instant.
+  useCalendarScrollMemory({
+    dayCount,
+    setDayCount,
+    ready: direction === 'forward' && !isLoading,
+  })
+
+  // Watch scroll position to toggle the "Return to today" button. The
+  // button is only meaningful when scrolling through upcoming days; in
+  // backward mode "today" is already at the top.
+  useEffect(() => {
+    if (direction !== 'forward') return
+    const onScroll = () => {
+      setShowReturnToToday(window.scrollY > RETURN_TO_TODAY_THRESHOLD_PX)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [direction])
+
+  const handleReturnToToday = useCallback(() => {
+    clearCalendarScrollMemory()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   // Group meals by date
   const mealsByDate = new Map<string, typeof meals>()
@@ -127,8 +168,6 @@ function CalendarViewInner({
     observer.observe(sentinel)
     return () => observer.disconnect()
   }, [loadMore])
-
-  const isLoading = mealsLoading || contextsLoading
 
   return (
     <div className="space-y-3 p-4">
@@ -200,6 +239,27 @@ function CalendarViewInner({
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-600" />
         )}
       </div>
+
+      {showReturnToToday && (
+        <button
+          type="button"
+          onClick={handleReturnToToday}
+          className="safe-area-bottom fixed inset-x-0 bottom-16 z-20 mx-auto flex w-fit items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg ring-1 ring-emerald-700/20 transition-colors hover:bg-emerald-700 active:bg-emerald-800"
+          aria-label="Return to today"
+          data-testid="return-to-today-button"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+          </svg>
+          Return to today
+        </button>
+      )}
     </div>
   )
 }
