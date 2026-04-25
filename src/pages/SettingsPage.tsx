@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { useHousehold } from '../hooks/useHousehold'
 import HouseholdSwitcher from '../components/settings/HouseholdSwitcher'
@@ -9,21 +10,21 @@ import InviteManager from '../components/settings/InviteManager'
 import PublicShareToggle from '../components/settings/PublicShareToggle'
 import MyMemberships from '../components/settings/MyMemberships'
 import AccessLevelsLink from '../components/settings/AccessLevelsLink'
+import { SkeletonSettingsCard } from '../components/ui/Skeleton'
+
+function SettingsSkeleton() {
+  return (
+    <div className="space-y-4" data-testid="settings-skeleton">
+      <SkeletonSettingsCard />
+      <SkeletonSettingsCard />
+      <SkeletonSettingsCard />
+    </div>
+  )
+}
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth()
   const { isLoading, memberships } = useHousehold()
-
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-sm space-y-4 p-4">
-        <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-        <div className="flex items-center justify-center p-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-600" />
-        </div>
-      </div>
-    )
-  }
 
   const hasMemberships = memberships.length > 0
 
@@ -31,33 +32,55 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-sm space-y-4 p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-        <AccessLevelsLink />
+        {!isLoading && <AccessLevelsLink />}
       </div>
 
-      <MyMemberships />
-      {hasMemberships && <HouseholdSwitcher />}
-      <CreateHouseholdForm />
+      <AnimatePresence mode="wait">
+        {isLoading ? (
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+          >
+            <SettingsSkeleton />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <div className="space-y-4">
+              <MyMemberships />
+              {hasMemberships && <HouseholdSwitcher />}
+              <CreateHouseholdForm />
 
-      {hasMemberships && (
-        <>
-          <HouseholdSettings />
-          <DayPlaceholders />
-          <MemberList />
-          <InviteManager />
-          <PublicShareToggle />
-        </>
-      )}
+              {hasMemberships && (
+                <>
+                  <HouseholdSettings />
+                  <DayPlaceholders />
+                  <MemberList />
+                  <InviteManager />
+                  <PublicShareToggle />
+                </>
+              )}
 
-      <div className="rounded-lg bg-white p-4 shadow">
-        <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
-        <p className="text-xs text-gray-500">{user?.email}</p>
-        <button
-          onClick={signOut}
-          className="mt-3 w-full rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-        >
-          Sign out
-        </button>
-      </div>
+              <div className="rounded-lg bg-white p-4 shadow">
+                <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+                <button
+                  onClick={signOut}
+                  className="mt-3 w-full rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

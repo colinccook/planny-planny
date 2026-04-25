@@ -236,7 +236,15 @@ function CalendarViewInner({
       {/* Infinite scroll sentinel */}
       <div ref={sentinelRef} className="flex justify-center py-4">
         {isLoading && (
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-300 border-t-emerald-600" />
+          <div className="flex items-center gap-1.5" aria-label="Loading more days">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-2 w-2 animate-pulse rounded-full bg-emerald-400"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
         )}
       </div>
 

@@ -66,7 +66,7 @@ describe('CalendarPage', () => {
     }
   })
 
-  it('shows loading spinner when loading', () => {
+  it('shows loading skeleton when loading', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: null,
       currentRole: null,
@@ -77,10 +77,10 @@ describe('CalendarPage', () => {
       wrapper: createWrapper(),
     })
 
-    // Spinner has animate-spin class
-    const spinner = container.querySelector('.animate-spin')
-    expect(spinner).toBeDefined()
-    expect(spinner).not.toBeNull()
+    // Skeleton has animate-pulse class
+    const skeleton = container.querySelector('.animate-pulse')
+    expect(skeleton).toBeDefined()
+    expect(skeleton).not.toBeNull()
   })
 
   it('shows no household message when none selected', () => {
