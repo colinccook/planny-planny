@@ -2,15 +2,16 @@
  * Reusable skeleton building blocks for loading states.
  * All blocks use Tailwind's `animate-pulse` for the throbbing effect.
  */
+import { clsx } from 'clsx'
 
 interface SkeletonBlockProps {
   className?: string
 }
 
 /** A single pulsing placeholder rectangle. */
-export function SkeletonBlock({ className = '' }: SkeletonBlockProps) {
+export function SkeletonBlock({ className }: SkeletonBlockProps) {
   return (
-    <div className={`animate-pulse rounded bg-gray-200 ${className}`} />
+    <div className={clsx('animate-pulse rounded bg-gray-200', className)} />
   )
 }
 
