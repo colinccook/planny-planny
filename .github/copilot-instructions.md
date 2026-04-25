@@ -4,10 +4,11 @@
 
 All new functionality **must** be covered by appropriate tests:
 
-1. **BDD End-to-End Tests** (preferred): Write Gherkin `.feature` files in `tests/features/` with step definitions in `tests/steps/`. Use Playwright + playwright-bdd.
-2. **Unit Tests**: For pure logic (utilities, computations), unit tests with Vitest are acceptable.
-3. **All tests must build and pass** before a PR can be merged.
-4. **README update check is required**: for any user-facing functionality change, review `README.md` and update it when needed.
+1. **BDD Integration Tests** (preferred): Write Gherkin `.feature` files in `tests/integration/features/` with step definitions in `tests/integration/steps/`. These drive the real React app against a local Supabase container via Playwright + playwright-bdd. **Default to this style** for any user-facing feature.
+2. **BDD Component Tests** (only when the data layer doesn't exist yet, or for pure logic): `.feature` files in `tests/component/features/` with step definitions in `tests/component/steps/`. These use `page.setContent` HTML harnesses (or no DOM at all, like the role-capability matrix) and never touch Supabase. If you add a component test for a UI contract, **pair it with an integration test as soon as the component is wired up**.
+3. **Unit Tests**: For pure logic (utilities, computations), unit tests with Vitest are acceptable.
+4. **All tests must build and pass** before a PR can be merged.
+5. **README update check is required**: for any user-facing functionality change, review `README.md` and update it when needed.
 
 ## Tech Stack
 
@@ -34,9 +35,11 @@ All new functionality **must** be covered by appropriate tests:
 - `src/pages/` — Page-level components
 - `src/types/` — TypeScript types (database schema types)
 - `supabase/migrations/` — Database migrations (ordered)
-- `tests/features/` — Gherkin BDD feature files
-- `tests/steps/` — Playwright BDD step definitions
-- `tests/support/` — Test fixtures and helpers
+- `tests/integration/features/` — Gherkin BDD feature files for real-app + Supabase tests
+- `tests/integration/steps/` — Step definitions for integration tests
+- `tests/component/features/` — Gherkin BDD feature files for HTML-harness / pure-logic tests (no backend)
+- `tests/component/steps/` — Step definitions for component tests
+- `tests/support/` — Test fixtures and helpers shared by both suites
 
 ## Branching & Pull Requests
 
@@ -58,7 +61,7 @@ For every new feature request you must:
 1. **Summarise the access levels** in the PR description and decide, for each of the five audiences, whether the feature is allowed.
 2. **Use the predicates in `src/lib/permissions.ts`** (e.g. `canEditMeals`, `canVote`, `canInviteMembers`) — never compare role strings inline. Add a new predicate if no existing one fits.
 3. **Update the explainer content** in `ACCESS_LEVELS` (in `src/lib/permissions.ts`) so the "What do these levels mean?" tray reflects the new capability.
-4. **Update the BDD matrix** at `tests/features/permissions/role-capability-matrix.feature` with a row per role for the new capability.
+4. **Update the BDD matrix** at `tests/component/features/permissions/role-capability-matrix.feature` with a row per role for the new capability.
 5. **Update RLS** in a new `supabase/migrations/*.sql` file if the feature touches data — the predicates and the policies must agree.
 6. **Add BDD scenarios** verifying the right roles can do the new thing and the wrong roles cannot.
 
