@@ -60,7 +60,7 @@ function createWrapper() {
 }
 
 describe('SettingsPage', () => {
-  it('shows loading spinner when household data is loading', () => {
+  it('shows loading skeleton when household data is loading', () => {
     mockUseHousehold.mockReturnValue({
       households: [],
       memberships: [],
@@ -73,8 +73,8 @@ describe('SettingsPage', () => {
     const { container } = render(createElement(SettingsPage), { wrapper: createWrapper() })
 
     expect(screen.getByText('Settings')).toBeDefined()
-    const spinner = container.querySelector('.animate-spin')
-    expect(spinner).not.toBeNull()
+    const skeleton = container.querySelector('.animate-pulse')
+    expect(skeleton).not.toBeNull()
   })
 
   it('renders all settings sections when loaded with at least one membership', () => {
