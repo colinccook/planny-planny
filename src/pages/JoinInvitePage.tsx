@@ -50,11 +50,15 @@ export default function JoinInvitePage() {
   }, [authLoading, user, token, navigate])
 
   // Once we know the invite + the user, check the email matches.
+  // Per-email invites are the new contract: we treat a missing
+  // invite email or a missing user email (e.g. a user authenticated
+  // via a non-email provider) as a mismatch so an invite can only
+  // ever be accepted by the email it was addressed to.
   const emailMismatch =
     !!invite &&
-    !!invite.email &&
-    !!user?.email &&
-    invite.email.toLowerCase() !== user.email.toLowerCase()
+    (!invite.email ||
+      !user?.email ||
+      invite.email.toLowerCase() !== user.email.toLowerCase())
 
   const handleJoin = async () => {
     if (!user || !invite) return
@@ -136,11 +140,27 @@ export default function JoinInvitePage() {
           >
             <p className="font-semibold">This invite isn&apos;t for you.</p>
             <p className="mt-1">
-              It was sent to <span className="font-medium">{invite?.email}</span>{' '}
-              but you&apos;re signed in as{' '}
-              <span className="font-medium">{user?.email}</span>. Sign out and
-              sign in with the invited email, or ask the inviter to send a new
-              link.
+              {invite?.email && user?.email ? (
+                <>
+                  It was sent to <span className="font-medium">{invite.email}</span>{' '}
+                  but you&apos;re signed in as{' '}
+                  <span className="font-medium">{user.email}</span>. Sign out and
+                  sign in with the invited email, or ask the inviter to send a new
+                  link.
+                </>
+              ) : !invite?.email ? (
+                <>
+                  This invite link isn&apos;t addressed to a specific email
+                  address, so it can&apos;t be accepted. Ask the household owner
+                  to send you a new email-addressed invite.
+                </>
+              ) : (
+                <>
+                  It was sent to <span className="font-medium">{invite.email}</span>{' '}
+                  but your account doesn&apos;t have an email on file. Sign in with
+                  the email address the invite was sent to.
+                </>
+              )}
             </p>
           </div>
         )}

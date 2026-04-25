@@ -144,11 +144,15 @@ Migrations to know about:
 
 ### Per-email invites
 
-`household_invites.email` is `not null`. The `JoinInvitePage` checks that the
-signed-in user's email matches the invite before letting them join, and a
-trigger on `household_members` deletes the invite as soon as the join
-happens. The end result: invite links are single-use and personal — sharing
-the URL with a different person doesn't grant them access.
+`household_invites.email` is `not null`. Every invite is addressed to a
+specific email — the migration drops any pre-existing "anyone with link"
+rows during deployment so the contract holds for both new and old
+installations. The `JoinInvitePage` checks that the signed-in user's email
+matches the invite before letting them join (and treats a missing user
+email or invite email as a mismatch). A trigger on `household_members`
+deletes the invite as soon as the join happens. The end result: invite
+links are single-use and personal — sharing the URL with a different
+person doesn't grant them access.
 
 ### Public share
 

@@ -9,6 +9,7 @@ import {
   canSeeEvents,
   canSeeIdeas,
   canSeeMeals,
+  canSeeVoteCounts,
   canSeeVoters,
   canVote,
   roleLabel,
@@ -39,16 +40,17 @@ type Row = [
   boolean, // canSeeIdeas
   boolean, // canInviteMembers
   boolean, // canManageMembers
+  boolean, // canSeeVoteCounts
 ]
 
 const MATRIX: Row[] = [
-  // audience       edit  events propose vote seeVoters seeEvents seeMeals seeIdeas invite manage
-  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
-  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  false],
-  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  false, false],
-  ['voting_guest',   false, false, false, true,  true,  true,  true,  true,  false, false],
-  ['public',         false, false, false, false, false, false, true,  true,  false, false],
-  [null,             false, false, false, false, false, false, false, false, false, false],
+  // audience       edit  events propose vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts
+  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true],
+  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  false, false, true],
+  ['voting_guest',   false, false, false, true,  true,  true,  true,  true,  false, false, true],
+  ['public',         false, false, false, false, false, false, true,  true,  false, false, true],
+  [null,             false, false, false, false, false, false, false, false, false, false, false],
 ]
 
 describe('permissions', () => {
@@ -66,6 +68,7 @@ describe('permissions', () => {
       seeIdeas,
       invite,
       manage,
+      seeCounts,
     ) => {
       it(`canEditMeals = ${edit}`, () => {
         expect(canEditMeals(audience)).toBe(edit)
@@ -96,6 +99,9 @@ describe('permissions', () => {
       })
       it(`canManageMembers = ${manage}`, () => {
         expect(canManageMembers(audience)).toBe(manage)
+      })
+      it(`canSeeVoteCounts = ${seeCounts}`, () => {
+        expect(canSeeVoteCounts(audience)).toBe(seeCounts)
       })
     },
   )

@@ -75,7 +75,16 @@ Then(
         `Unknown capability "${capability}". Register it in tests/steps/role-capability.steps.ts`,
       )
     }
-    const expected = allowed.toLowerCase() === 'true'
+    let expected: boolean
+    if (allowed === 'true') {
+      expected = true
+    } else if (allowed === 'false') {
+      expected = false
+    } else {
+      throw new Error(
+        `Invalid value for "allowed" in matrix: "${allowed}". Use "true" or "false".`,
+      )
+    }
     expect(predicate(world.audience)).toBe(expected)
   },
 )

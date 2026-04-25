@@ -1,9 +1,11 @@
 Feature: Permission rules — role × capability matrix
   These scenarios are the canonical BDD specification of who can
   do what. Each capability used by the app is a function in
-  `src/lib/permissions.ts`; this feature pins down the expected
-  result for every (role, capability) pair so any future change to
-  the predicates is forced through this file.
+  `src/lib/permissions.ts`. The unit-test matrix in
+  `src/lib/permissions.test.ts` covers every (role, capability)
+  pair exhaustively; this feature pins down the user-facing
+  decisions for each role so that a deliberate, human-readable
+  record exists for any future change to the predicates.
 
   When adding a new capability:
     1. Add a predicate in `src/lib/permissions.ts`.

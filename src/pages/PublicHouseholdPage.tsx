@@ -5,14 +5,20 @@ import type { Database } from '../types/database'
 import AccessLevelsLink from '../components/settings/AccessLevelsLink'
 
 type Household = Database['public']['Tables']['households']['Row']
-type MealPlan = Database['public']['Tables']['meal_plans']['Row']
-type MealIdea = Database['public']['Tables']['meal_ideas']['Row']
+type MealPlanRow = Database['public']['Tables']['meal_plans']['Row']
+type MealIdeaRow = Database['public']['Tables']['meal_ideas']['Row']
 
-interface IdeaWithCount extends MealIdea {
+// The public page deliberately reads a narrow subset of columns
+// from `meal_plans` and `meal_ideas`. Mirror that here so we don't
+// accidentally start rendering anything we didn't ask for.
+type PublicMealPlan = Pick<MealPlanRow, 'id' | 'household_id' | 'date' | 'title' | 'description'>
+type PublicMealIdea = Pick<MealIdeaRow, 'id' | 'household_id' | 'title' | 'created_at'>
+
+interface IdeaWithCount extends PublicMealIdea {
   reactionCount: number
 }
 
-interface MealPlanWithCount extends MealPlan {
+interface MealPlanWithCount extends PublicMealPlan {
   reactionCount: number
 }
 
@@ -43,28 +49,49 @@ export default function PublicHouseholdPage() {
       setHousehold(hData)
 
       const today = new Date().toISOString().split('T')[0]
-      const { data: plans } = await supabase
+      const { data: plans, error: plansError } = await supabase
         .from('meal_plans')
-        .select('*')
+        .select('id, household_id, date, title, description')
         .eq('household_id', hData.id)
         .gte('date', today)
         .order('date', { ascending: true })
         .limit(14)
 
-      const { data: ideaRows } = await supabase
+      if (plansError) {
+        setError('Could not load the shared meal plan.')
+        setLoading(false)
+        return
+      }
+
+      const { data: ideaRows, error: ideasError } = await supabase
         .from('meal_ideas')
-        .select('*')
+        // Only the columns the public page renders. We deliberately
+        // skip `created_by` so the share link never exposes who
+        // proposed an idea.
+        .select('id, household_id, title, created_at')
         .eq('household_id', hData.id)
         .order('created_at', { ascending: false })
+
+      if (ideasError) {
+        setError('Could not load the shared meal plan.')
+        setLoading(false)
+        return
+      }
 
       // Fetch all reactions in one go and aggregate client-side.
       // The RLS policy added in migration 20260424000001 lets
       // anonymous viewers read reactions belonging to a shared
       // household; voter identity is intentionally never shown.
-      const { data: reactionRows } = await supabase
+      const { data: reactionRows, error: reactionsError } = await supabase
         .from('reactions')
         .select('target_type, target_id')
         .eq('household_id', hData.id)
+
+      if (reactionsError) {
+        setError('Could not load the shared meal plan.')
+        setLoading(false)
+        return
+      }
 
       const counts = new Map<string, number>()
       for (const r of reactionRows ?? []) {

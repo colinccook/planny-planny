@@ -96,7 +96,7 @@ export interface Database {
           household_id: string
           token: string
           role: 'member' | 'honoured_guest' | 'voting_guest'
-          email: string | null
+          email: string
           created_by: string | null
           expires_at: string | null
           created_at: string
@@ -106,7 +106,7 @@ export interface Database {
           household_id: string
           token?: string
           role?: 'member' | 'honoured_guest' | 'voting_guest'
-          email?: string | null
+          email: string
           created_by?: string | null
           expires_at?: string | null
           created_at?: string
@@ -116,7 +116,7 @@ export interface Database {
           household_id?: string
           token?: string
           role?: 'member' | 'honoured_guest' | 'voting_guest'
-          email?: string | null
+          email?: string
           created_by?: string | null
           expires_at?: string | null
           created_at?: string

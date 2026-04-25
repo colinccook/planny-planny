@@ -21,6 +21,26 @@ alter table public.household_invites
 create index if not exists household_invites_email_idx
   on public.household_invites (lower(email));
 
+-- Per-email invites are the new contract: every invite must be
+-- addressed to a specific email. Drop any pre-existing
+-- "anyone with link" rows (created before this migration) and
+-- then enforce NOT NULL so the JoinInvitePage email-match rule
+-- can never be bypassed by an invite without an email.
+delete from public.household_invites where email is null;
+
+alter table public.household_invites
+  alter column email set not null;
+
+-- Strengthen the insert RLS policy to require a non-empty email.
+-- The existing "Members can create invites" policy (added in
+-- 20260424000001) handles the "who can insert" question; this
+-- policy adds the per-email contract on top.
+drop policy if exists "Invites must be email addressed" on public.household_invites;
+
+create policy "Invites must be email addressed"
+  on public.household_invites for insert
+  with check (email is not null and length(trim(email)) > 0);
+
 -- When a member is inserted whose user account uses an email
 -- with a pending invite for this household, drop the invite.
 -- Keeps invite links one-shot and stops them lingering.
@@ -43,7 +63,6 @@ begin
 
   delete from public.household_invites
   where household_id = new.household_id
-    and email is not null
     and lower(email) = lower(member_email);
 
   return new;
