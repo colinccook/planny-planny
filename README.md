@@ -12,9 +12,10 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Day Placeholders** — Set themes for each day of the week: "Oily Fish Monday", "Veggie Thursday", "Sunday Roast".
 - **Ingredient Tracking** — Tag meals with ingredients. Star your favourites. Get reminders when you haven't used a starred ingredient in a while.
 - **Ingredient Warnings** — Mark ingredients that you overuse (hello, chicken!). Get prompted when you've already had it in the last 7 days.
-- **Public Sharing** — Share a read-only link to your meal plan so visiting family can see what's for dinner.
-- **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily.
-- **Guest Access** — Invite someone as a guest (view-only) or a full member (can edit).
+- **Public Sharing** — Share a read-only link to your meal plan so visiting family can see what's for dinner, including meal ideas with vote counts (no events, no voter names).
+- **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily, see every membership in one place, and leave when you no longer want to be in one.
+- **Five Access Levels** — Owner, Member, Honoured Guest (full editor, can't invite), Voting Guest (vote only), and Public. Each role's capabilities are summarised in an in-app "What do these levels mean?" tray and documented in [`docs/permissions.md`](docs/permissions.md).
+- **Per-email Invites** — Owners and members invite people by email. The invite link only works for that address and is consumed automatically when the person joins.
 - **Meal Ideas, Meals & Reactions** — Add lightweight meal ideas per day and react to ideas or meal plans with 👍. Tap the reaction button to like/unlike; long press to see who reacted.
 - **AI Meal Suggestions (Magic Wand)** — Generate a tailored prompt to paste into ChatGPT. Pulls in household headcount, events, day theme, suggested ingredients, and household meal ideas. Choose to exclude ideas, include all, or only thumbed-up ones — multiple thumbs-up ideas ask the AI for three recipes per idea.
 
@@ -284,11 +285,22 @@ After authentication, all data flows through Supabase Realtime (WebSockets). Whe
 
 ### Roles
 
-| Role | Can View | Can Edit | Can Invite |
-|---|---|---|---|
-| Owner | ✅ | ✅ | ✅ |
-| Member | ✅ | ✅ | ✅ |
-| Guest | ✅ | ❌ | ❌ |
+Five access levels, summarised below. The full breakdown — what each level
+can and can't do, the TypeScript predicates, and the matching RLS policies —
+is in [`docs/permissions.md`](docs/permissions.md). Anyone who was previously
+a "guest" has been migrated to **Honoured Guest**.
+
+| Role           | View | Edit Meals | Vote | Propose Ideas | Invite | Manage Members |
+| -------------- | :--: | :--------: | :--: | :-----------: | :----: | :------------: |
+| Owner          |  ✅  |     ✅     |  ✅  |       ✅      |   ✅   |       ✅       |
+| Member         |  ✅  |     ✅     |  ✅  |       ✅      |   ✅   |       ❌       |
+| Honoured Guest |  ✅  |     ✅     |  ✅  |       ✅      |   ❌   |       ❌       |
+| Voting Guest   |  ✅  |     ❌     |  ✅  |       ❌      |   ❌   |       ❌       |
+| Public Link    |  partial (meals + ideas + vote counts only) |     ❌     |  ❌  |       ❌      |   ❌   |       ❌       |
+
+Owners can change a member's role by tapping them in the Members card —
+that opens the access-level tray with a card per level so you can pick the
+new one.
 
 ## 📁 Project Structure
 

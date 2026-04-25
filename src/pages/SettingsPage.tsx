@@ -7,10 +7,12 @@ import DayPlaceholders from '../components/settings/DayPlaceholders'
 import MemberList from '../components/settings/MemberList'
 import InviteManager from '../components/settings/InviteManager'
 import PublicShareToggle from '../components/settings/PublicShareToggle'
+import MyMemberships from '../components/settings/MyMemberships'
+import AccessLevelsLink from '../components/settings/AccessLevelsLink'
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth()
-  const { isLoading } = useHousehold()
+  const { isLoading, memberships } = useHousehold()
 
   if (isLoading) {
     return (
@@ -23,17 +25,28 @@ export default function SettingsPage() {
     )
   }
 
+  const hasMemberships = memberships.length > 0
+
   return (
     <div className="mx-auto max-w-sm space-y-4 p-4">
-      <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+        <AccessLevelsLink />
+      </div>
 
-      <HouseholdSwitcher />
+      <MyMemberships />
+      {hasMemberships && <HouseholdSwitcher />}
       <CreateHouseholdForm />
-      <HouseholdSettings />
-      <DayPlaceholders />
-      <MemberList />
-      <InviteManager />
-      <PublicShareToggle />
+
+      {hasMemberships && (
+        <>
+          <HouseholdSettings />
+          <DayPlaceholders />
+          <MemberList />
+          <InviteManager />
+          <PublicShareToggle />
+        </>
+      )}
 
       <div className="rounded-lg bg-white p-4 shadow">
         <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>

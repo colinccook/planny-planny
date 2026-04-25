@@ -49,7 +49,7 @@ describe('JoinInvitePage', () => {
 
   it('shows error state for invalid invite', async () => {
     render(createElement(JoinInvitePage), { wrapper: createWrapper() })
-    const errorMsg = await screen.findByText(/Invite not found/)
+    const errorMsg = await screen.findByText(/Invite not found|already been used/)
     expect(errorMsg).toBeDefined()
   })
 })

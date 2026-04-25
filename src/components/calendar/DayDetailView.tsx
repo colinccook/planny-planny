@@ -29,6 +29,7 @@ import ReactionButton, {
 } from '../ui/ReactionButton'
 import type { ReactionWithProfile } from '../../hooks/useMealIdeas'
 import { useAuth } from '../../hooks/useAuth'
+import { canEditMeals, canProposeIdeas, canVote, type Audience } from '../../lib/permissions'
 
 const THUMB_OPTIONS: ReactionOption[] = [{ emoji: '👍', label: 'Thumbs up' }]
 
@@ -51,7 +52,7 @@ type MealIdea = Database['public']['Tables']['meal_ideas']['Row']
 interface DayDetailViewProps {
   date: string
   household: Household
-  currentRole: 'owner' | 'member' | 'guest' | null
+  currentRole: Audience
   onBack: () => void
   onAddMeal: () => void
   onEditMeal: (mealId: string) => void
@@ -107,7 +108,12 @@ export default function DayDetailView({
   const deleteIdea = useDeleteMealIdea()
   const upsertReaction = useUpsertReaction()
   const removeReaction = useDeleteReaction()
-  const canEdit = currentRole === 'owner' || currentRole === 'member'
+  const canEdit = canEditMeals(currentRole)
+  // canPropose has the same audience as canEdit today; kept
+  // separate so that "add an idea" can diverge from "edit a
+  // meal" later without code-spelunking.
+  const canPropose = canProposeIdeas(currentRole)
+  const canVoteHere = canVote(currentRole)
   const ideaIdsKey = ideas.map((idea) => idea.id).join('|')
   const ideaIds = useMemo(
     () => (ideaIdsKey ? ideaIdsKey.split('|') : []),
@@ -326,7 +332,7 @@ export default function DayDetailView({
         )}
 
         {/* Add idea button */}
-        {canEdit && (
+        {canPropose && (
           <button
             type="button"
             onClick={() => setShowAddIdeaTray(true)}
@@ -402,7 +408,7 @@ export default function DayDetailView({
                 currentUserEmoji={currentUserEmoji}
                 onReact={(emoji) => handleReact('meal_plan', meal.id, emoji)}
                 onUnreact={() => handleUnreact('meal_plan', meal.id, '👍')}
-                canReact={!!user && currentRole !== null && currentRole !== 'guest'}
+                canReact={canVoteHere && !!user}
               />
             )
           })}

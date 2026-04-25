@@ -127,7 +127,7 @@ describe('CalendarView', () => {
     render(
       createElement(CalendarView, {
         household: mockHousehold,
-        currentRole: 'guest',
+        currentRole: 'voting_guest',
       }),
       { wrapper: createWrapper() }
     )

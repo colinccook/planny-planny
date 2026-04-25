@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Database } from '../../types/database'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
 import IngredientTag from '../ingredients/IngredientTag'
+import type { Audience } from '../../lib/permissions'
 
 type Household = Database['public']['Tables']['households']['Row']
 type DayContext = Database['public']['Tables']['day_contexts']['Row']
@@ -13,7 +14,7 @@ interface DayRowProps {
   contexts: DayContext[]
   placeholder: DayPlaceholder | null
   meals: MealPlanWithIngredients[]
-  currentRole: 'owner' | 'member' | 'guest' | null
+  currentRole: Audience
 }
 
 function formatDateLabel(dateStr: string): string {

@@ -5,6 +5,7 @@ import {
   useUpsertDayPlaceholder,
   useDeleteDayPlaceholder,
 } from '../../hooks/useDayPlaceholders'
+import { canEditMeals } from '../../lib/permissions'
 
 const DAYS = [
   { index: 1, name: 'Monday' },
@@ -25,7 +26,7 @@ export default function DayPlaceholders() {
   const [localEdits, setLocalEdits] = useState<Record<number, string>>({})
   const [savedDays, setSavedDays] = useState<Set<number>>(new Set())
 
-  const canEdit = currentRole === 'owner' || currentRole === 'member'
+  const canEdit = canEditMeals(currentRole)
 
   const serverLabels = useMemo(() => {
     const map: Record<number, string> = {}
@@ -147,7 +148,7 @@ export default function DayPlaceholders() {
 
       {!canEdit && (
         <p className="mt-2 text-xs text-gray-400">
-          Only owners and members can edit day placeholders.
+          You don&apos;t have edit access to day placeholders.
         </p>
       )}
     </div>

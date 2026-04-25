@@ -43,6 +43,12 @@ vi.mock('../components/settings/InviteManager', () => ({
 vi.mock('../components/settings/PublicShareToggle', () => ({
   default: () => createElement('div', { 'data-testid': 'public-share-toggle' }),
 }))
+vi.mock('../components/settings/MyMemberships', () => ({
+  default: () => createElement('div', { 'data-testid': 'my-memberships' }),
+}))
+vi.mock('../components/settings/AccessLevelsLink', () => ({
+  default: () => createElement('div', { 'data-testid': 'access-levels-link' }),
+}))
 
 import SettingsPage from './SettingsPage'
 
@@ -57,6 +63,7 @@ describe('SettingsPage', () => {
   it('shows loading spinner when household data is loading', () => {
     mockUseHousehold.mockReturnValue({
       households: [],
+      memberships: [],
       currentHousehold: null,
       currentRole: null,
       switchHousehold: vi.fn(),
@@ -70,9 +77,10 @@ describe('SettingsPage', () => {
     expect(spinner).not.toBeNull()
   })
 
-  it('renders all settings sections when loaded', () => {
+  it('renders all settings sections when loaded with at least one membership', () => {
     mockUseHousehold.mockReturnValue({
       households: [{ id: 'h1', name: 'My House' }],
+      memberships: [{ household: { id: 'h1', name: 'My House' }, role: 'owner' }],
       currentHousehold: { id: 'h1', name: 'My House' },
       currentRole: 'owner',
       switchHousehold: vi.fn(),
@@ -82,6 +90,7 @@ describe('SettingsPage', () => {
     render(createElement(SettingsPage), { wrapper: createWrapper() })
 
     expect(screen.getByText('Settings')).toBeDefined()
+    expect(screen.getByTestId('my-memberships')).toBeDefined()
     expect(screen.getByTestId('household-switcher')).toBeDefined()
     expect(screen.getByTestId('create-household-form')).toBeDefined()
     expect(screen.getByTestId('household-settings')).toBeDefined()
@@ -89,12 +98,40 @@ describe('SettingsPage', () => {
     expect(screen.getByTestId('member-list')).toBeDefined()
     expect(screen.getByTestId('invite-manager')).toBeDefined()
     expect(screen.getByTestId('public-share-toggle')).toBeDefined()
+    expect(screen.getByTestId('access-levels-link')).toBeDefined()
     expect(screen.getByText('test@example.com')).toBeDefined()
+  })
+
+  it('hides household-scoped sections when the user has no memberships', () => {
+    mockUseHousehold.mockReturnValue({
+      households: [],
+      memberships: [],
+      currentHousehold: null,
+      currentRole: null,
+      switchHousehold: vi.fn(),
+      isLoading: false,
+    })
+
+    render(createElement(SettingsPage), { wrapper: createWrapper() })
+
+    // My Memberships, Create form, and Account always render.
+    expect(screen.getByTestId('my-memberships')).toBeDefined()
+    expect(screen.getByTestId('create-household-form')).toBeDefined()
+    expect(screen.getByText('Account')).toBeDefined()
+
+    // Everything that requires a current household is hidden.
+    expect(screen.queryByTestId('household-switcher')).toBeNull()
+    expect(screen.queryByTestId('household-settings')).toBeNull()
+    expect(screen.queryByTestId('day-placeholders')).toBeNull()
+    expect(screen.queryByTestId('member-list')).toBeNull()
+    expect(screen.queryByTestId('invite-manager')).toBeNull()
+    expect(screen.queryByTestId('public-share-toggle')).toBeNull()
   })
 
   it('renders sign out button in the account section and triggers signOut on click', () => {
     mockUseHousehold.mockReturnValue({
       households: [{ id: 'h1', name: 'My House' }],
+      memberships: [{ household: { id: 'h1', name: 'My House' }, role: 'owner' }],
       currentHousehold: { id: 'h1', name: 'My House' },
       currentRole: 'owner',
       switchHousehold: vi.fn(),
@@ -122,6 +159,7 @@ describe('SettingsPage', () => {
   it('does not show settings sections while loading', () => {
     mockUseHousehold.mockReturnValue({
       households: [],
+      memberships: [],
       currentHousehold: null,
       currentRole: null,
       switchHousehold: vi.fn(),

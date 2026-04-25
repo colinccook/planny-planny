@@ -1,14 +1,26 @@
 import type { ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useHousehold } from '../../hooks/useHousehold'
 import { usePlanStreak } from '../../hooks/usePlanStreak'
 import { HeaderOverrideProvider, useHeaderOverride } from '../../hooks/useHeaderOverride'
 import { CalendarDirectionProvider } from '../../hooks/useCalendarDirection'
 import TabBar from './TabBar'
 
+const ALWAYS_ACCESSIBLE = new Set(['/settings'])
+
 function AppShellInner({ children }: { children: ReactNode }) {
-  const { currentHousehold } = useHousehold()
+  const { currentHousehold, memberships, isLoading } = useHousehold()
   const { data: streak, isSuccess } = usePlanStreak(currentHousehold?.id)
   const { override } = useHeaderOverride()
+  const location = useLocation()
+
+  // If you've left or been removed from your last household,
+  // every other tab would be a dead end. Bounce to /settings so
+  // you can join or create one.
+  const noHouseholds = !isLoading && memberships.length === 0
+  if (noHouseholds && !ALWAYS_ACCESSIBLE.has(location.pathname)) {
+    return <Navigate to="/settings" replace />
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">

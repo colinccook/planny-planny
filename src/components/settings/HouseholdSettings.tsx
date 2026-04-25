@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { useHousehold } from '../../hooks/useHousehold'
+import { canEditMeals } from '../../lib/permissions'
 import NumberStepper from '../ui/NumberStepper'
 
 export default function HouseholdSettings() {
@@ -29,7 +30,7 @@ export default function HouseholdSettings() {
 
   if (!currentHousehold) return null
 
-  const isReadOnly = currentRole === 'guest'
+  const isReadOnly = !canEditMeals(currentRole)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,7 +70,7 @@ export default function HouseholdSettings() {
 
       {isReadOnly && (
         <p className="mb-3 rounded-md bg-gray-50 p-2 text-xs text-gray-500">
-          You are a guest. Settings are read-only.
+          You don&apos;t have edit access. Settings are read-only.
         </p>
       )}
 

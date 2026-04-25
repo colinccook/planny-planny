@@ -77,25 +77,37 @@ describe('HouseholdSettings', () => {
     expect(screen.getByRole('button', { name: /Save changes/i })).toBeDefined()
   })
 
-  it('shows read-only message for guests', () => {
+  it('shows read-only message for voting guests', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: mockHousehold,
-      currentRole: 'guest',
+      currentRole: 'voting_guest',
     })
 
     render(createElement(HouseholdSettings), { wrapper: createWrapper() })
-    expect(screen.getByText(/You are a guest/)).toBeDefined()
+    expect(screen.getByText(/don't have edit access/i)).toBeDefined()
     expect(screen.queryByRole('button', { name: /Save/i })).toBeNull()
   })
 
-  it('disables inputs for guests', () => {
+  it('disables inputs for voting guests', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: mockHousehold,
-      currentRole: 'guest',
+      currentRole: 'voting_guest',
     })
 
     render(createElement(HouseholdSettings), { wrapper: createWrapper() })
     const nameInput = screen.getByDisplayValue('Test House') as HTMLInputElement
     expect(nameInput.disabled).toBe(true)
+  })
+
+  it('allows honoured guests to edit (they have full edit rights)', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'honoured_guest',
+    })
+
+    render(createElement(HouseholdSettings), { wrapper: createWrapper() })
+    expect(screen.getByRole('button', { name: /Save changes/i })).toBeDefined()
+    const nameInput = screen.getByDisplayValue('Test House') as HTMLInputElement
+    expect(nameInput.disabled).toBe(false)
   })
 })

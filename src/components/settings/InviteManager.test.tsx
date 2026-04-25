@@ -30,7 +30,16 @@ vi.mock('../../lib/supabase', () => ({
         eq: vi.fn().mockReturnValue({
           order: vi.fn().mockResolvedValue({
             data: [
-              { id: 'inv1', household_id: 'h1', token: 'abc123', role: 'member', created_by: 'u1', expires_at: null, created_at: '2024-01-01' },
+              {
+                id: 'inv1',
+                household_id: 'h1',
+                token: 'abc123',
+                role: 'member',
+                email: 'friend@example.com',
+                created_by: 'u1',
+                expires_at: null,
+                created_at: '2024-01-01',
+              },
             ],
             error: null,
           }),
@@ -56,10 +65,20 @@ describe('InviteManager', () => {
     vi.clearAllMocks()
   })
 
-  it('renders nothing for guests', () => {
+  it('renders nothing for honoured guests (cannot invite)', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: { id: 'h1' },
-      currentRole: 'guest',
+      currentRole: 'honoured_guest',
+    })
+
+    const { container } = render(createElement(InviteManager), { wrapper: createWrapper() })
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('renders nothing for voting guests', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: { id: 'h1' },
+      currentRole: 'voting_guest',
     })
 
     const { container } = render(createElement(InviteManager), { wrapper: createWrapper() })
@@ -86,7 +105,7 @@ describe('InviteManager', () => {
     expect(screen.getByText('Invite Links')).toBeDefined()
     expect(screen.getByText('Generate invite')).toBeDefined()
 
-    // Wait for invite list
+    // Wait for invite list (token is rendered with a leading slash)
     const token = await screen.findByText(/abc123/)
     expect(token).toBeDefined()
   })
@@ -101,26 +120,44 @@ describe('InviteManager', () => {
     expect(screen.getByText('Generate invite')).toBeDefined()
   })
 
-  it('shows role selector with member and guest options', () => {
+  it('shows role selector with member, honoured_guest and voting_guest options', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: { id: 'h1' },
       currentRole: 'owner',
     })
 
     render(createElement(InviteManager), { wrapper: createWrapper() })
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    const options = select.querySelectorAll('option')
-    expect(options).toHaveLength(2)
-    expect(options[0].value).toBe('member')
-    expect(options[1].value).toBe('guest')
+    const select = screen.getByLabelText('Invite role') as HTMLSelectElement
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.value)
+    expect(options).toEqual(['member', 'honoured_guest', 'voting_guest'])
+  })
+
+  it('shows the invitee email next to each pending invite', async () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: { id: 'h1' },
+      currentRole: 'owner',
+    })
+
+    render(createElement(InviteManager), { wrapper: createWrapper() })
+    expect(await screen.findByText('friend@example.com')).toBeDefined()
+  })
+
+  it('rejects invite generation when the email is invalid', async () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: { id: 'h1' },
+      currentRole: 'owner',
+    })
+
+    render(createElement(InviteManager), { wrapper: createWrapper() })
+    fireEvent.change(screen.getByLabelText('Recipient email'), {
+      target: { value: 'not-an-email' },
+    })
+    fireEvent.click(screen.getByText('Generate invite'))
+
+    expect(await screen.findByTestId('invite-error')).toBeDefined()
   })
 
   it('copies an invite URL that includes the app base path', async () => {
-    // Regression test: the copied URL must respect Vite's BASE_URL so that
-    // GitHub Pages deployments produce links like
-    //   https://colinccook.github.io/planny-planny/invite/<token>
-    // instead of
-    //   https://colinccook.github.io/invite/<token>
     mockUseHousehold.mockReturnValue({
       currentHousehold: { id: 'h1' },
       currentRole: 'owner',
@@ -129,19 +166,13 @@ describe('InviteManager', () => {
 
     render(createElement(InviteManager), { wrapper: createWrapper() })
 
-    // Wait for the invite list to load
     await screen.findByText(/abc123/)
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
 
     await waitFor(() => expect(mockCopyToClipboard).toHaveBeenCalledTimes(1))
     const copied: string = mockCopyToClipboard.mock.calls[0][0]
-    // jsdom's default origin is http://localhost:3000 and Vite's BASE_URL
-    // defaults to '/' in the test environment.
     expect(copied).toMatch(/^https?:\/\/[^/]+\/.*invite\/abc123$/)
     expect(copied.endsWith('/invite/abc123')).toBe(true)
-    // Must not produce the broken `origin/invite/...` shape when there's a
-    // non-root base path. With BASE_URL='/' the URL ends in `/invite/abc123`,
-    // which is fine; the dedicated buildInviteUrl tests cover the GH Pages base.
   })
 })

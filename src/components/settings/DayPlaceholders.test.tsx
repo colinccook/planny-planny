@@ -120,10 +120,10 @@ describe('DayPlaceholders', () => {
     expect(screen.getByRole('button', { name: 'Clear Monday' })).toBeDefined()
   })
 
-  it('disables inputs for guest role', () => {
+  it('disables inputs for voting guest role', () => {
     mockUseHousehold.mockReturnValue({
       currentHousehold: mockHousehold,
-      currentRole: 'guest',
+      currentRole: 'voting_guest',
     })
     mockUseDayPlaceholders.mockReturnValue({
       data: [],
@@ -134,7 +134,23 @@ describe('DayPlaceholders', () => {
 
     const mondayInput = screen.getByRole('textbox', { name: 'Monday placeholder' })
     expect(mondayInput).toHaveProperty('disabled', true)
-    expect(screen.getByText(/Only owners and members/)).toBeDefined()
+    expect(screen.getByText(/don't have edit access/i)).toBeDefined()
+  })
+
+  it('enables inputs for honoured guest role (full edit rights)', () => {
+    mockUseHousehold.mockReturnValue({
+      currentHousehold: mockHousehold,
+      currentRole: 'honoured_guest',
+    })
+    mockUseDayPlaceholders.mockReturnValue({
+      data: [],
+      isLoading: false,
+    })
+
+    render(createElement(DayPlaceholders), { wrapper: createWrapper() })
+
+    const mondayInput = screen.getByRole('textbox', { name: 'Monday placeholder' })
+    expect(mondayInput).toHaveProperty('disabled', false)
   })
 
   it('renders nothing when no household selected', () => {

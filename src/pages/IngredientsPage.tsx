@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useHousehold } from '../hooks/useHousehold'
+import { canEditMeals } from '../lib/permissions'
 import AddIngredientForm from '../components/ingredients/AddIngredientForm'
 import IngredientsList from '../components/ingredients/IngredientsList'
 import type { SortOption } from '../components/ingredients/IngredientsList'
@@ -38,7 +39,7 @@ export default function IngredientsPage() {
     )
   }
 
-  const isGuest = currentRole === 'guest'
+  const canEdit = canEditMeals(currentRole)
 
   return (
     <div className="space-y-4 p-4">
@@ -58,7 +59,7 @@ export default function IngredientsPage() {
         </select>
       </div>
 
-      {!isGuest && (
+      {canEdit && (
         <AddIngredientForm
           householdId={currentHousehold.id}
           existingIngredients={ingredients}
