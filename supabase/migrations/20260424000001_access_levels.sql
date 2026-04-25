@@ -16,19 +16,16 @@
 -- ============================================================
 
 -- ── Replace the role check constraints ──────────────────────
+-- Drop the old constraints first, then migrate existing 'guest'
+-- rows to 'honoured_guest', and only then add the new
+-- constraints. Doing the data migration before re-adding the
+-- check is essential: any pre-existing 'guest' row would
+-- otherwise violate the new constraint immediately.
 alter table public.household_members
   drop constraint if exists household_members_role_check;
 
-alter table public.household_members
-  add constraint household_members_role_check
-  check (role in ('owner', 'member', 'honoured_guest', 'voting_guest'));
-
 alter table public.household_invites
   drop constraint if exists household_invites_role_check;
-
-alter table public.household_invites
-  add constraint household_invites_role_check
-  check (role in ('member', 'honoured_guest', 'voting_guest'));
 
 -- ── Migrate existing guests ────────────────────────────────
 update public.household_members
@@ -38,6 +35,14 @@ where role = 'guest';
 update public.household_invites
 set role = 'honoured_guest'
 where role = 'guest';
+
+alter table public.household_members
+  add constraint household_members_role_check
+  check (role in ('owner', 'member', 'honoured_guest', 'voting_guest'));
+
+alter table public.household_invites
+  add constraint household_invites_role_check
+  check (role in ('member', 'honoured_guest', 'voting_guest'));
 
 -- ── Helper: capability predicates as SQL ───────────────────
 -- Mirrors src/lib/permissions.ts so the same rules are
