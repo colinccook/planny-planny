@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useCalendarDirection } from '../../hooks/useCalendarDirection'
+import { useHeaderOverride } from '../../hooks/useHeaderOverride'
 import { useHousehold } from '../../hooks/useHousehold'
 
 const tabs = [
@@ -13,11 +14,17 @@ export default function TabBar() {
   const location = useLocation()
   const { toggleDirection } = useCalendarDirection()
   const { memberships, isLoading } = useHousehold()
+  const { override } = useHeaderOverride()
 
   // Until you belong to a household, the other tabs would be
   // dead ends — hide them so it's obvious to head to Settings.
   const hasHousehold = isLoading || memberships.length > 0
   const visibleTabs = hasHousehold ? tabs : tabs.filter((t) => t.to === '/settings')
+
+  // When a header override is active (i.e. we're on a "drilled-in" view
+  // that shows a back button), slide the tab bar down off-screen. Going
+  // back clears the override and the bar slides back up.
+  const isHidden = override !== null
 
   const handleCalendarTabClick = (e: React.MouseEvent) => {
     const isOnCalendar = location.pathname === '/calendar'
@@ -33,7 +40,13 @@ export default function TabBar() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
+    <nav
+      className={`fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white transition-transform duration-300 ease-out ${
+        isHidden ? 'translate-y-full' : 'translate-y-0'
+      }`}
+      aria-hidden={isHidden}
+      data-hidden={isHidden}
+    >
       <div className="safe-area-bottom mx-auto flex max-w-lg" data-testid="tab-bar">
         {visibleTabs.map((tab) => (
           <NavLink
@@ -42,8 +55,11 @@ export default function TabBar() {
             replace
             onClick={tab.to === '/calendar' ? handleCalendarTabClick : undefined}
             data-testid={`tab-${tab.to.slice(1)}`}
+            tabIndex={isHidden ? -1 : undefined}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
+                isHidden ? 'pointer-events-none' : ''
+              } ${
                 isActive
                   ? 'text-emerald-600'
                   : 'text-gray-400 hover:text-gray-600'
