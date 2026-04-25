@@ -101,6 +101,22 @@ describe('DayContextForm', () => {
     })
   })
 
+  it('end date field has min set to the event start date', () => {
+    render(
+      createElement(DayContextForm, {
+        householdId: 'h1',
+        date: '2024-06-15',
+        household: mockHousehold,
+        onClose: vi.fn(),
+      }),
+      { wrapper: createWrapper() }
+    )
+
+    const endDateInput = screen.getByLabelText(/End date/) as HTMLInputElement
+    expect(endDateInput.type).toBe('date')
+    expect(endDateInput.min).toBe('2024-06-15')
+  })
+
   it('renders form with existing values', () => {
     const existing = {
       id: 'ctx1',

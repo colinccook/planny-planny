@@ -134,8 +134,9 @@ function CalendarViewInner({
   }
 
   // Group contexts by date — multi-day events appear on every date in their range.
-  // We only iterate over each context's effective span intersected with the
-  // currently-rendered date window, using filter() to avoid an O(contexts × dates) loop.
+  // filter() produces the subset of rendered dates within each context's span so
+  // we only insert into the map for matching days (O(contexts × dates) in the
+  // worst case, but in practice contexts are few and dates ≤ ~100).
   const contextsByDate = new Map<string, typeof contexts>()
   for (const ctx of contexts) {
     const effectiveEnd = ctx.end_date ?? ctx.date
