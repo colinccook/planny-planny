@@ -176,6 +176,7 @@ export interface Database {
           id: string
           household_id: string
           date: string
+          end_date: string | null
           event_name: string | null
           extra_adults: number
           extra_children: number
@@ -186,6 +187,7 @@ export interface Database {
           id?: string
           household_id: string
           date: string
+          end_date?: string | null
           event_name?: string | null
           extra_adults?: number
           extra_children?: number
@@ -196,6 +198,7 @@ export interface Database {
           id?: string
           household_id?: string
           date?: string
+          end_date?: string | null
           event_name?: string | null
           extra_adults?: number
           extra_children?: number

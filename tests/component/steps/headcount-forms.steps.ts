@@ -66,6 +66,9 @@ function buildDayContextFormHtml(
     <label for="event-name">Event</label>
     <input id="event-name" type="text" placeholder="e.g. Mum visiting" />
 
+    <label for="end-date">End date (optional – leave blank for single day)</label>
+    <input id="end-date" type="date" />
+
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
       ${buildStepperHtml('extra-adults', 'Extra adults', extraAdults, -householdDefaults.adults, 99)}
       ${buildStepperHtml('extra-children', 'Extra children', extraChildren, -householdDefaults.children, 99)}
@@ -105,6 +108,11 @@ Then('I should see an extra adults stepper', async ({ page }) => {
   await expect(page.getByTestId('extra-adults-value')).toBeVisible()
   await expect(page.getByTestId('extra-adults-decrement')).toBeVisible()
   await expect(page.getByTestId('extra-adults-increment')).toBeVisible()
+})
+
+Then('I should see an end date field', async ({ page }) => {
+  await expect(page.locator('label[for="end-date"]')).toBeVisible()
+  await expect(page.locator('input#end-date[type="date"]')).toBeVisible()
 })
 
 Then('I should see an extra children stepper', async ({ page }) => {

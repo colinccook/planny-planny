@@ -133,12 +133,19 @@ function CalendarViewInner({
     mealsByDate.set(meal.date, existing)
   }
 
-  // Group contexts by date
+  // Group contexts by date — multi-day events appear on every date in their range.
+  // filter() produces the subset of rendered dates within each context's span so
+  // we only insert into the map for matching days (O(contexts × dates) in the
+  // worst case, but in practice contexts are few and dates ≤ ~100).
   const contextsByDate = new Map<string, typeof contexts>()
   for (const ctx of contexts) {
-    const existing = contextsByDate.get(ctx.date) ?? []
-    existing.push(ctx)
-    contextsByDate.set(ctx.date, existing)
+    const effectiveEnd = ctx.end_date ?? ctx.date
+    const applicableDates = dates.filter((day) => day >= ctx.date && day <= effectiveEnd)
+    for (const day of applicableDates) {
+      const existing = contextsByDate.get(day) ?? []
+      existing.push(ctx)
+      contextsByDate.set(day, existing)
+    }
   }
 
   // Map placeholders by day of week (0=Sunday, 6=Saturday)

@@ -254,12 +254,19 @@ export function useDayContexts(
     queryKey: ['day-contexts', householdId, startDate, endDate],
     queryFn: async () => {
       if (!householdId) return []
+      // Fetch all contexts that overlap with [startDate, endDate].
+      // A multi-day context (end_date set) overlaps when:
+      //   ctx.date <= endDate AND ctx.end_date >= startDate
+      // A single-day context (end_date null) is treated as end_date = date, so:
+      //   ctx.date <= endDate AND ctx.date >= startDate
+      // Combined filter:
+      //   date <= endDate AND (end_date >= startDate OR (end_date IS NULL AND date >= startDate))
       const { data, error } = await supabase
         .from('day_contexts')
         .select('*')
         .eq('household_id', householdId)
-        .gte('date', startDate)
         .lte('date', endDate)
+        .or(`end_date.gte.${startDate},and(end_date.is.null,date.gte.${startDate})`)
         .order('created_at', { ascending: true })
 
       if (error) throw error

@@ -19,6 +19,7 @@ function makeContext(overrides: Record<string, unknown> = {}) {
     id: 'ctx-1',
     household_id: 'hh-1',
     date: '2025-04-14',
+    end_date: null,
     event_name: null,
     description: null,
     extra_adults: 0,
