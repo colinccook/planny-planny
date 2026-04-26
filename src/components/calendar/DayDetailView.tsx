@@ -121,7 +121,7 @@ export default function DayDetailView({
   // days and "rolled forward" to today. The hook filters down to
   // what should appear on the displayed `date` via
   // `useGroupedTodos`.
-  const todayStr = toDateString(new Date(new Date().setHours(0, 0, 0, 0)))
+  const todayStr = toDateString(new Date())
   const todoStart = date < todayStr ? date : todayStr
   const todoEnd = date > todayStr ? date : todayStr
   const { data: todos = [] } = useTodos(household.id, todoStart, todoEnd)
