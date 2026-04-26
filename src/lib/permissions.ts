@@ -67,6 +67,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add, move and delete meals',
       'Add and edit events (visitors etc.)',
       'Propose ideas and vote',
+      'Add and tick off todo items',
       'See who voted',
       'Invite new members',
     ],
@@ -81,6 +82,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add, move and delete meals',
       'Add and edit events (visitors etc.)',
       'Propose ideas and vote',
+      'Add and tick off todo items',
       'See who voted',
     ],
     cannot: ['Invite new members'],
@@ -98,6 +100,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Propose meal ideas',
       'Add, move or delete meals',
       'Add or edit events',
+      'Add or tick off todo items',
       'Invite new members',
     ],
   },
@@ -152,6 +155,14 @@ export function canManageEvents(audience: Audience): boolean {
 
 /** Owner / member / honoured guest. */
 export function canProposeIdeas(audience: Audience): boolean {
+  return canEditMeals(audience)
+}
+
+/** Owner / member / honoured guest — same audience as meal
+ *  editing. Controls who can create, tick off and delete todo
+ *  items (both household-level and private reminders). Voting
+ *  guests and public viewers cannot manage todos. */
+export function canManageTodos(audience: Audience): boolean {
   return canEditMeals(audience)
 }
 

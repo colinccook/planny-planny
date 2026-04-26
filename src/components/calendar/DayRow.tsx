@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Database } from '../../types/database'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
 import IngredientTag from '../ingredients/IngredientTag'
+import HeaderCountBadge from '../ui/HeaderCountBadge'
 import type { Audience } from '../../lib/permissions'
 
 type Household = Database['public']['Tables']['households']['Row']
@@ -14,6 +15,10 @@ interface DayRowProps {
   contexts: DayContext[]
   placeholder: DayPlaceholder | null
   meals: MealPlanWithIngredients[]
+  /** Number of meal ideas pinned to this day (rendered as 💡 N). */
+  ideaCount?: number
+  /** Number of todo items currently visible on this day (rendered as ✅ N). */
+  todoCount?: number
   currentRole: Audience
 }
 
@@ -46,6 +51,8 @@ export default function DayRow({
   contexts,
   placeholder,
   meals,
+  ideaCount = 0,
+  todoCount = 0,
 }: DayRowProps) {
   const navigate = useNavigate()
 
@@ -111,6 +118,26 @@ export default function DayRow({
           <span className="text-sm italic text-emerald-500">
             {placeholder.label}
           </span>
+        )}
+
+        {/* Idea + todo counts — same shared pill as the streak flame. */}
+        {todoCount > 0 && (
+          <HeaderCountBadge
+            icon="✅"
+            count={todoCount}
+            ariaLabel={`${todoCount} todo ${todoCount === 1 ? 'item' : 'items'}`}
+            variant="subtle"
+            testId={`day-todo-badge-${date}`}
+          />
+        )}
+        {ideaCount > 0 && (
+          <HeaderCountBadge
+            icon="💡"
+            count={ideaCount}
+            ariaLabel={`${ideaCount} ${ideaCount === 1 ? 'idea' : 'ideas'}`}
+            variant="subtle"
+            testId={`day-idea-badge-${date}`}
+          />
         )}
 
         {/* Chevron */}

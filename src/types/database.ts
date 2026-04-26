@@ -282,6 +282,42 @@ export interface Database {
         }
         Relationships: []
       }
+      todo_items: {
+        Row: {
+          id: string
+          household_id: string
+          user_id: string | null
+          date: string
+          title: string
+          completed_on: string | null
+          completed_at: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          household_id: string
+          user_id?: string | null
+          date: string
+          title: string
+          completed_on?: string | null
+          completed_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          household_id?: string
+          user_id?: string | null
+          date?: string
+          title?: string
+          completed_on?: string | null
+          completed_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       reactions: {
         Row: {
           id: string

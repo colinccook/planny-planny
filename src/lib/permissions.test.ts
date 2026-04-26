@@ -5,6 +5,7 @@ import {
   canInviteMembers,
   canManageEvents,
   canManageMembers,
+  canManageTodos,
   canProposeIdeas,
   canSeeEvents,
   canSeeIdeas,
@@ -33,6 +34,7 @@ type Row = [
   boolean, // canEditMeals
   boolean, // canManageEvents
   boolean, // canProposeIdeas
+  boolean, // canManageTodos
   boolean, // canVote
   boolean, // canSeeVoters
   boolean, // canSeeEvents
@@ -44,13 +46,13 @@ type Row = [
 ]
 
 const MATRIX: Row[] = [
-  // audience       edit  events propose vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts
-  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
-  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true],
-  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  false, false, true],
-  ['voting_guest',   false, false, false, true,  true,  true,  true,  true,  false, false, true],
-  ['public',         false, false, false, false, false, false, true,  true,  false, false, true],
-  [null,             false, false, false, false, false, false, false, false, false, false, false],
+  // audience       edit  events propose todos vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts
+  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true],
+  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, true],
+  ['voting_guest',   false, false, false, false, true,  true,  true,  true,  true,  false, false, true],
+  ['public',         false, false, false, false, false, false, false, true,  true,  false, false, true],
+  [null,             false, false, false, false, false, false, false, false, false, false, false, false],
 ]
 
 describe('permissions', () => {
@@ -61,6 +63,7 @@ describe('permissions', () => {
       edit,
       events,
       propose,
+      todos,
       vote,
       seeVoters,
       seeEvents,
@@ -78,6 +81,9 @@ describe('permissions', () => {
       })
       it(`canProposeIdeas = ${propose}`, () => {
         expect(canProposeIdeas(audience)).toBe(propose)
+      })
+      it(`canManageTodos = ${todos}`, () => {
+        expect(canManageTodos(audience)).toBe(todos)
       })
       it(`canVote = ${vote}`, () => {
         expect(canVote(audience)).toBe(vote)

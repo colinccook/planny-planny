@@ -30,6 +30,25 @@ vi.mock('../../hooks/useMealPlans', () => ({
   }),
 }))
 
+vi.mock('../../hooks/useMealIdeas', () => ({
+  useMealIdeas: () => ({ data: [] }),
+}))
+
+vi.mock('../../hooks/useTodos', () => ({
+  useTodos: () => ({ data: [] }),
+  useGroupedTodos: () => new Map(),
+  useCreateTodo: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useCompleteTodo: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useReopenTodo: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  useDeleteTodo: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+  todoBelongsOnDay: () => false,
+  groupTodosByDay: () => new Map(),
+}))
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: { id: 'u1' } }),
+}))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
