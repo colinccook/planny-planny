@@ -8,6 +8,7 @@ import { copyToClipboard } from '../lib/clipboard'
 import { useToast } from '../hooks/useToast'
 import CupboardHeader from '../components/store-cupboard/CupboardHeader'
 import CupboardList from '../components/store-cupboard/CupboardList'
+import { SkeletonBlock } from '../components/ui/Skeleton'
 
 export default function StoreCupboardPage() {
   const { user } = useAuth()
@@ -53,11 +54,12 @@ export default function StoreCupboardPage() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           className="p-4"
+          data-testid="store-cupboard-skeleton"
         >
-          <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
+          <SkeletonBlock className="h-8 w-48" />
           <div className="mt-4 space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-100" />
+              <SkeletonBlock key={i} className="h-14 rounded-lg" />
             ))}
           </div>
         </motion.div>

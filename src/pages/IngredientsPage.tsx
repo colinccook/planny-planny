@@ -6,6 +6,7 @@ import AddIngredientForm from '../components/ingredients/AddIngredientForm'
 import IngredientsList from '../components/ingredients/IngredientsList'
 import type { SortOption } from '../components/ingredients/IngredientsList'
 import { useIngredients } from '../hooks/useIngredients'
+import { SkeletonBlock } from '../components/ui/Skeleton'
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'alphabetical', label: 'A–Z' },
@@ -30,11 +31,12 @@ export default function IngredientsPage() {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
           className="p-4"
+          data-testid="ingredients-skeleton"
         >
-          <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
+          <SkeletonBlock className="h-8 w-48" />
           <div className="mt-4 space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-100" />
+              <SkeletonBlock key={i} className="h-14 rounded-lg" />
             ))}
           </div>
         </motion.div>

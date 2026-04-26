@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 import AccessLevelsLink from '../components/settings/AccessLevelsLink'
+import { SkeletonBlock } from '../components/ui/Skeleton'
 
 type Household = Database['public']['Tables']['households']['Row']
 type MealPlanRow = Database['public']['Tables']['meal_plans']['Row']
@@ -119,8 +120,31 @@ export default function PublicHouseholdPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600" />
+      <div className="min-h-screen bg-gray-50" data-testid="public-household-skeleton">
+        <header className="flex items-start justify-between gap-2 bg-emerald-600 px-4 py-3">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-5 w-32 bg-emerald-400/60" />
+            <SkeletonBlock className="h-3 w-24 bg-emerald-400/40" />
+          </div>
+        </header>
+        <main className="mx-auto max-w-sm space-y-6 p-4">
+          <section>
+            <SkeletonBlock className="mb-2 h-3 w-28" />
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <SkeletonBlock key={i} className="h-16 rounded-lg" />
+              ))}
+            </div>
+          </section>
+          <section>
+            <SkeletonBlock className="mb-2 h-3 w-20" />
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <SkeletonBlock key={i} className="h-10 rounded-lg" />
+              ))}
+            </div>
+          </section>
+        </main>
       </div>
     )
   }

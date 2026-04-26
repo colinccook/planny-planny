@@ -12,6 +12,7 @@ import RoleBadge from './RoleBadge'
 import AccessLevelsLink from './AccessLevelsLink'
 import AccessLevelsList from './AccessLevelsList'
 import Tray from '../ui/Tray'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 interface MemberRow {
   user_id: string
@@ -127,9 +128,9 @@ export default function MemberList() {
       )}
 
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2" data-testid="member-list-skeleton">
           {[1, 2].map((i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-gray-100" />
+            <SkeletonBlock key={i} className="h-10" />
           ))}
         </div>
       ) : members.length === 0 ? (

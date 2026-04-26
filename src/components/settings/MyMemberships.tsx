@@ -6,6 +6,7 @@ import { useHousehold } from '../../hooks/useHousehold'
 import { roleLabel } from '../../lib/permissions'
 import RoleBadge from './RoleBadge'
 import AccessLevelsLink from './AccessLevelsLink'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 /**
  * Panel listing every household the signed-in user is a member
@@ -25,8 +26,8 @@ export default function MyMemberships() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg bg-white p-4 shadow">
-        <div className="h-5 w-40 animate-pulse rounded bg-gray-100" />
+      <div className="rounded-lg bg-white p-4 shadow" data-testid="my-memberships-skeleton">
+        <SkeletonBlock className="h-5 w-40" />
       </div>
     )
   }

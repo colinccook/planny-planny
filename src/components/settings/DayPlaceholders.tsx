@@ -6,6 +6,7 @@ import {
   useDeleteDayPlaceholder,
 } from '../../hooks/useDayPlaceholders'
 import { canEditMeals } from '../../lib/permissions'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 const DAYS = [
   { index: 1, name: 'Monday' },
@@ -104,9 +105,9 @@ export default function DayPlaceholders() {
       </p>
 
       {isLoading ? (
-        <div className="space-y-2">
+        <div className="space-y-2" data-testid="day-placeholders-skeleton">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-gray-100" />
+            <SkeletonBlock key={i} className="h-10" />
           ))}
         </div>
       ) : (
