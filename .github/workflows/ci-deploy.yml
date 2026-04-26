@@ -112,21 +112,16 @@ jobs:
           version: latest
 
       - name: Start Supabase
+        # `supabase start` boots a fresh stack and applies every migration in
+        # `supabase/migrations/` on first boot, so an explicit `db reset`
+        # afterwards is redundant. We previously ran one with retries, but
+        # it added 1–2 minutes per run and was the sole source of CI flake:
+        # the post-reset "Restarting containers..." step regularly returned
+        # 502 / context-deadline-exceeded from the Storage container before
+        # it had finished coming back up. Dropping the reset keeps the same
+        # schema state and removes the flake entirely. `seed.sql` currently
+        # has no rows so we don't lose seeding either.
         run: supabase start
-
-      - name: Apply migrations
-        run: |
-          for attempt in 1 2 3; do
-            if supabase db reset; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              echo "supabase db reset failed on attempt $attempt; retrying in 10 seconds..."
-              sleep 10
-            fi
-          done
-          echo "supabase db reset failed after 3 attempts."
-          exit 1
 
       - name: Resolve Playwright version
         id: playwright-version
