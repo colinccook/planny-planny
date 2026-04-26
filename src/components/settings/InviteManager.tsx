@@ -9,6 +9,7 @@ import { useToast } from '../../hooks/useToast'
 import { canInviteMembers, INVITABLE_ROLES, roleLabel, type InvitableRole } from '../../lib/permissions'
 import RoleBadge from './RoleBadge'
 import AccessLevelsLink from './AccessLevelsLink'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -151,7 +152,7 @@ export default function InviteManager() {
       )}
 
       {isLoading ? (
-        <div className="h-8 animate-pulse rounded bg-gray-100" />
+        <SkeletonBlock className="h-8" data-testid="invite-manager-skeleton" />
       ) : invites.length === 0 ? (
         <p className="text-sm text-gray-500">No active invites.</p>
       ) : (

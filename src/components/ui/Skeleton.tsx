@@ -10,15 +10,19 @@
  * See `docs/skeleton-strategy.md` for the full rationale and checklist.
  */
 import { clsx } from 'clsx'
+import type { HTMLAttributes } from 'react'
 
-interface SkeletonBlockProps {
+interface SkeletonBlockProps extends HTMLAttributes<HTMLDivElement> {
   className?: string
 }
 
 /** A single pulsing placeholder rectangle. */
-export function SkeletonBlock({ className }: SkeletonBlockProps) {
+export function SkeletonBlock({ className, ...rest }: SkeletonBlockProps) {
   return (
-    <div className={clsx('animate-pulse rounded bg-gray-200', className)} />
+    <div
+      className={clsx('animate-pulse rounded bg-gray-200', className)}
+      {...rest}
+    />
   )
 }
 

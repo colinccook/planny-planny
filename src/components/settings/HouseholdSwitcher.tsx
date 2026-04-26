@@ -1,13 +1,14 @@
 import { useHousehold } from '../../hooks/useHousehold'
 import RoleBadge from './RoleBadge'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 export default function HouseholdSwitcher() {
   const { households, currentHousehold, switchHousehold, isLoading } = useHousehold()
 
   if (isLoading) {
     return (
-      <div className="animate-pulse rounded-lg bg-white p-4 shadow">
-        <div className="h-5 w-32 rounded bg-gray-200" />
+      <div className="rounded-lg bg-white p-4 shadow" data-testid="household-switcher-skeleton">
+        <SkeletonBlock className="h-5 w-32" />
       </div>
     )
   }

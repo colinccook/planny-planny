@@ -7,6 +7,7 @@ import {
 } from '../../hooks/useIngredients'
 import type { IngredientUsageStat } from '../../hooks/useIngredients'
 import type { Database } from '../../types/database'
+import { SkeletonBlock } from '../ui/Skeleton'
 
 type Ingredient = Database['public']['Tables']['ingredients']['Row']
 
@@ -115,9 +116,9 @@ export default function IngredientsList({ householdId, sortBy }: IngredientsList
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2" data-testid="ingredients-list-skeleton">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-14 animate-pulse rounded-lg bg-gray-100" />
+          <SkeletonBlock key={i} className="h-14 rounded-lg" />
         ))}
       </div>
     )

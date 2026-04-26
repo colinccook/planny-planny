@@ -184,4 +184,53 @@ feature components are pure UI for loaded data.
   [`src/pages/CalendarPage.tsx`](../src/pages/CalendarPage.tsx),
   [`src/pages/DayDetailPage.tsx`](../src/pages/DayDetailPage.tsx),
   [`src/pages/MealFormPage.tsx`](../src/pages/MealFormPage.tsx),
-  [`src/pages/SettingsPage.tsx`](../src/pages/SettingsPage.tsx)
+  [`src/pages/SettingsPage.tsx`](../src/pages/SettingsPage.tsx),
+  [`src/pages/IngredientsPage.tsx`](../src/pages/IngredientsPage.tsx),
+  [`src/pages/StoreCupboardPage.tsx`](../src/pages/StoreCupboardPage.tsx),
+  [`src/pages/PublicHouseholdPage.tsx`](../src/pages/PublicHouseholdPage.tsx)
+- Example sub-component placeholders (own data, page-level skeleton already gone):
+  [`src/components/ingredients/IngredientsList.tsx`](../src/components/ingredients/IngredientsList.tsx),
+  [`src/components/settings/MemberList.tsx`](../src/components/settings/MemberList.tsx),
+  [`src/components/settings/InviteManager.tsx`](../src/components/settings/InviteManager.tsx),
+  [`src/components/settings/DayPlaceholders.tsx`](../src/components/settings/DayPlaceholders.tsx),
+  [`src/components/settings/MyMemberships.tsx`](../src/components/settings/MyMemberships.tsx),
+  [`src/components/settings/HouseholdSwitcher.tsx`](../src/components/settings/HouseholdSwitcher.tsx)
+
+---
+
+## Sub-component loading (the legitimate exception)
+
+Some leaf components own their own `useQuery` and start fetching only
+once the page is past its initial skeleton (e.g. `MemberList`,
+`InviteManager`, `DayPlaceholders` inside `SettingsPage`). For those
+the page-level skeleton can't help — by the time these components
+mount, the page is already "loaded".
+
+In that case it **is** OK for the leaf to render a brief inline
+placeholder, with two rules:
+
+1. **Use the shared building blocks** (`SkeletonBlock`, `SkeletonCard`)
+   — never hand-rolled `animate-pulse` divs. The whole point of the
+   building blocks is to keep the look uniform.
+2. **No `AnimatePresence`** for sub-component loads. They're usually
+   sub-second and a cross-fade just adds visual noise. A flat
+   skeleton → content swap is fine.
+3. **Tag the placeholder** with `data-testid="<thing>-skeleton"` so
+   tests can assert "showed skeleton, then showed content".
+
+```tsx
+if (isLoading) {
+  return (
+    <div className="space-y-2" data-testid="thing-skeleton">
+      {[1, 2, 3].map((i) => (
+        <SkeletonBlock key={i} className="h-14 rounded-lg" />
+      ))}
+    </div>
+  )
+}
+```
+
+This is the **only** place a non-page component should branch on
+`isLoading`. If you find yourself adding this branch to a component
+whose data is also fetched at the page level, hoist the skeleton to
+the page instead.
