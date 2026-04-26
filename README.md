@@ -14,7 +14,7 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Ingredient Tracking** — Tag meals with ingredients. Star your favourites. Get reminders when you haven't used a starred ingredient in a while.
 - **Ingredient Warnings** — Mark ingredients that you overuse (hello, chicken!). Get prompted when you've already had it in the last 7 days.
 - **Public Sharing** — Share a read-only link to your meal plan so visiting family can see what's for dinner, including meal ideas with vote counts (no events, no voter names).
-- **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily, see every membership in one place, and leave when you no longer want to be in one.
+- **Multiple Households** — Belong to multiple households (e.g., your family + a shared flat). Switch between them easily, see every membership in one place, and leave when you no longer want to be in one. The app remembers the last household you were using and drops you back into it the next time you log in (or falls back to another one of your households if you're no longer a member).
 - **Five Access Levels** — Owner, Member, Honoured Guest (full editor, can't invite), Voting Guest (vote only), and Public. Each role's capabilities are summarised in an in-app "What do these levels mean?" tray and documented in [`docs/permissions.md`](docs/permissions.md).
 - **Per-email Invites** — Owners and members invite people by email. The invite link only works for that address and is consumed automatically when the person joins.
 - **Meal Ideas, Meals & Reactions** — Add lightweight meal ideas per day and react to ideas or meal plans with 👍. Tap the reaction button to like/unlike; long press to see who reacted.

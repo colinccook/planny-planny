@@ -5,6 +5,7 @@ import { HouseholdRealtimeManager } from '../lib/realtime'
 import { useAuth } from './useAuth'
 import type { Database } from '../types/database'
 import type { Role } from '../lib/permissions'
+import { pickInitialHousehold, lastHouseholdStorageKey } from '../lib/householdSelection'
 
 type Household = Database['public']['Tables']['households']['Row']
 
@@ -64,18 +65,42 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     .filter((m): m is MembershipWithHousehold & { households: Household } => m.households !== null)
     .map((m) => ({ household: m.households, role: m.role as Role }))
 
-  const currentHousehold =
-    households.find((h) => h.id === currentHouseholdId) ?? households[0] ?? null
+  // Pick which household should be active. If the user has previously chosen
+  // one (and they're still a member), keep using it. Otherwise fall back to
+  // the first available household. The selection rule itself is a pure
+  // function (`pickInitialHousehold`) so it can be reasoned about and tested
+  // independently of React.
+  const storedId =
+    currentHouseholdId ??
+    (user && typeof window !== 'undefined'
+      ? window.localStorage.getItem(lastHouseholdStorageKey(user.id))
+      : null)
+  const currentHousehold = pickInitialHousehold(storedId, households)
 
   const currentMembership = memberships.find(
     (m) => m.households?.id === currentHousehold?.id
   )
   const currentRole = (currentMembership?.role as Role) ?? null
 
-  // Auto-select first household
-  if (currentHousehold && !currentHouseholdId) {
+  // Auto-select first household and reconcile our internal state when the
+  // stored id is no longer a valid membership (e.g. the user was removed
+  // from that household between sessions). This mirrors the original
+  // "auto-select first household" guard — it is idempotent so it doesn't
+  // cause render loops.
+  if (currentHousehold && currentHouseholdId !== currentHousehold.id) {
     setCurrentHouseholdId(currentHousehold.id)
   }
+
+  // Persist the active household id so we can pick it up next time the
+  // user logs in. Writing to localStorage is the canonical "sync external
+  // system" use case for an effect.
+  useEffect(() => {
+    if (!currentHousehold || !user || typeof window === 'undefined') return
+    window.localStorage.setItem(
+      lastHouseholdStorageKey(user.id),
+      currentHousehold.id,
+    )
+  }, [currentHousehold, user])
 
   // Subscribe to Realtime when household changes
   useEffect(() => {
@@ -88,6 +113,9 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
 
   const switchHousehold = (householdId: string) => {
     setCurrentHouseholdId(householdId)
+    if (user && typeof window !== 'undefined') {
+      window.localStorage.setItem(lastHouseholdStorageKey(user.id), householdId)
+    }
     realtimeRef.current?.subscribe(householdId)
   }
 
