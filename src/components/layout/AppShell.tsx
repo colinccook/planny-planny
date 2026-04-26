@@ -4,6 +4,7 @@ import { useHousehold } from '../../hooks/useHousehold'
 import { usePlanStreak } from '../../hooks/usePlanStreak'
 import { HeaderOverrideProvider, useHeaderOverride } from '../../hooks/useHeaderOverride'
 import { CalendarDirectionProvider } from '../../hooks/useCalendarDirection'
+import HeaderCountBadge from '../ui/HeaderCountBadge'
 import TabBar from './TabBar'
 
 const ALWAYS_ACCESSIBLE = new Set(['/settings'])
@@ -50,12 +51,13 @@ function AppShellInner({ children }: { children: ReactNode }) {
           <>
             <h1 className="flex-1 text-lg font-bold text-white">Planny Planny</h1>
             {isSuccess && (
-              <span
-                className="flex items-center gap-1 rounded-full bg-emerald-700 px-2.5 py-1 text-sm font-medium text-white"
-                aria-label={`${streak} ${streak === 1 ? 'day' : 'days'} planning streak`}
-              >
-                🔥 {streak}
-              </span>
+              <HeaderCountBadge
+                icon="🔥"
+                count={streak}
+                hideWhenZero={false}
+                ariaLabel={`${streak} ${streak === 1 ? 'day' : 'days'} planning streak`}
+                testId="streak-badge"
+              />
             )}
           </>
         )}

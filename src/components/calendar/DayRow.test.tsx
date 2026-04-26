@@ -210,4 +210,54 @@ describe('DayRow', () => {
     // 2 default + 1 extra adult = 3
     expect(screen.getByText('3')).toBeDefined()
   })
+
+  it('renders the idea badge when ideaCount > 0', () => {
+    render(
+      createElement(DayRow, {
+        date: '2024-06-15',
+        household: mockHousehold,
+        contexts: [],
+        placeholder: null,
+        meals: [],
+        ideaCount: 3,
+        currentRole: 'owner',
+      }),
+      { wrapper: createWrapper() },
+    )
+    expect(screen.getByTestId('day-idea-badge-2024-06-15')).toBeDefined()
+    expect(screen.queryByTestId('day-todo-badge-2024-06-15')).toBeNull()
+  })
+
+  it('renders the todo badge when todoCount > 0', () => {
+    render(
+      createElement(DayRow, {
+        date: '2024-06-15',
+        household: mockHousehold,
+        contexts: [],
+        placeholder: null,
+        meals: [],
+        todoCount: 1,
+        currentRole: 'owner',
+      }),
+      { wrapper: createWrapper() },
+    )
+    const badge = screen.getByTestId('day-todo-badge-2024-06-15')
+    expect(badge.getAttribute('aria-label')).toBe('1 todo item')
+  })
+
+  it('hides both badges when counts are 0', () => {
+    render(
+      createElement(DayRow, {
+        date: '2024-06-15',
+        household: mockHousehold,
+        contexts: [],
+        placeholder: null,
+        meals: [],
+        currentRole: 'owner',
+      }),
+      { wrapper: createWrapper() },
+    )
+    expect(screen.queryByTestId('day-idea-badge-2024-06-15')).toBeNull()
+    expect(screen.queryByTestId('day-todo-badge-2024-06-15')).toBeNull()
+  })
 })

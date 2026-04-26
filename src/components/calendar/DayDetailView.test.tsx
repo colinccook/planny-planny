@@ -32,6 +32,19 @@ vi.mock('../../hooks/useMealIdeas', () => ({
   useDeleteReaction: (...args: unknown[]) => mockUseDeleteReaction(...args),
 }))
 
+const mockUseTodos = vi.fn()
+const mockMutate = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
+vi.mock('../../hooks/useTodos', () => ({
+  useTodos: (...args: unknown[]) => mockUseTodos(...args),
+  useGroupedTodos: () => new Map(),
+  useCreateTodo: () => mockMutate,
+  useCompleteTodo: () => mockMutate,
+  useReopenTodo: () => mockMutate,
+  useDeleteTodo: () => mockMutate,
+  todoBelongsOnDay: () => false,
+  groupTodosByDay: () => new Map(),
+}))
+
 const mockUseAuth = vi.fn()
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -106,6 +119,7 @@ describe('DayDetailView ideas and reactions', () => {
     mockUseDayPlaceholders.mockReturnValue({ data: [] })
     mockUseDeleteMealPlan.mockReturnValue({ mutate: deleteMealMutate })
     mockUseDeleteDayContext.mockReturnValue({ mutate: deleteCtxMutate })
+    mockUseTodos.mockReturnValue({ data: [] })
 
     mockUseMealIdeas.mockReturnValue({
       data: [

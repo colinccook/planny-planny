@@ -32,6 +32,7 @@ The capability matrix:
 | Propose ideas           |  ✅   |   ✅   |       ✅       |      ❌      |   ❌   |
 | Add / move meals        |  ✅   |   ✅   |       ✅       |      ❌      |   ❌   |
 | Add / edit events       |  ✅   |   ✅   |       ✅       |      ❌      |   ❌   |
+| Manage todo items       |  ✅   |   ✅   |       ✅       |      ❌      |   ❌   |
 | Invite people           |  ✅   |   ✅   |       ❌       |      ❌      |   ❌   |
 | Remove members / change roles | ✅ | ❌  |       ❌       |      ❌      |   ❌   |
 

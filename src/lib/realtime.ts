@@ -10,6 +10,7 @@ interface TableSubscription {
 const HOUSEHOLD_TABLES: readonly TableSubscription[] = [
   { table: 'meal_plans', queryKey: 'meal-plans' },
   { table: 'meal_ideas', queryKey: 'meal-ideas' },
+  { table: 'todo_items', queryKey: 'todo-items' },
   { table: 'reactions', queryKey: 'reactions' },
   { table: 'day_contexts', queryKey: 'day-contexts' },
   { table: 'ingredients', queryKey: 'ingredients' },

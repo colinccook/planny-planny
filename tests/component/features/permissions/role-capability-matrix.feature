@@ -22,6 +22,7 @@ Feature: Permission rules — role × capability matrix
       | owner | edit meals                   | true    |
       | owner | manage events                | true    |
       | owner | propose ideas                | true    |
+      | owner | manage todos                 | true    |
       | owner | vote                         | true    |
       | owner | invite members               | true    |
       | owner | manage members               | true    |
@@ -33,6 +34,7 @@ Feature: Permission rules — role × capability matrix
       | member | edit meals                  | true    |
       | member | manage events               | true    |
       | member | propose ideas               | true    |
+      | member | manage todos                | true    |
       | member | vote                        | true    |
       | member | invite members              | true    |
       | member | manage members              | false   |
@@ -44,6 +46,7 @@ Feature: Permission rules — role × capability matrix
       | honoured_guest | edit meals      | true    |
       | honoured_guest | manage events   | true    |
       | honoured_guest | propose ideas   | true    |
+      | honoured_guest | manage todos    | true    |
       | honoured_guest | vote            | true    |
       | honoured_guest | invite members  | false   |
       | honoured_guest | manage members  | false   |
@@ -55,6 +58,7 @@ Feature: Permission rules — role × capability matrix
       | voting_guest | edit meals      | false   |
       | voting_guest | manage events   | false   |
       | voting_guest | propose ideas   | false   |
+      | voting_guest | manage todos    | false   |
       | voting_guest | vote            | true    |
       | voting_guest | invite members  | false   |
       | voting_guest | manage members  | false   |
@@ -66,6 +70,7 @@ Feature: Permission rules — role × capability matrix
       | public | edit meals      | false   |
       | public | manage events   | false   |
       | public | propose ideas   | false   |
+      | public | manage todos    | false   |
       | public | vote            | false   |
       | public | invite members  | false   |
       | public | manage members  | false   |

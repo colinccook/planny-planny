@@ -5,8 +5,11 @@ import {
   useDayContexts,
   useDayPlaceholders,
 } from '../../hooks/useMealPlans'
-import { generateDateRange, generateBackwardDateRange } from '../../lib/dates'
+import { useMealIdeas } from '../../hooks/useMealIdeas'
+import { useTodos, useGroupedTodos } from '../../hooks/useTodos'
+import { generateDateRange, generateBackwardDateRange, toDateString } from '../../lib/dates'
 import { useCalendarDirection } from '../../hooks/useCalendarDirection'
+import { useAuth } from '../../hooks/useAuth'
 import {
   useCalendarScrollMemory,
   clearCalendarScrollMemory,
@@ -91,6 +94,11 @@ function CalendarViewInner({
     endDate
   )
   const { data: placeholders = [] } = useDayPlaceholders(household.id)
+  const { data: ideas = [] } = useMealIdeas(household.id, startDate, endDate)
+  const { data: todos = [] } = useTodos(household.id, startDate, endDate)
+  const { user } = useAuth()
+  const todayStr = toDateString(today)
+  const todosByDate = useGroupedTodos(todos, dates, todayStr, user?.id)
 
   const isLoading = mealsLoading || contextsLoading
 
@@ -131,6 +139,14 @@ function CalendarViewInner({
     const existing = mealsByDate.get(meal.date) ?? []
     existing.push(meal)
     mealsByDate.set(meal.date, existing)
+  }
+
+  // Group ideas by date — used to render the 💡 badge per day.
+  const ideasByDate = new Map<string, typeof ideas>()
+  for (const idea of ideas) {
+    const existing = ideasByDate.get(idea.date) ?? []
+    existing.push(idea)
+    ideasByDate.set(idea.date, existing)
   }
 
   // Group contexts by date — multi-day events appear on every date in their range.
@@ -235,6 +251,8 @@ function CalendarViewInner({
             contexts={contextsByDate.get(dateStr) ?? []}
             placeholder={placeholdersByDow.get(dow) ?? null}
             meals={mealsByDate.get(dateStr) ?? []}
+            ideaCount={ideasByDate.get(dateStr)?.length ?? 0}
+            todoCount={todosByDate.get(dateStr)?.length ?? 0}
             currentRole={currentRole}
           />
         )

@@ -16,13 +16,16 @@ import {
   useUpsertReaction,
   useDeleteReaction,
 } from '../../hooks/useMealIdeas'
+import { useTodos, useGroupedTodos } from '../../hooks/useTodos'
 import FullScreenView from '../ui/FullScreenView'
+import HeaderCountBadge from '../ui/HeaderCountBadge'
 import MealCard from './MealCard'
 import CopyMealTray from './CopyMealTray'
 import DayContextBadge from './DayContextBadge'
 import DayContextForm from './DayContextForm'
 import MealPromptGenerator from './MealPromptGenerator'
 import SwipeableDay from './SwipeableDay'
+import TodoList from './TodoList'
 import Tray from '../ui/Tray'
 import ReactionButton, {
   type Reactor,
@@ -30,6 +33,7 @@ import ReactionButton, {
 } from '../ui/ReactionButton'
 import type { ReactionWithProfile } from '../../hooks/useMealIdeas'
 import { useAuth } from '../../hooks/useAuth'
+import { toDateString } from '../../lib/dates'
 import { canEditMeals, canProposeIdeas, canVote, type Audience } from '../../lib/permissions'
 
 const THUMB_OPTIONS: ReactionOption[] = [{ emoji: '👍', label: 'Thumbs up' }]
@@ -112,6 +116,17 @@ export default function DayDetailView({
   const { data: placeholders = [] } = useDayPlaceholders(household.id)
   const { data: ideas = [] } = useMealIdeas(household.id, date, date)
   const { user } = useAuth()
+  // For the todo strip we need to span at least [today, date]
+  // because incomplete todos may have been created on previous
+  // days and "rolled forward" to today. The hook filters down to
+  // what should appear on the displayed `date` via
+  // `useGroupedTodos`.
+  const todayStr = toDateString(new Date())
+  const todoStart = date < todayStr ? date : todayStr
+  const todoEnd = date > todayStr ? date : todayStr
+  const { data: todos = [] } = useTodos(household.id, todoStart, todoEnd)
+  const todosByDay = useGroupedTodos(todos, [date], todayStr, user?.id)
+  const todosForDay = todosByDay.get(date) ?? []
   const deleteMeal = useDeleteMealPlan()
   const deleteCtx = useDeleteDayContext()
   const createIdea = useCreateMealIdea()
@@ -300,7 +315,36 @@ export default function DayDetailView({
               {placeholder.label}
             </span>
           )}
+          {todosForDay.length > 0 && (
+            <HeaderCountBadge
+              icon="✅"
+              count={todosForDay.length}
+              ariaLabel={`${todosForDay.length} todo ${
+                todosForDay.length === 1 ? 'item' : 'items'
+              }`}
+              variant="subtle"
+              testId={`day-todo-badge-${date}`}
+            />
+          )}
+          {ideas.length > 0 && (
+            <HeaderCountBadge
+              icon="💡"
+              count={ideas.length}
+              ariaLabel={`${ideas.length} ${ideas.length === 1 ? 'idea' : 'ideas'}`}
+              variant="subtle"
+              testId={`day-idea-badge-${date}`}
+            />
+          )}
         </div>
+
+        {/* Todo list (top of day) */}
+        <TodoList
+          householdId={household.id}
+          date={date}
+          today={todayStr}
+          todos={todosForDay}
+          currentRole={currentRole}
+        />
 
         {/* Events list */}
         {contexts.length > 0 && (
