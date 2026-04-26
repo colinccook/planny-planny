@@ -220,6 +220,10 @@ For a deep dive into how the BDD suite works — the two suites (real-app
 **integration** vs. in-step HTML **component** harnesses), what each one
 guarantees, and how to add a new test — see [`docs/bdd-testing.md`](docs/bdd-testing.md).
 
+For how loading states are structured (shared skeleton building blocks +
+per-page composition + `AnimatePresence` cross-fade), see
+[`docs/skeleton-strategy.md`](docs/skeleton-strategy.md).
+
 ## 🌍 Deployment
 
 ### How It Works
