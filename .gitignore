@@ -35,6 +35,9 @@ dist-ssr
 # playwright-bdd generated files
 .features-gen/
 
+# Lighthouse CI results
+.lighthouseci/
+
 # Supabase
 .branches
 .temp
