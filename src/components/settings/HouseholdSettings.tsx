@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useHousehold } from '../../hooks/useHousehold'
 import { canEditMeals } from '../../lib/permissions'
 import NumberStepper from '../ui/NumberStepper'
+import CollapsibleSection from '../ui/CollapsibleSection'
 
 export default function HouseholdSettings() {
   const { currentHousehold, currentRole } = useHousehold()
@@ -65,87 +66,87 @@ export default function HouseholdSettings() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow">
-      <h3 className="mb-3 text-sm font-semibold text-gray-900">Household Settings</h3>
-
-      {isReadOnly && (
-        <p className="mb-3 rounded-md bg-gray-50 p-2 text-xs text-gray-500">
-          You don&apos;t have edit access. Settings are read-only.
-        </p>
-      )}
-
-      {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-
-      <form onSubmit={handleSave} className="space-y-3">
-        <div>
-          <label htmlFor="settings-name" className="mb-1 block text-sm font-medium text-gray-700">
-            Name
-          </label>
-          <input
-            id="settings-name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isReadOnly}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="settings-alias" className="mb-1 block text-sm font-medium text-gray-700">
-            Alias
-          </label>
-          <input
-            id="settings-alias"
-            type="text"
-            value={alias}
-            onChange={(e) => setAlias(e.target.value)}
-            disabled={isReadOnly}
-            placeholder="e.g., 123 Oak Street"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <NumberStepper
-            id="settings-adults"
-            label="Default adults"
-            value={defaultAdults}
-            min={0}
-            max={99}
-            onChange={setDefaultAdults}
-            disabled={isReadOnly}
-          />
-          <NumberStepper
-            id="settings-children"
-            label="Default children"
-            value={defaultChildren}
-            min={0}
-            max={99}
-            onChange={setDefaultChildren}
-            disabled={isReadOnly}
-          />
-          <NumberStepper
-            id="settings-babies"
-            label="Default babies"
-            value={defaultBabies}
-            min={0}
-            max={99}
-            onChange={setDefaultBabies}
-            disabled={isReadOnly}
-          />
-        </div>
-
-        {!isReadOnly && (
-          <button
-            type="submit"
-            disabled={saving || !name.trim()}
-            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
-          >
-            {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
-          </button>
+    <CollapsibleSection title="Household Settings">
+      <div className="p-4">
+        {isReadOnly && (
+          <p className="mb-3 rounded-md bg-gray-50 p-2 text-xs text-gray-500">
+            You don&apos;t have edit access. Settings are read-only.
+          </p>
         )}
-      </form>
-    </div>
+
+        {error && <div className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+        <form onSubmit={handleSave} className="space-y-3">
+          <div>
+            <label htmlFor="settings-name" className="mb-1 block text-sm font-medium text-gray-700">
+              Name
+            </label>
+            <input
+              id="settings-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isReadOnly}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="settings-alias" className="mb-1 block text-sm font-medium text-gray-700">
+              Alias
+            </label>
+            <input
+              id="settings-alias"
+              type="text"
+              value={alias}
+              onChange={(e) => setAlias(e.target.value)}
+              disabled={isReadOnly}
+              placeholder="e.g., 123 Oak Street"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <NumberStepper
+              id="settings-adults"
+              label="Default adults"
+              value={defaultAdults}
+              min={0}
+              max={99}
+              onChange={setDefaultAdults}
+              disabled={isReadOnly}
+            />
+            <NumberStepper
+              id="settings-children"
+              label="Default children"
+              value={defaultChildren}
+              min={0}
+              max={99}
+              onChange={setDefaultChildren}
+              disabled={isReadOnly}
+            />
+            <NumberStepper
+              id="settings-babies"
+              label="Default babies"
+              value={defaultBabies}
+              min={0}
+              max={99}
+              onChange={setDefaultBabies}
+              disabled={isReadOnly}
+            />
+          </div>
+
+          {!isReadOnly && (
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+            >
+              {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
+            </button>
+          )}
+        </form>
+      </div>
+    </CollapsibleSection>
   )
 }

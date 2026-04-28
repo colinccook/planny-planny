@@ -55,6 +55,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Remove other members',
       'Change anyone\u2019s access level',
       'Toggle the public share link',
+      'Delete the household permanently',
     ],
     cannot: [],
   },
@@ -213,4 +214,10 @@ export function canManageMembers(audience: Audience): boolean {
  *  `canSeeVoters`. */
 export function canSeeVoteCounts(audience: Audience): boolean {
   return audience !== null
+}
+
+/** Owner only — only an owner may permanently delete the household
+ *  and all its data (meals, members, invites). */
+export function canDeleteHousehold(audience: Audience): boolean {
+  return audience === 'owner'
 }

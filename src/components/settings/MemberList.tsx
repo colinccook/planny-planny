@@ -13,6 +13,7 @@ import AccessLevelsLink from './AccessLevelsLink'
 import AccessLevelsList from './AccessLevelsList'
 import Tray from '../ui/Tray'
 import { SkeletonBlock } from '../ui/Skeleton'
+import CollapsibleSection from '../ui/CollapsibleSection'
 
 interface MemberRow {
   user_id: string
@@ -109,103 +110,104 @@ export default function MemberList() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow" data-testid="member-list">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">Members</h3>
-        <AccessLevelsLink />
-      </div>
-
-      {isOwner && (
-        <p className="mb-2 text-xs text-gray-500">
-          Tap a member to change their access level.
-        </p>
-      )}
-
-      {error && (
-        <p className="mb-2 text-xs text-red-600" role="alert" data-testid="member-list-error">
-          {error}
-        </p>
-      )}
-
-      {isLoading ? (
-        <div className="space-y-2" data-testid="member-list-skeleton">
-          {[1, 2].map((i) => (
-            <SkeletonBlock key={i} className="h-10" />
-          ))}
+    <CollapsibleSection title="Members" data-testid="member-list">
+      <div className="p-4">
+        <div className="mb-3 text-right">
+          <AccessLevelsLink />
         </div>
-      ) : members.length === 0 ? (
-        <p className="text-sm text-gray-500">No members found.</p>
-      ) : (
-        <ul className="divide-y divide-gray-100">
-          {members.map((member) => {
-            const displayName = member.profiles?.display_name ?? 'Unknown user'
-            const isSelf = member.user_id === user?.id
-            const isClickable = isOwner && !isSelf
 
-            const inner = (
-              <>
-                <div className="flex flex-1 items-center gap-2">
-                  <span className="text-sm text-gray-900">{displayName}</span>
-                  <RoleBadge role={member.role} />
-                  {isSelf && <span className="text-xs text-gray-400">(you)</span>}
-                </div>
-                {isOwner && !isSelf && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemove(member.user_id)
-                    }}
-                    className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                    data-testid={`remove-member-${member.user_id}`}
-                  >
-                    Remove
-                  </button>
-                )}
-              </>
-            )
+        {isOwner && (
+          <p className="mb-2 text-xs text-gray-500">
+            Tap a member to change their access level.
+          </p>
+        )}
 
-            return (
-              <li
-                key={member.user_id}
-                className="flex items-center justify-between py-2"
-                data-testid={`member-row-${member.user_id}`}
-              >
-                {isClickable ? (
-                  <button
-                    type="button"
-                    onClick={() => openEditor(member)}
-                    className="flex flex-1 items-center justify-between rounded px-1 py-1 text-left hover:bg-gray-50"
-                    data-testid={`edit-member-${member.user_id}`}
-                    aria-label={`Change access level for ${displayName}`}
-                  >
-                    {inner}
-                  </button>
-                ) : (
-                  <div className="flex flex-1 items-center justify-between px-1 py-1">
-                    {inner}
+        {error && (
+          <p className="mb-2 text-xs text-red-600" role="alert" data-testid="member-list-error">
+            {error}
+          </p>
+        )}
+
+        {isLoading ? (
+          <div className="space-y-2" data-testid="member-list-skeleton">
+            {[1, 2].map((i) => (
+              <SkeletonBlock key={i} className="h-10" />
+            ))}
+          </div>
+        ) : members.length === 0 ? (
+          <p className="text-sm text-gray-500">No members found.</p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {members.map((member) => {
+              const displayName = member.profiles?.display_name ?? 'Unknown user'
+              const isSelf = member.user_id === user?.id
+              const isClickable = isOwner && !isSelf
+
+              const inner = (
+                <>
+                  <div className="flex flex-1 items-center gap-2">
+                    <span className="text-sm text-gray-900">{displayName}</span>
+                    <RoleBadge role={member.role} />
+                    {isSelf && <span className="text-xs text-gray-400">(you)</span>}
                   </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                  {isOwner && !isSelf && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemove(member.user_id)
+                      }}
+                      className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                      data-testid={`remove-member-${member.user_id}`}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </>
+              )
 
-      <Tray
-        isOpen={editingMember !== null}
-        onClose={() => (savingRole ? undefined : setEditingMember(null))}
-        title={`Access level: ${editingMember?.profiles?.display_name ?? ''}`}
-        description="Tap a level to change what this person can do."
-      >
-        <AccessLevelsList
-          currentKey={editingMember?.role}
-          onSelect={handleChangeRole}
-          disabled={savingRole}
-          // The "public" entry is informational — it's not a role
-          // a household member can hold.
-          filter={(level) => level.key !== 'public'}
-        />
-      </Tray>
-    </div>
+              return (
+                <li
+                  key={member.user_id}
+                  className="flex items-center justify-between py-2"
+                  data-testid={`member-row-${member.user_id}`}
+                >
+                  {isClickable ? (
+                    <button
+                      type="button"
+                      onClick={() => openEditor(member)}
+                      className="flex flex-1 items-center justify-between rounded px-1 py-1 text-left hover:bg-gray-50"
+                      data-testid={`edit-member-${member.user_id}`}
+                      aria-label={`Change access level for ${displayName}`}
+                    >
+                      {inner}
+                    </button>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-between px-1 py-1">
+                      {inner}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+
+        <Tray
+          isOpen={editingMember !== null}
+          onClose={() => (savingRole ? undefined : setEditingMember(null))}
+          title={`Access level: ${editingMember?.profiles?.display_name ?? ''}`}
+          description="Tap a level to change what this person can do."
+        >
+          <AccessLevelsList
+            currentKey={editingMember?.role}
+            onSelect={handleChangeRole}
+            disabled={savingRole}
+            // The "public" entry is informational — it's not a role
+            // a household member can hold.
+            filter={(level) => level.key !== 'public'}
+          />
+        </Tray>
+      </div>
+    </CollapsibleSection>
   )
 }

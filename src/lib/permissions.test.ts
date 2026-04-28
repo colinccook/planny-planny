@@ -13,6 +13,7 @@ import {
   canSeeVoteCounts,
   canSeeVoters,
   canVote,
+  canDeleteHousehold,
   roleLabel,
   type Audience,
 } from './permissions'
@@ -43,16 +44,17 @@ type Row = [
   boolean, // canInviteMembers
   boolean, // canManageMembers
   boolean, // canSeeVoteCounts
+  boolean, // canDeleteHousehold
 ]
 
 const MATRIX: Row[] = [
-  // audience       edit  events propose todos vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts
-  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
-  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true],
-  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, true],
-  ['voting_guest',   false, false, false, false, true,  true,  true,  true,  true,  false, false, true],
-  ['public',         false, false, false, false, false, false, false, true,  true,  false, false, true],
-  [null,             false, false, false, false, false, false, false, false, false, false, false, false],
+  // audience       edit  events propose todos vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts deleteHH
+  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true,  false],
+  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, true,  false],
+  ['voting_guest',   false, false, false, false, true,  true,  true,  true,  true,  false, false, true,  false],
+  ['public',         false, false, false, false, false, false, false, true,  true,  false, false, true,  false],
+  [null,             false, false, false, false, false, false, false, false, false, false, false, false, false],
 ]
 
 describe('permissions', () => {
@@ -72,6 +74,7 @@ describe('permissions', () => {
       invite,
       manage,
       seeCounts,
+      deleteHousehold,
     ) => {
       it(`canEditMeals = ${edit}`, () => {
         expect(canEditMeals(audience)).toBe(edit)
@@ -108,6 +111,9 @@ describe('permissions', () => {
       })
       it(`canSeeVoteCounts = ${seeCounts}`, () => {
         expect(canSeeVoteCounts(audience)).toBe(seeCounts)
+      })
+      it(`canDeleteHousehold = ${deleteHousehold}`, () => {
+        expect(canDeleteHousehold(audience)).toBe(deleteHousehold)
       })
     },
   )

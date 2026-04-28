@@ -65,7 +65,7 @@ describe('HouseholdSwitcher', () => {
     })
 
     render(createElement(HouseholdSwitcher), { wrapper: createWrapper() })
-    const select = screen.getByLabelText('Current Household') as HTMLSelectElement
+    const select = screen.getByLabelText('Switch household') as HTMLSelectElement
     expect(select).toBeDefined()
     expect(select.value).toBe('h1')
 
