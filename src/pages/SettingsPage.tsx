@@ -10,6 +10,9 @@ import InviteManager from '../components/settings/InviteManager'
 import PublicShareToggle from '../components/settings/PublicShareToggle'
 import MyMemberships from '../components/settings/MyMemberships'
 import AccessLevelsLink from '../components/settings/AccessLevelsLink'
+import DeleteHousehold from '../components/settings/DeleteHousehold'
+import DeleteAccount from '../components/settings/DeleteAccount'
+import CollapsibleSection from '../components/ui/CollapsibleSection'
 import { SkeletonSettingsCard } from '../components/ui/Skeleton'
 
 function SettingsSkeleton() {
@@ -64,19 +67,23 @@ export default function SettingsPage() {
                   <MemberList />
                   <InviteManager />
                   <PublicShareToggle />
+                  <DeleteHousehold />
                 </>
               )}
 
-              <div className="rounded-lg bg-white p-4 shadow">
-                <h3 className="mb-1 text-sm font-semibold text-gray-900">Account</h3>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-                <button
-                  onClick={signOut}
-                  className="mt-3 w-full rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
-                >
-                  Sign out
-                </button>
-              </div>
+              <CollapsibleSection title="Account">
+                <div className="p-4">
+                  <p className="mb-1 text-xs text-gray-500">{user?.email}</p>
+                  <button
+                    onClick={signOut}
+                    className="mt-2 w-full rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              </CollapsibleSection>
+
+              <DeleteAccount />
             </div>
           </motion.div>
         )}

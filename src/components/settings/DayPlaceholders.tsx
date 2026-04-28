@@ -7,6 +7,7 @@ import {
 } from '../../hooks/useDayPlaceholders'
 import { canEditMeals } from '../../lib/permissions'
 import { SkeletonBlock } from '../ui/Skeleton'
+import CollapsibleSection from '../ui/CollapsibleSection'
 
 const DAYS = [
   { index: 1, name: 'Monday' },
@@ -98,60 +99,61 @@ export default function DayPlaceholders() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow" data-testid="day-placeholders">
-      <h3 className="mb-3 text-sm font-semibold text-gray-900">Day Placeholders</h3>
-      <p className="mb-3 text-xs text-gray-500">
-        Set default themes for each day (e.g. &quot;Oily fish Monday&quot;).
-      </p>
-
-      {isLoading ? (
-        <div className="space-y-2" data-testid="day-placeholders-skeleton">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <SkeletonBlock key={i} className="h-10" />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {DAYS.map(({ index, name }) => {
-            const existing = placeholders.find((p) => p.day_of_week === index)
-            return (
-              <div key={index} className="flex items-center gap-2">
-                <label className="w-24 shrink-0 text-xs font-medium text-gray-700">
-                  {name}
-                </label>
-                <input
-                  type="text"
-                  className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
-                  placeholder={`e.g. ${name} theme`}
-                  value={labels[index] ?? ''}
-                  onChange={(e) => setLabel(index, e.target.value)}
-                  onBlur={() => handleBlur(index)}
-                  disabled={!canEdit}
-                  aria-label={`${name} placeholder`}
-                />
-                {canEdit && existing && (
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="shrink-0 rounded px-2 py-1.5 text-xs text-red-600 hover:bg-red-50"
-                    aria-label={`Clear ${name}`}
-                  >
-                    ✕
-                  </button>
-                )}
-                {savedDays.has(index) && (
-                  <span className="text-xs text-emerald-600">✓</span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {!canEdit && (
-        <p className="mt-2 text-xs text-gray-400">
-          You don&apos;t have edit access to day placeholders.
+    <CollapsibleSection title="Day Placeholders" data-testid="day-placeholders">
+      <div className="p-4">
+        <p className="mb-3 text-xs text-gray-500">
+          Set default themes for each day (e.g. &quot;Oily fish Monday&quot;).
         </p>
-      )}
-    </div>
+
+        {isLoading ? (
+          <div className="space-y-2" data-testid="day-placeholders-skeleton">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <SkeletonBlock key={i} className="h-10" />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {DAYS.map(({ index, name }) => {
+              const existing = placeholders.find((p) => p.day_of_week === index)
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <label className="w-24 shrink-0 text-xs font-medium text-gray-700">
+                    {name}
+                  </label>
+                  <input
+                    type="text"
+                    className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+                    placeholder={`e.g. ${name} theme`}
+                    value={labels[index] ?? ''}
+                    onChange={(e) => setLabel(index, e.target.value)}
+                    onBlur={() => handleBlur(index)}
+                    disabled={!canEdit}
+                    aria-label={`${name} placeholder`}
+                  />
+                  {canEdit && existing && (
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="shrink-0 rounded px-2 py-1.5 text-xs text-red-600 hover:bg-red-50"
+                      aria-label={`Clear ${name}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                  {savedDays.has(index) && (
+                    <span className="text-xs text-emerald-600">✓</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {!canEdit && (
+          <p className="mt-2 text-xs text-gray-400">
+            You don&apos;t have edit access to day placeholders.
+          </p>
+        )}
+      </div>
+    </CollapsibleSection>
   )
 }

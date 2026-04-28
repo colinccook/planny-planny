@@ -49,6 +49,12 @@ vi.mock('../components/settings/MyMemberships', () => ({
 vi.mock('../components/settings/AccessLevelsLink', () => ({
   default: () => createElement('div', { 'data-testid': 'access-levels-link' }),
 }))
+vi.mock('../components/settings/DeleteHousehold', () => ({
+  default: () => createElement('div', { 'data-testid': 'delete-household' }),
+}))
+vi.mock('../components/settings/DeleteAccount', () => ({
+  default: () => createElement('div', { 'data-testid': 'delete-account' }),
+}))
 
 import SettingsPage from './SettingsPage'
 
@@ -140,15 +146,16 @@ describe('SettingsPage', () => {
 
     render(createElement(SettingsPage), { wrapper: createWrapper() })
 
-    // Verify the Account heading exists
+    // Verify the Account heading exists (inside the CollapsibleSection button)
     expect(screen.getByText('Account')).toBeDefined()
 
-    // The sign out button should be a sibling of the email in the Account section
+    // The sign out button should be visible (Account section opens by default)
     const signOutButton = screen.getByRole('button', { name: 'Sign out' })
     expect(signOutButton).toBeDefined()
 
-    // Verify button is inside the same container as the Account heading
-    const accountSection = screen.getByText('Account').closest('div')
+    // Verify button is inside the same top-level container as the Account heading
+    const accountHeading = screen.getByText('Account')
+    const accountSection = accountHeading.closest('[class*="rounded-lg"]')
     expect(accountSection?.contains(signOutButton)).toBe(true)
 
     // Verify clicking calls signOut

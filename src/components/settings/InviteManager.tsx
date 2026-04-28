@@ -10,6 +10,7 @@ import { canInviteMembers, INVITABLE_ROLES, roleLabel, type InvitableRole } from
 import RoleBadge from './RoleBadge'
 import AccessLevelsLink from './AccessLevelsLink'
 import { SkeletonBlock } from '../ui/Skeleton'
+import CollapsibleSection from '../ui/CollapsibleSection'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -99,99 +100,100 @@ export default function InviteManager() {
   }
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-gray-900">Invite Links</h3>
-        <AccessLevelsLink />
-      </div>
-
-      <p className="mb-3 text-xs text-gray-500">
-        Invite links are tied to a specific email address and stop
-        working once that person has joined.
-      </p>
-
-      <div className="mb-2 space-y-2">
-        <input
-          type="email"
-          value={inviteEmail}
-          onChange={(e) => setInviteEmail(e.target.value)}
-          placeholder="friend@example.com"
-          aria-label="Recipient email"
-          data-testid="invite-email-input"
-          className="w-full min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-        />
-        <div className="flex items-center gap-2">
-          <select
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as InvitableRole)}
-            aria-label="Invite role"
-            data-testid="invite-role-select"
-            className="min-h-[44px] flex-1 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-          >
-            {INVITABLE_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {roleLabel(role)}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleCreate}
-            disabled={creating || !inviteEmail.trim()}
-            data-testid="generate-invite-button"
-            className="min-h-[44px] rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            {creating ? 'Creating…' : 'Generate invite'}
-          </button>
+    <CollapsibleSection title="Invite Links">
+      <div className="p-4">
+        <div className="mb-3 text-right">
+          <AccessLevelsLink />
         </div>
-      </div>
 
-      {error && (
-        <p className="mb-2 text-xs text-red-600" role="alert" data-testid="invite-error">
-          {error}
+        <p className="mb-3 text-xs text-gray-500">
+          Invite links are tied to a specific email address and stop
+          working once that person has joined.
         </p>
-      )}
 
-      {isLoading ? (
-        <SkeletonBlock className="h-8" data-testid="invite-manager-skeleton" />
-      ) : invites.length === 0 ? (
-        <p className="text-sm text-gray-500">No active invites.</p>
-      ) : (
-        <ul className="space-y-2">
-          {invites.map((invite) => (
-            <li
-              key={invite.id}
-              className="flex items-center justify-between rounded-md border border-gray-100 p-2"
-              data-testid={`invite-row-${invite.id}`}
+        <div className="mb-2 space-y-2">
+          <input
+            type="email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            placeholder="friend@example.com"
+            aria-label="Recipient email"
+            data-testid="invite-email-input"
+            className="w-full min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          />
+          <div className="flex items-center gap-2">
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as InvitableRole)}
+              aria-label="Invite role"
+              data-testid="invite-role-select"
+              className="min-h-[44px] flex-1 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             >
-              <div className="flex flex-col gap-1 overflow-hidden">
-                <div className="flex items-center gap-2">
-                  <RoleBadge role={invite.role} />
-                  <span className="truncate text-xs font-medium text-gray-700">
-                    {invite.email ?? 'Anyone with link'}
-                  </span>
+              {INVITABLE_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {roleLabel(role)}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleCreate}
+              disabled={creating || !inviteEmail.trim()}
+              data-testid="generate-invite-button"
+              className="min-h-[44px] rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {creating ? 'Creating…' : 'Generate invite'}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mb-2 text-xs text-red-600" role="alert" data-testid="invite-error">
+            {error}
+          </p>
+        )}
+
+        {isLoading ? (
+          <SkeletonBlock className="h-8" data-testid="invite-manager-skeleton" />
+        ) : invites.length === 0 ? (
+          <p className="text-sm text-gray-500">No active invites.</p>
+        ) : (
+          <ul className="space-y-2">
+            {invites.map((invite) => (
+              <li
+                key={invite.id}
+                className="flex items-center justify-between rounded-md border border-gray-100 p-2"
+                data-testid={`invite-row-${invite.id}`}
+              >
+                <div className="flex flex-col gap-1 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={invite.role} />
+                    <span className="truncate text-xs font-medium text-gray-700">
+                      {invite.email ?? 'Anyone with link'}
+                    </span>
+                  </div>
+                  <code className="truncate text-xs text-gray-500">
+                    /invite/{invite.token}
+                  </code>
                 </div>
-                <code className="truncate text-xs text-gray-500">
-                  /invite/{invite.token}
-                </code>
-              </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  onClick={() => copyLink(invite.token, invite.id)}
-                  className="rounded px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-50"
-                >
-                  {copiedId === invite.id ? '✓ Copied' : 'Copy'}
-                </button>
-                <button
-                  onClick={() => handleDelete(invite.id)}
-                  className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => copyLink(invite.token, invite.id)}
+                    className="rounded px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-50"
+                  >
+                    {copiedId === invite.id ? '✓ Copied' : 'Copy'}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(invite.id)}
+                    className="rounded px-2 py-1 text-xs text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </CollapsibleSection>
   )
 }
