@@ -4,9 +4,10 @@ import { test } from '../../support/fixtures';
 
 const { Then } = createBdd(test);
 
-Then('the viewport should have user-scalable disabled', async ({ page }) => {
+Then('the viewport should allow user scaling', async ({ page }) => {
   const content = await page.getAttribute('meta[name="viewport"]', 'content');
-  expect(content).toContain('user-scalable=no');
+  expect(content).not.toContain('user-scalable=no');
+  expect(content).not.toMatch(/maximum-scale\s*=\s*1(\.0)?\b/);
 });
 
 Then('the viewport should use viewport-fit cover', async ({ page }) => {
