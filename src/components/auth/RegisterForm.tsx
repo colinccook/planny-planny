@@ -50,6 +50,7 @@ export default function RegisterForm() {
         <input
           type="text"
           placeholder="Display name"
+          aria-label="Display name"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           required
@@ -58,6 +59,7 @@ export default function RegisterForm() {
         <input
           type="email"
           placeholder="Email"
+          aria-label="Email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -66,6 +68,7 @@ export default function RegisterForm() {
         <input
           type="password"
           placeholder="Password"
+          aria-label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -75,6 +78,7 @@ export default function RegisterForm() {
         <input
           type="password"
           placeholder="Confirm password"
+          aria-label="Confirm password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required

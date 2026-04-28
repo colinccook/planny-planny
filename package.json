@@ -13,7 +13,8 @@
     "test:e2e": "npx bddgen && npx playwright test",
     "test:e2e:ui": "npx bddgen && npx playwright test --ui",
     "test:integration": "npx bddgen && npx playwright test --project=integration",
-    "test:component": "npx bddgen && npx playwright test --project=component"
+    "test:component": "npx bddgen && npx playwright test --project=component",
+    "test:lighthouse": "lhci autorun"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@testing-library/jest-dom": "^6.9.1",

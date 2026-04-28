@@ -122,21 +122,25 @@ export default function TodoList({
                 }
                 aria-pressed={isComplete}
                 data-testid={`todo-toggle-${todo.id}`}
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors ${
-                  isComplete
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                    : 'border-gray-300 bg-white text-transparent hover:border-emerald-500'
-                } ${canActOnRow ? '' : 'cursor-not-allowed opacity-60'}`}
+                className={`inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${canActOnRow ? '' : 'cursor-not-allowed opacity-60'}`}
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-md border-2 transition-colors ${
+                    isComplete
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-gray-300 bg-white text-transparent'
+                  }`}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
               </button>
 
               <span
@@ -167,7 +171,7 @@ export default function TodoList({
                 <button
                   type="button"
                   onClick={() => remove.mutate({ id: todo.id, householdId })}
-                  className="shrink-0 rounded-md p-1 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                  className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-gray-300 hover:bg-red-50 hover:text-red-500"
                   aria-label={`Delete todo "${todo.title}"`}
                   data-testid={`todo-delete-${todo.id}`}
                 >

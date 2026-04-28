@@ -158,8 +158,44 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  lighthouse:
+    # Builds the app and runs Google Lighthouse CI to check for critical
+    # accessibility issues (including tap-target sizes) and best practices.
+    # Fails the pipeline if the accessibility score drops below 90% or if
+    # any tap targets are too small to be reliably tapped on mobile.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder
+
+      - name: Run Lighthouse CI
+        run: npm run test:lighthouse
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 7
+
   migrate:
-    needs: [lint, component-tests, test]
+    needs: [lint, component-tests, test, lighthouse]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:

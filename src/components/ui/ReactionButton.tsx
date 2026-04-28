@@ -102,11 +102,9 @@ export default function ReactionButton({
     void onReact(emoji)
   }
 
-  const padding =
-    size === 'sm'
-      ? 'min-h-[40px] min-w-[40px] px-3 py-1.5 text-sm'
-      : 'min-h-[44px] min-w-[44px] px-4 py-2 text-sm'
-  const baseClass = `inline-flex items-center gap-1 rounded-full border transition-colors ${padding} select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400`
+  const TOUCH_TARGET = 'min-h-[44px] min-w-[44px]'
+  const padding = size === 'sm' ? 'px-3 py-1.5 text-sm' : 'px-4 py-2 text-sm'
+  const baseClass = `inline-flex items-center gap-1 rounded-full border transition-colors ${TOUCH_TARGET} ${padding} select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400`
 
   const unreactedClass =
     'border-dashed border-gray-300 bg-gray-50 text-gray-400 grayscale hover:bg-gray-100'
@@ -158,7 +156,7 @@ export default function ReactionButton({
               key={opt.emoji}
               type="button"
               onClick={() => handlePickEmoji(opt.emoji)}
-              className="rounded-full px-2 py-1 text-lg hover:bg-gray-100"
+              className={`inline-flex ${TOUCH_TARGET} items-center justify-center rounded-full text-lg hover:bg-gray-100`}
               aria-label={opt.label}
             >
               {opt.emoji}
