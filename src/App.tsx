@@ -10,6 +10,7 @@ import RegisterPage from './pages/RegisterPage'
 import CalendarPage from './pages/CalendarPage'
 import DayDetailPage from './pages/DayDetailPage'
 import MealFormPage from './pages/MealFormPage'
+import TodoFormPage from './pages/TodoFormPage'
 import IngredientsPage from './pages/IngredientsPage'
 import StoreCupboardPage from './pages/StoreCupboardPage'
 import SettingsPage from './pages/SettingsPage'
@@ -37,6 +38,8 @@ function App() {
                     <Route path="/calendar/:date" element={<DayDetailPage />} />
                     <Route path="/calendar/:date/add" element={<MealFormPage />} />
                     <Route path="/calendar/:date/edit/:mealId" element={<MealFormPage />} />
+                    <Route path="/calendar/:date/todos/add" element={<TodoFormPage />} />
+                    <Route path="/calendar/:date/todos/edit/:todoId" element={<TodoFormPage />} />
                     <Route path="/ingredients" element={<IngredientsPage />} />
                     <Route path="/store-cupboard" element={<StoreCupboardPage />} />
                     <Route path="/settings" element={<SettingsPage />} />

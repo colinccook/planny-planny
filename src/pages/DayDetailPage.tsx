@@ -73,6 +73,8 @@ export default function DayDetailPage() {
             onBack={() => navigate('/calendar')}
             onAddMeal={() => navigate(`/calendar/${date}/add`)}
             onEditMeal={(mealId) => navigate(`/calendar/${date}/edit/${mealId}`)}
+            onAddTodo={() => navigate(`/calendar/${date}/todos/add`)}
+            onEditTodo={(todoId) => navigate(`/calendar/${date}/todos/edit/${todoId}`)}
             enterFrom={enterFrom}
             onPrevDay={
               prevDate

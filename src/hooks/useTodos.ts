@@ -205,6 +205,43 @@ export function useDeleteTodo() {
   })
 }
 
+// ── Update ──────────────────────────────────────────────────
+//
+// Used by the full-screen Todo view to edit a todo's title,
+// reschedule it to a different day, and add/remove the optional
+// note. Deliberately separate from `useCompleteTodo`/`useReopenTodo`
+// — those are one-tap optimistic flips for the list, this one is
+// a deliberate save action from the detail view.
+
+interface UpdateTodoArgs {
+  id: string
+  householdId: string
+  title: string
+  date: string
+  note: string | null
+}
+
+export function useUpdateTodo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, title, date, note }: UpdateTodoArgs) => {
+      const { data, error } = await supabase
+        .from('todo_items')
+        .update({ title, date, note })
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data as TodoItem
+    },
+    onSuccess: (_data, { householdId }) => {
+      invalidateAfter(queryClient, 'todo_items', householdId)
+    },
+  })
+}
+
 // ── Client-side grouping ────────────────────────────────────
 
 /** Stable, memoisation-friendly grouping for React components. */
