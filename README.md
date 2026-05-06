@@ -287,6 +287,15 @@ After authentication, all data flows through Supabase Realtime (WebSockets). Whe
 - **Reads**: Initial REST load, then WebSocket push for all changes
 - **Auth**: The only REST-only flow (tokens must exist before WebSocket connects)
 
+### State Management
+
+Server state is owned by Postgres and cached in TanStack Query, kept fresh by
+Supabase Realtime. UI / session state lives in a small set of focused React
+Contexts (auth, household, toast, header override, calendar direction). There
+is intentionally **no global state library** — see
+[`docs/state-management.md`](docs/state-management.md) for the full review,
+the current growing pains, and the rationale.
+
 ### Database
 
 12 tables with Row-Level Security:
