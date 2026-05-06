@@ -48,7 +48,7 @@ describe('useCompleteTodo (optimistic)', () => {
   it('marks the todo complete in the cache immediately', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     seed(qc, [TODO])
-    let resolve: (v: unknown) => void = () => {}
+    let resolve: (v: unknown) => void = () => { /* set in mock */ }
     updateMock.mockReturnValue(new Promise((r) => (resolve = r)))
 
     const { result } = renderHook(() => useCompleteTodo(), {
@@ -110,7 +110,7 @@ describe('useReopenTodo (optimistic)', () => {
       completed_at: '2026-04-26T10:00:00Z',
     }
     seed(qc, [completed])
-    let resolve: (v: unknown) => void = () => {}
+    let resolve: (v: unknown) => void = () => { /* set in mock */ }
     updateMock.mockReturnValue(new Promise((r) => (resolve = r)))
 
     const { result } = renderHook(() => useReopenTodo(), {

@@ -59,7 +59,7 @@ describe('useUpsertReaction (optimistic)', () => {
     seed(qc, [])
 
     // Slow server: never resolve so we can observe the optimistic state.
-    let resolve: (v: unknown) => void = () => {}
+    let resolve: (v: unknown) => void = () => { /* set in mock */ }
     upsertMock.mockReturnValue(new Promise((r) => (resolve = r)))
 
     const { result } = renderHook(() => useUpsertReaction(), {
@@ -139,7 +139,7 @@ describe('useDeleteReaction (optimistic)', () => {
     }
     seed(qc, [reaction])
 
-    let resolve: (v: unknown) => void = () => {}
+    let resolve: (v: unknown) => void = () => { /* set in mock */ }
     deleteMock.mockReturnValue(new Promise((r) => (resolve = r)))
 
     const { result } = renderHook(() => useDeleteReaction(), {

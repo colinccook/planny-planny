@@ -15,6 +15,17 @@
   }
 }
 
+/*
+ * iOS Safari ignores `user-scalable=no` on the viewport meta tag — pinch
+ * gestures still trigger a zoom, which on a chrome-free PWA-style layout
+ * visibly distorts the sticky header. Setting `touch-action: manipulation`
+ * here disables double-tap-to-zoom, and the global `gesturestart`
+ * handler in `index.html` cancels the pinch-zoom gesture on iOS.
+ */
+html, body {
+  touch-action: manipulation;
+}
+
 /* Match the iOS status-bar / safe-area background to the header colour */
 html {
   background-color: var(--color-emerald-600);

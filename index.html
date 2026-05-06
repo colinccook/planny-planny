@@ -24,6 +24,16 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // iOS Safari ignores `user-scalable=no` in the viewport meta and will
+      // still pinch-zoom the page (a regression that has been open for years).
+      // Cancelling the `gesture*` events at the document level — which only
+      // fire on iOS Safari — completes the pinch-to-zoom block. The viewport
+      // meta above handles every other browser.
+      document.addEventListener('gesturestart', (e) => e.preventDefault())
+      document.addEventListener('gesturechange', (e) => e.preventDefault())
+      document.addEventListener('gestureend', (e) => e.preventDefault())
+    </script>
+    <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           // %BASE_URL% is replaced by Vite at build time and matches the
