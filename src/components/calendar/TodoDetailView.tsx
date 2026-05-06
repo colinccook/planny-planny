@@ -363,6 +363,7 @@ export default function TodoDetailView({
           {dates.map((dateStr) => {
             const dayMeals = mealsByDate.get(dateStr) ?? []
             const isSelected = dateStr === scheduledDate
+            const isPast = dateStr < toDateString(new Date())
             return (
               <button
                 key={dateStr}
@@ -381,6 +382,11 @@ export default function TodoDetailView({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-900">
                     {formatDateLabel(dateStr)}
+                    {isPast && (
+                      <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wide text-gray-400">
+                        past
+                      </span>
+                    )}
                   </span>
                   {isSelected && (
                     <span className="text-xs font-medium text-emerald-600">

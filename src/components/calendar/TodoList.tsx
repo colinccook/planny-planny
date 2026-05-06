@@ -43,9 +43,6 @@ export default function TodoList({
   onAddTodo,
   onEditTodo,
 }: TodoListProps) {
-  // `householdId` is part of the props contract — the optimistic
-  // mutations below need it to scope cache invalidation to this
-  // household.
   const { user } = useAuth()
   const canManage = canManageTodos(currentRole)
   const complete = useCompleteTodo()
