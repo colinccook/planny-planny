@@ -78,13 +78,16 @@ interface TodoCacheCtx {
   previous: [unknown[], TodoItem[] | undefined][]
 }
 
-function patchTodoInCache(
+async function patchTodoInCache(
   qc: ReturnType<typeof useQueryClient>,
   householdId: string,
   todoId: string,
   patch: Partial<TodoItem>,
-): TodoCacheCtx {
-  qc.cancelQueries({ queryKey: queryKeys.todoItems(householdId) })
+): Promise<TodoCacheCtx> {
+  // `cancelQueries` is async — without awaiting it a slow in-flight fetch
+  // can resolve after we mutate the cache below and overwrite the
+  // optimistic state, leaving the checkbox flipping back briefly.
+  await qc.cancelQueries({ queryKey: queryKeys.todoItems(householdId) })
 
   // Snapshot every matching cache entry *before* mutating, so `onError`
   // can put each one back exactly as it was.

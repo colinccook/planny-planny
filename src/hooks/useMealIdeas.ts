@@ -112,39 +112,55 @@ export function useReactions(
 // change to the cache immediately, send the request in the background, and
 // roll back if the server rejects it.
 //
-// We update *every* `['reactions', householdId, targetType, ...]` cache
-// entry (the target-id sub-array is part of the key, so different views
-// have different keys). TanStack Query's predicate filter lets us match
-// them all in one pass.
+// We only touch cache entries whose key actually contains the mutated
+// `targetId` — keys are `['reactions', hh, targetType, ...targetIds]` and
+// reacting to one idea must NOT optimistically appear in a sibling cache
+// that doesn't track this idea (e.g. a different day's view).
 
 interface ReactionCacheCtx {
   /** Snapshots of every reactions cache entry we touched, for rollback. */
   previous: [unknown[], ReactionWithProfile[] | undefined][]
 }
 
-function withReactionsCacheEdit(
+/** Predicate: this reactions cache entry's key includes `targetId`. */
+function reactionKeyTouchesTarget(
+  key: readonly unknown[],
+  targetId: string,
+): boolean {
+  // key shape: ['reactions', hh, targetType, ...targetIds]
+  return key.length > 3 && key.slice(3).includes(targetId)
+}
+
+async function withReactionsCacheEdit(
   qc: ReturnType<typeof useQueryClient>,
   householdId: string,
   targetType: string,
+  targetId: string,
   edit: (existing: ReactionWithProfile[]) => ReactionWithProfile[],
-): ReactionCacheCtx {
-  // Cancel any in-flight reactions queries so they don't overwrite our
-  // optimistic snapshot when they resolve.
-  qc.cancelQueries({ queryKey: queryKeys.reactions(householdId, targetType) })
+): Promise<ReactionCacheCtx> {
+  const filter = {
+    queryKey: queryKeys.reactions(householdId, targetType),
+    predicate: (q: { queryKey: readonly unknown[] }) =>
+      reactionKeyTouchesTarget(q.queryKey, targetId),
+  }
+
+  // Cancel in-flight reactions queries that overlap our target *and await
+  // them*. `cancelQueries` is async; without the await a slow fetch can
+  // resolve after the snapshot below and overwrite the optimistic state.
+  await qc.cancelQueries(filter)
 
   // Snapshot every matching cache entry *before* we mutate it, so that
   // `onError` can put each one back exactly where it was.
   const previous = qc
     .getQueryCache()
-    .findAll({ queryKey: queryKeys.reactions(householdId, targetType) })
+    .findAll(filter)
     .map((q): [unknown[], ReactionWithProfile[] | undefined] => [
       q.queryKey as unknown[],
       q.state.data as ReactionWithProfile[] | undefined,
     ])
 
-  qc.setQueriesData<ReactionWithProfile[]>(
-    { queryKey: queryKeys.reactions(householdId, targetType) },
-    (old) => (old ? edit(old) : old),
+  qc.setQueriesData<ReactionWithProfile[]>(filter, (old) =>
+    old ? edit(old) : old,
   )
 
   return { previous }
@@ -188,10 +204,11 @@ export function useUpsertReaction() {
         created_at: new Date().toISOString(),
         profiles: null,
       }
-      return withReactionsCacheEdit(
+      return await withReactionsCacheEdit(
         queryClient,
         variables.household_id,
         variables.target_type,
+        variables.target_id,
         (existing) => {
           // Don't double-add: if the same (user, target, emoji) is already
           // present we leave the cache alone — the upsert is idempotent.
@@ -211,7 +228,12 @@ export function useUpsertReaction() {
     onSettled: (_data, _err, variables) => {
       // Re-sync with the server to swap our optimistic placeholder for the
       // real row (with a server-issued id, real timestamp, joined profile).
-      invalidateAfter(queryClient, 'reactions', variables.household_id)
+      // Narrow to the touched target_type so we don't force a sibling
+      // reactions query (e.g. meal_plan reactions while we tapped a
+      // meal_idea reaction) to refetch on every tap.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.reactions(variables.household_id, variables.target_type),
+      })
     },
   })
 }
@@ -246,10 +268,11 @@ export function useDeleteReaction() {
       return { householdId, targetType }
     },
     onMutate: async (variables) => {
-      return withReactionsCacheEdit(
+      return await withReactionsCacheEdit(
         queryClient,
         variables.householdId,
         variables.targetType,
+        variables.targetId,
         (existing) =>
           existing.filter(
             (r) =>
@@ -265,7 +288,10 @@ export function useDeleteReaction() {
       rollbackReactions(queryClient, context)
     },
     onSettled: (_data, _err, variables) => {
-      invalidateAfter(queryClient, 'reactions', variables.householdId)
+      // Narrow to the touched target_type — see useUpsertReaction.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.reactions(variables.householdId, variables.targetType),
+      })
     },
   })
 }

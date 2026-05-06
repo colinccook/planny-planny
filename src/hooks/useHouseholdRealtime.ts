@@ -33,13 +33,19 @@ export function useHouseholdRealtime(householdId: string | null | undefined): vo
     }
   }, [queryClient])
 
-  // (Re-)subscribe whenever the active household changes.
+  // (Re-)subscribe whenever the active household changes. When the active
+  // household disappears (logout, removed from the household, deleted the
+  // last household), tear the subscription down so we stop consuming
+  // events for a household we no longer have a view into.
   useEffect(() => {
-    if (!householdId) return
-    if (managerRef.current && managerRef.current.householdId !== householdId) {
-      managerRef.current.subscribe(householdId)
-    } else if (managerRef.current && managerRef.current.householdId === null) {
-      managerRef.current.subscribe(householdId)
+    const manager = managerRef.current
+    if (!manager) return
+    if (!householdId) {
+      if (manager.householdId !== null) manager.unsubscribe()
+      return
+    }
+    if (manager.householdId !== householdId) {
+      manager.subscribe(householdId)
     }
   }, [householdId])
 }

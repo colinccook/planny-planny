@@ -4,15 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <!--
-      `user-scalable=no` + `maximum-scale=1` disables pinch-to-zoom across the
-      app. Without this, pinching the sticky header (or any other fixed
-      element) zooms the viewport and visibly breaks the mobile-first layout.
-      Planny Planny is a chrome-free PWA-style web app where pinch-zoom isn't a
-      useful gesture, so we opt out of it explicitly.
+      We deliberately do NOT set `maximum-scale=1` / `user-scalable=no`
+      here. Those flags block pinch-to-zoom on every browser that honours
+      them (Android Chrome, Firefox, etc.) which is an accessibility
+      regression for low-vision users — and they don't actually fix the
+      iOS-Safari sticky-header pinch bug we're trying to address (Safari
+      ignores them). The iOS-specific `gesturestart` handler at the
+      bottom of `<body>` does the real work.
     -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#059669" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -25,10 +27,15 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       // iOS Safari ignores `user-scalable=no` in the viewport meta and will
-      // still pinch-zoom the page (a regression that has been open for years).
+      // still pinch-zoom the page, which on a chrome-free PWA-style layout
+      // visibly distorts the sticky header (the user-reported bug).
       // Cancelling the `gesture*` events at the document level — which only
-      // fire on iOS Safari — completes the pinch-to-zoom block. The viewport
-      // meta above handles every other browser.
+      // fire on iOS Safari — fixes that one symptom on that one browser.
+      //
+      // Accessibility note: this disables pinch-zoom on iOS Safari only.
+      // Every other browser keeps full zoom support thanks to the relaxed
+      // viewport meta above. iOS users who need to magnify can still use
+      // Settings → Accessibility → Zoom (system-level magnifier).
       document.addEventListener('gesturestart', (e) => e.preventDefault())
       document.addEventListener('gesturechange', (e) => e.preventDefault())
       document.addEventListener('gestureend', (e) => e.preventDefault())

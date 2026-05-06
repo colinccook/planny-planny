@@ -449,20 +449,31 @@ permissions, read [`docs/permissions.md`](permissions.md).
 
 ## 12. Routing and the App shell
 
-`src/App.tsx` wires up React Router and the four global Providers, in this
-order:
+Bootstrap is split between two files:
+
+- `src/main.tsx` mounts `QueryClientProvider` (the TanStack Query cache)
+  and `BrowserRouter` (React Router) around `<App />`.
+- `src/App.tsx` declares the routes and the in-app providers.
+
+The provider tree, from outermost to innermost, is:
 
 ```
-QueryClientProvider             ← TanStack Query cache
-  ToastProvider                 ← global toast notifications
+QueryClientProvider             ← TanStack Query cache (main.tsx)
+  BrowserRouter                 ← React Router (main.tsx)
     AuthProvider                ← who is logged in?
-      HouseholdProvider         ← which household am I looking at?
-        OverlayProvider         ← which tray/modal is open?
-          AppShell + <Routes>
+      ToastProvider             ← global toast notifications
+        <Routes>
+          /login, /register, /invite/:token, /shared/:token  (public)
+          /*  ProtectedRoute
+            HouseholdProvider   ← which household am I looking at?
+              OverlayProvider   ← which tray/modal is open?
+                AppShell + nested <Routes>
 ```
 
-Each provider is the one that owns its slice of state. Components further
-down the tree consume them via the matching `useFoo()` hook.
+`HouseholdProvider` and `OverlayProvider` are intentionally inside
+`ProtectedRoute` because they only make sense once the user is signed in.
+Each provider owns its slice of state; components further down the tree
+consume it via the matching `useFoo()` hook.
 
 ---
 
