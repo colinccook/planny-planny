@@ -190,6 +190,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     expect(screen.getByText('Events')).toBeDefined()
@@ -207,6 +209,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByTestId('add-idea-button'))
@@ -232,6 +236,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByText('Burgers'))
@@ -254,6 +260,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
@@ -299,6 +307,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
@@ -322,6 +332,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
@@ -367,6 +379,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
@@ -390,6 +404,8 @@ describe('DayDetailView ideas and reactions', () => {
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
+        onAddTodo: vi.fn(),
+        onEditTodo: vi.fn(),
       })
 
     expect(screen.queryByTestId('meal-reaction-meal-1')).toBeNull()

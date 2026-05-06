@@ -24,6 +24,8 @@ interface DayDetailViewProps {
   onBack: () => void
   onAddMeal: () => void
   onEditMeal: (mealId: string) => void
+  onAddTodo: () => void
+  onEditTodo: (todoId: string) => void
   /** Navigate to the previous day with a "slide in from left" animation. */
   onPrevDay?: () => void
   /** Navigate to the next day with a "slide in from right" animation. */
@@ -72,6 +74,8 @@ export default function DayDetailView({
   onBack,
   onAddMeal,
   onEditMeal,
+  onAddTodo,
+  onEditTodo,
   onPrevDay,
   onNextDay,
   enterFrom = null,
@@ -179,6 +183,8 @@ export default function DayDetailView({
             today={todayStr}
             todos={todosForDay}
             currentRole={currentRole}
+            onAddTodo={onAddTodo}
+            onEditTodo={onEditTodo}
           />
 
           <DayEventsSection

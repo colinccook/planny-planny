@@ -289,6 +289,7 @@ export interface Database {
           user_id: string | null
           date: string
           title: string
+          note: string | null
           completed_on: string | null
           completed_at: string | null
           created_by: string | null
@@ -300,6 +301,7 @@ export interface Database {
           user_id?: string | null
           date: string
           title: string
+          note?: string | null
           completed_on?: string | null
           completed_at?: string | null
           created_by?: string | null
@@ -311,6 +313,7 @@ export interface Database {
           user_id?: string | null
           date?: string
           title?: string
+          note?: string | null
           completed_on?: string | null
           completed_at?: string | null
           created_by?: string | null

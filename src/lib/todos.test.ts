@@ -8,6 +8,7 @@ function todo(overrides: Partial<TodoItem>): TodoItem {
     user_id: null,
     date: '2026-04-26',
     title: 'Buy milk',
+    note: null,
     completed_on: null,
     completed_at: null,
     created_by: 'u-1',

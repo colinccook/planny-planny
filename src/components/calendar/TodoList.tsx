@@ -1,8 +1,5 @@
-import { useState } from 'react'
 import {
   useCompleteTodo,
-  useCreateTodo,
-  useDeleteTodo,
   useReopenTodo,
   type TodoItem,
 } from '../../hooks/useTodos'
@@ -19,18 +16,23 @@ interface TodoListProps {
   today: string
   todos: TodoItem[]
   currentRole: Audience
+  /** Open the full-screen Todo view in "create" mode. */
+  onAddTodo: () => void
+  /** Open the full-screen Todo view in "edit" mode for the given todo. */
+  onEditTodo: (todoId: string) => void
 }
 
 /**
  * Editable todo strip rendered at the top of the day detail
  * view. Owners, members and honoured guests can:
- *   • add a new todo (household-level by default; tick the
- *     "Just for me" box to make it private),
- *   • tick a todo off (stamps `completed_on` with `date`),
- *   • un-tick a todo (clears completion),
- *   • press the "×" to delete it permanently.
+ *   • tap "Add a todo" to open the full-screen Todo view in
+ *     create mode (set name, due date, optional note, private
+ *     flag),
+ *   • tap a todo's name to open the same view in edit mode
+ *     (rename, reschedule, attach a note, delete),
+ *   • tap the checkbox to tick / un-tick a todo.
  *
- * Voting guests and public viewers see nothing.
+ * Voting guests and public viewers see the list read-only.
  */
 export default function TodoList({
   householdId,
@@ -38,29 +40,13 @@ export default function TodoList({
   today,
   todos,
   currentRole,
+  onAddTodo,
+  onEditTodo,
 }: TodoListProps) {
   const { user } = useAuth()
   const canManage = canManageTodos(currentRole)
-  const create = useCreateTodo()
   const complete = useCompleteTodo()
   const reopen = useReopenTodo()
-  const remove = useDeleteTodo()
-
-  const [title, setTitle] = useState('')
-  const [isPrivate, setIsPrivate] = useState(false)
-
-  const handleAdd = async () => {
-    const trimmed = title.trim()
-    if (!trimmed || !user) return
-    await create.mutateAsync({
-      household_id: householdId,
-      date,
-      title: trimmed,
-      user_id: isPrivate ? user.id : null,
-      created_by: user.id,
-    })
-    setTitle('')
-  }
 
   if (!canManage && todos.length === 0) {
     // Non-managers don't see the "add" UI, and there's nothing
@@ -143,52 +129,58 @@ export default function TodoList({
                 </span>
               </button>
 
-              <span
-                className={`min-w-0 flex-1 text-sm ${
-                  isComplete ? 'text-gray-400 line-through' : 'text-gray-900'
-                }`}
-              >
-                {todo.title}
-                {isPrivateRow && (
-                  <span
-                    className="ml-1.5 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-indigo-700"
-                    aria-label="Private reminder, only visible to you"
-                  >
-                    Private
-                  </span>
-                )}
-                {rolledForward && (
-                  <span
-                    className="ml-1.5 text-[10px] uppercase tracking-wide text-gray-400"
-                    aria-label={`Rolled forward from ${todo.date}`}
-                  >
-                    rolled
-                  </span>
-                )}
-              </span>
-
-              {canActOnRow && (
+              {canActOnRow ? (
                 <button
                   type="button"
-                  onClick={() => remove.mutate({ id: todo.id, householdId })}
-                  className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-gray-300 hover:bg-red-50 hover:text-red-500"
-                  aria-label={`Delete todo "${todo.title}"`}
-                  data-testid={`todo-delete-${todo.id}`}
+                  onClick={() => onEditTodo(todo.id)}
+                  className={`min-w-0 flex-1 rounded text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                    isComplete ? 'text-gray-400 line-through' : 'text-gray-900'
+                  }`}
+                  aria-label={`Open todo "${todo.title}"`}
+                  data-testid={`todo-open-${todo.id}`}
                 >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  {todo.title}
+                  {isPrivateRow && (
+                    <span
+                      className="ml-1.5 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-indigo-700"
+                      aria-label="Private reminder, only visible to you"
+                    >
+                      Private
+                    </span>
+                  )}
+                  {rolledForward && (
+                    <span
+                      className="ml-1.5 text-[10px] uppercase tracking-wide text-gray-400"
+                      aria-label={`Rolled forward from ${todo.date}`}
+                    >
+                      rolled
+                    </span>
+                  )}
                 </button>
+              ) : (
+                <span
+                  className={`min-w-0 flex-1 text-sm ${
+                    isComplete ? 'text-gray-400 line-through' : 'text-gray-900'
+                  }`}
+                >
+                  {todo.title}
+                  {isPrivateRow && (
+                    <span
+                      className="ml-1.5 inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-indigo-700"
+                      aria-label="Private reminder, only visible to you"
+                    >
+                      Private
+                    </span>
+                  )}
+                  {rolledForward && (
+                    <span
+                      className="ml-1.5 text-[10px] uppercase tracking-wide text-gray-400"
+                      aria-label={`Rolled forward from ${todo.date}`}
+                    >
+                      rolled
+                    </span>
+                  )}
+                </span>
               )}
             </li>
           )
@@ -196,42 +188,14 @@ export default function TodoList({
       </ul>
 
       {canManage && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void handleAdd()
-          }}
-          className="space-y-2"
+        <button
+          type="button"
+          onClick={onAddTodo}
+          className="w-full rounded-lg border-2 border-dashed border-emerald-200 py-3 text-sm font-medium text-emerald-600 transition-colors hover:border-emerald-400 hover:bg-emerald-50"
+          data-testid={`todo-add-${date}`}
         >
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Add a todo…"
-              className="flex-1 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-              data-testid={`todo-input-${date}`}
-            />
-            <button
-              type="submit"
-              disabled={!title.trim() || create.isPending}
-              className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:opacity-50"
-              data-testid={`todo-add-${date}`}
-            >
-              {create.isPending ? 'Adding…' : 'Add'}
-            </button>
-          </div>
-          <label className="flex items-center gap-2 text-xs text-gray-600">
-            <input
-              type="checkbox"
-              checked={isPrivate}
-              onChange={(e) => setIsPrivate(e.target.checked)}
-              data-testid={`todo-private-${date}`}
-              className="h-3.5 w-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            Just for me (private)
-          </label>
-        </form>
+          + Add a todo
+        </button>
       )}
     </section>
   )

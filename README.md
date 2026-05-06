@@ -308,7 +308,7 @@ codebase aimed at developers new to TypeScript or Supabase.
 - `household_invites` — Token-based invite links
 - `meal_plans` — Daily meal entries
 - `meal_ideas` — Lightweight daily idea entries
-- `todo_items` — Daily todo / reminder items, household or private
+- `todo_items` — Daily todo / reminder items, household or private. Tap one to open a full-screen Todo view (rename, reschedule, attach a note, delete)
 - `meal_plan_ingredients` — Ingredients tagged to meals
 - `reactions` — Generic emoji reactions across household-scoped entities
 - `ingredients` — Household ingredient library

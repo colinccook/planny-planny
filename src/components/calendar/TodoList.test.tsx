@@ -2,16 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { createElement } from 'react'
 
-const mockCreate = { mutate: vi.fn(), mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false }
 const mockComplete = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
 const mockReopen = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
-const mockDelete = { mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }
 
 vi.mock('../../hooks/useTodos', () => ({
-  useCreateTodo: () => mockCreate,
   useCompleteTodo: () => mockComplete,
   useReopenTodo: () => mockReopen,
-  useDeleteTodo: () => mockDelete,
 }))
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -28,6 +24,7 @@ function todo(overrides: Partial<TodoItem>): TodoItem {
     user_id: null,
     date: '2026-04-26',
     title: 'Buy milk',
+    note: null,
     completed_on: null,
     completed_at: null,
     created_by: 'u-me',
@@ -36,10 +33,15 @@ function todo(overrides: Partial<TodoItem>): TodoItem {
   }
 }
 
+const onAddTodo = vi.fn()
+const onEditTodo = vi.fn()
+
 const baseProps = {
   householdId: 'hh-1',
   date: '2026-04-26',
   today: '2026-04-26',
+  onAddTodo,
+  onEditTodo,
 }
 
 describe('TodoList', () => {
@@ -124,7 +126,33 @@ describe('TodoList', () => {
     })
   })
 
-  it('deletes a todo permanently when the × is pressed', () => {
+  it('opens the todo detail view when the title is tapped', () => {
+    render(
+      createElement(TodoList, {
+        ...baseProps,
+        todos: [todo({ id: 'a', title: 'Buy bread' })],
+        currentRole: 'owner',
+      }),
+    )
+    fireEvent.click(screen.getByTestId('todo-open-a'))
+    expect(onEditTodo).toHaveBeenCalledWith('a')
+  })
+
+  it('opens the create view when the "Add a todo" button is tapped', () => {
+    render(
+      createElement(TodoList, {
+        ...baseProps,
+        todos: [],
+        currentRole: 'member',
+      }),
+    )
+    fireEvent.click(screen.getByTestId('todo-add-2026-04-26'))
+    expect(onAddTodo).toHaveBeenCalled()
+  })
+
+  it('does not render an inline delete button on todo rows', () => {
+    // The delete affordance has moved to the full-screen Todo
+    // view; the list row should be free of a destructive control.
     render(
       createElement(TodoList, {
         ...baseProps,
@@ -132,14 +160,10 @@ describe('TodoList', () => {
         currentRole: 'owner',
       }),
     )
-    fireEvent.click(screen.getByTestId('todo-delete-a'))
-    expect(mockDelete.mutate).toHaveBeenCalledWith({
-      id: 'a',
-      householdId: 'hh-1',
-    })
+    expect(screen.queryByTestId('todo-delete-a')).toBeNull()
   })
 
-  it('hides toggle and delete controls for voting guests but still shows todos', () => {
+  it('hides the open + add controls for voting guests but still shows todos', () => {
     render(
       createElement(TodoList, {
         ...baseProps,
@@ -148,55 +172,12 @@ describe('TodoList', () => {
       }),
     )
     expect(screen.getByTestId('todo-item-a')).toBeDefined()
-    expect(screen.queryByTestId('todo-delete-a')).toBeNull()
+    expect(screen.queryByTestId('todo-open-a')).toBeNull()
     // Toggle is rendered but disabled.
     const toggle = screen.getByTestId('todo-toggle-a') as HTMLButtonElement
     expect(toggle.disabled).toBe(true)
-    // No add input for voting guest.
-    expect(screen.queryByTestId('todo-input-2026-04-26')).toBeNull()
-  })
-
-  it('creates a household-level todo by default', async () => {
-    render(
-      createElement(TodoList, {
-        ...baseProps,
-        todos: [],
-        currentRole: 'member',
-      }),
-    )
-    fireEvent.change(screen.getByTestId('todo-input-2026-04-26'), {
-      target: { value: 'Pick up parcel' },
-    })
-    fireEvent.click(screen.getByTestId('todo-add-2026-04-26'))
-    expect(mockCreate.mutateAsync).toHaveBeenCalledWith({
-      household_id: 'hh-1',
-      date: '2026-04-26',
-      title: 'Pick up parcel',
-      user_id: null,
-      created_by: 'u-me',
-    })
-  })
-
-  it('creates a private todo when the "Just for me" box is ticked', async () => {
-    render(
-      createElement(TodoList, {
-        ...baseProps,
-        todos: [],
-        currentRole: 'honoured_guest',
-      }),
-    )
-    fireEvent.click(screen.getByTestId('todo-private-2026-04-26'))
-    fireEvent.change(screen.getByTestId('todo-input-2026-04-26'), {
-      target: { value: 'Personal note' },
-    })
-    fireEvent.click(screen.getByTestId('todo-add-2026-04-26'))
-    expect(mockCreate.mutateAsync).toHaveBeenCalledWith({
-      household_id: 'hh-1',
-      date: '2026-04-26',
-      title: 'Personal note',
-      user_id: 'u-me',
-      created_by: 'u-me',
-    })
+    // No add button for voting guest.
+    expect(screen.queryByTestId('todo-add-2026-04-26')).toBeNull()
   })
 
   it('marks private todos with a "Private" pill', () => {
