@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import { invalidateAfter, queryKeys } from '../lib/queryKeys'
 
 type Ingredient = Database['public']['Tables']['ingredients']['Row']
 type IngredientInsert = Database['public']['Tables']['ingredients']['Insert']
@@ -14,7 +15,7 @@ export interface IngredientUsageStat {
 
 export function useIngredients(householdId: string | undefined) {
   return useQuery({
-    queryKey: ['ingredients', householdId],
+    queryKey: queryKeys.ingredients(householdId),
     queryFn: async () => {
       if (!householdId) return []
       const { data, error } = await supabase
@@ -32,7 +33,7 @@ export function useIngredients(householdId: string | undefined) {
 
 export function useIngredientUsageStats(householdId: string | undefined) {
   return useQuery({
-    queryKey: ['ingredient-usage-stats', householdId],
+    queryKey: queryKeys.ingredientUsageStats(householdId),
     queryFn: async () => {
       if (!householdId) return []
 
@@ -93,7 +94,7 @@ export function useCreateIngredient() {
       return data as Ingredient
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients', variables.household_id] })
+      invalidateAfter(queryClient, 'ingredients', variables.household_id)
     },
   })
 }
@@ -118,7 +119,7 @@ export function useUpdateIngredient() {
       return { data: data as Ingredient, householdId }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients', result.householdId] })
+      invalidateAfter(queryClient, 'ingredients', result.householdId)
     },
   })
 }
@@ -137,7 +138,7 @@ export function useDeleteIngredient() {
       return { householdId }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['ingredients', result.householdId] })
+      invalidateAfter(queryClient, 'ingredients', result.householdId)
     },
   })
 }

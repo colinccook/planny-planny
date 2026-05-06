@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
 import { HouseholdProvider } from './hooks/useHousehold'
 import ToastProvider from './components/ui/Toast'
+import { OverlayProvider } from './components/ui/OverlayProvider'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AppShell from './components/layout/AppShell'
 import LoginPage from './pages/LoginPage'
@@ -29,6 +30,7 @@ function App() {
           element={
             <ProtectedRoute>
               <HouseholdProvider>
+                <OverlayProvider>
                 <AppShell>
                   <Routes>
                     <Route path="/calendar" element={<CalendarPage />} />
@@ -41,6 +43,7 @@ function App() {
                     <Route path="*" element={<Navigate to="/calendar" replace />} />
                   </Routes>
                 </AppShell>
+                </OverlayProvider>
               </HouseholdProvider>
             </ProtectedRoute>
           }

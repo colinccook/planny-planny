@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
+import { invalidateAfter, queryKeys } from '../lib/queryKeys'
 
 type MealPlan = Database['public']['Tables']['meal_plans']['Row']
 type MealPlanInsert = Database['public']['Tables']['meal_plans']['Insert']
@@ -25,10 +26,10 @@ export type MealPlanWithIngredients = MealPlan & {
 export function useMealPlans(
   householdId: string | undefined,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   return useQuery({
-    queryKey: ['meal-plans', householdId, startDate, endDate],
+    queryKey: queryKeys.mealPlans(householdId, startDate, endDate),
     queryFn: async () => {
       if (!householdId) return []
       const { data, error } = await supabase
@@ -61,12 +62,7 @@ export function useCreateMealPlan() {
       return data as MealPlanWithIngredients
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['meal-plans', variables.household_id],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['plan-streak', variables.household_id],
-      })
+      invalidateAfter(queryClient, 'meal_plans', variables.household_id)
     },
   })
 }
@@ -91,12 +87,7 @@ export function useUpdateMealPlan() {
       return { data: data as MealPlanWithIngredients, householdId }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['meal-plans', householdId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['plan-streak', householdId],
-      })
+      invalidateAfter(queryClient, 'meal_plans', householdId)
     },
   })
 }
@@ -117,12 +108,7 @@ export function useDeleteMealPlan() {
       return { householdId }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['meal-plans', householdId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['plan-streak', householdId],
-      })
+      invalidateAfter(queryClient, 'meal_plans', householdId)
     },
   })
 }
@@ -181,15 +167,11 @@ export function useCopyMealPlan() {
       return { householdId: meal.household_id }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['meal-plans', householdId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['plan-streak', householdId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['ingredient-usage-stats', householdId],
-      })
+      // Touches both meal_plans and meal_plan_ingredients — go through both
+      // edges of the dependency graph so derived queries (plan-streak,
+      // ingredient-usage-stats) are refreshed exactly once.
+      invalidateAfter(queryClient, 'meal_plans', householdId)
+      invalidateAfter(queryClient, 'meal_plan_ingredients', householdId)
     },
   })
 }
@@ -233,12 +215,7 @@ export function useSetMealIngredients() {
       return { householdId }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['meal-plans', householdId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['ingredient-usage-stats', householdId],
-      })
+      invalidateAfter(queryClient, 'meal_plan_ingredients', householdId)
     },
   })
 }
@@ -248,10 +225,10 @@ export function useSetMealIngredients() {
 export function useDayContexts(
   householdId: string | undefined,
   startDate: string,
-  endDate: string
+  endDate: string,
 ) {
   return useQuery({
-    queryKey: ['day-contexts', householdId, startDate, endDate],
+    queryKey: queryKeys.dayContexts(householdId, startDate, endDate),
     queryFn: async () => {
       if (!householdId) return []
       // Fetch all contexts that overlap with [startDate, endDate].
@@ -291,9 +268,7 @@ export function useCreateDayContext() {
       return data as DayContext
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['day-contexts', variables.household_id],
-      })
+      invalidateAfter(queryClient, 'day_contexts', variables.household_id)
     },
   })
 }
@@ -318,9 +293,7 @@ export function useUpdateDayContext() {
       return { data: data as DayContext, householdId }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['day-contexts', householdId],
-      })
+      invalidateAfter(queryClient, 'day_contexts', householdId)
     },
   })
 }
@@ -341,9 +314,7 @@ export function useDeleteDayContext() {
       return { householdId }
     },
     onSuccess: ({ householdId }) => {
-      queryClient.invalidateQueries({
-        queryKey: ['day-contexts', householdId],
-      })
+      invalidateAfter(queryClient, 'day_contexts', householdId)
     },
   })
 }
@@ -352,7 +323,7 @@ export function useDeleteDayContext() {
 
 export function useDayPlaceholders(householdId: string | undefined) {
   return useQuery({
-    queryKey: ['day-placeholders', householdId],
+    queryKey: queryKeys.dayPlaceholders(householdId),
     queryFn: async () => {
       if (!householdId) return []
       const { data, error } = await supabase

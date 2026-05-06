@@ -1,27 +1,21 @@
 import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Database } from '../types/database'
-
-interface TableSubscription {
-  readonly table: string
-  readonly queryKey: string
-}
-
-const HOUSEHOLD_TABLES: readonly TableSubscription[] = [
-  { table: 'meal_plans', queryKey: 'meal-plans' },
-  { table: 'meal_ideas', queryKey: 'meal-ideas' },
-  { table: 'todo_items', queryKey: 'todo-items' },
-  { table: 'reactions', queryKey: 'reactions' },
-  { table: 'day_contexts', queryKey: 'day-contexts' },
-  { table: 'ingredients', queryKey: 'ingredients' },
-  { table: 'day_placeholders', queryKey: 'day-placeholders' },
-  { table: 'household_members', queryKey: 'household-members' },
-] as const
+import {
+  HOUSEHOLD_FILTERED_TABLES,
+  invalidateAfter,
+  type HouseholdTable,
+} from './queryKeys'
 
 /**
  * Manages Supabase Realtime subscriptions scoped to a single household.
  * When the user switches households, the old channels are torn down
  * and new ones are created for the active household.
+ *
+ * The mapping from "table that changed" to "query keys that need
+ * invalidating" lives in `src/lib/queryKeys.ts` (`invalidateAfter`),
+ * not here. That keeps the dependency graph in one place so a new
+ * derived query only needs to be added once.
  */
 export class HouseholdRealtimeManager {
   private channels: RealtimeChannel[] = []
@@ -38,8 +32,10 @@ export class HouseholdRealtimeManager {
     this.unsubscribe()
     this.currentHouseholdId = householdId
 
-    // Tables that have a direct household_id column
-    for (const { table, queryKey } of HOUSEHOLD_TABLES) {
+    // Tables that have a direct household_id column — we can filter the
+    // realtime stream server-side so each tab only receives changes for
+    // households the user actually has open.
+    for (const table of HOUSEHOLD_FILTERED_TABLES) {
       const channel = this.client
         .channel(`${table}-${householdId}`)
         .on(
@@ -50,20 +46,16 @@ export class HouseholdRealtimeManager {
             table,
             filter: `household_id=eq.${householdId}`,
           },
-          () => {
-            this.queryClient.invalidateQueries({ queryKey: [queryKey, householdId] })
-            // Keep plan-streak in sync when meal_plans change via realtime
-            if (table === 'meal_plans') {
-              this.queryClient.invalidateQueries({ queryKey: ['plan-streak', householdId] })
-            }
-          }
+          () => invalidateAfter(this.queryClient, table, householdId),
         )
         .subscribe()
 
       this.channels.push(channel)
     }
 
-    // Households table — UPDATE only, filtered by primary key
+    // Households table — UPDATE only, filtered by primary key. Inserts
+    // and deletes are handled via the household_members channel above
+    // (you can't see a household you're not a member of anyway).
     const householdChannel = this.client
       .channel(`households-${householdId}`)
       .on(
@@ -74,16 +66,15 @@ export class HouseholdRealtimeManager {
           table: 'households',
           filter: `id=eq.${householdId}`,
         },
-        () => {
-          this.queryClient.invalidateQueries({ queryKey: ['household', householdId] })
-        }
+        () => invalidateAfter(this.queryClient, 'households', householdId),
       )
       .subscribe()
 
     this.channels.push(householdChannel)
 
-    // meal_plan_ingredients has no household_id — subscribe to all changes
-    // and invalidate broadly; queries will re-fetch the correct data
+    // meal_plan_ingredients has no household_id column — Realtime can't
+    // filter it server-side, so we subscribe to all changes. The
+    // invalidation graph still narrows the cache writes to this household.
     const mpiChannel = this.client
       .channel(`meal-plan-ingredients-${householdId}`)
       .on(
@@ -93,10 +84,7 @@ export class HouseholdRealtimeManager {
           schema: 'public',
           table: 'meal_plan_ingredients',
         },
-        () => {
-          this.queryClient.invalidateQueries({ queryKey: ['meal-plan-ingredients', householdId] })
-          this.queryClient.invalidateQueries({ queryKey: ['meal-plans', householdId] })
-        }
+        () => invalidateAfter(this.queryClient, 'meal_plan_ingredients', householdId),
       )
       .subscribe()
 
@@ -115,3 +103,6 @@ export class HouseholdRealtimeManager {
     return this.currentHouseholdId
   }
 }
+
+// Re-exported for tests that previously asserted against the channel list.
+export type { HouseholdTable }
