@@ -154,11 +154,22 @@ export function useGroupedTodos(
   currentUserId: string | null | undefined,
 ): Map<string, TodoItem[]> {
   const daysKey = days.join('|')
-  const todoIdsKey = todos.map((t) => t.id).join('|')
+  // Key on every field that can affect grouping or row rendering.
+  // Crucially, this includes `completed_on` so ticking / un-ticking
+  // a todo invalidates the cached grouping — otherwise the memo
+  // would return the previous Map (which still contains the
+  // pre-toggle TodoItem objects) and the UI would appear stuck
+  // until the component is remounted (i.e. a manual refresh).
+  const todosKey = todos
+    .map(
+      (t) =>
+        `${t.id}:${t.date}:${t.completed_on ?? ''}:${t.user_id ?? ''}:${t.title}`,
+    )
+    .join('|')
   // Re-derive when any member of the input changes.
   return useMemo(
     () => groupTodosByDay(todos, days, today, currentUserId),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [todoIdsKey, daysKey, today, currentUserId],
+    [todosKey, daysKey, today, currentUserId],
   )
 }
