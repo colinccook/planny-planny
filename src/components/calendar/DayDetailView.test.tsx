@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'
+import { OverlayProvider } from '../ui/OverlayProvider'
 
 const mockUseMealPlans = vi.fn()
 const mockUseDayContexts = vi.fn()
@@ -61,6 +62,12 @@ vi.mock('../ui/FullScreenView', () => ({
 }))
 
 import DayDetailView from './DayDetailView'
+
+function renderDay(props: Parameters<typeof DayDetailView>[0]) {
+  return render(
+    createElement(OverlayProvider, null, createElement(DayDetailView, props)),
+  )
+}
 
 describe('DayDetailView ideas and reactions', () => {
   const household = {
@@ -176,16 +183,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('renders Events, Ideas, and Meal plans sections with thumbs count', () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     expect(screen.getByText('Events')).toBeDefined()
     expect(screen.getByText('Ideas')).toBeDefined()
@@ -195,16 +200,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('adds a meal idea from the tray', async () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByTestId('add-idea-button'))
     fireEvent.change(screen.getByTestId('meal-idea-input'), {
@@ -222,16 +225,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('shows delete action from idea detail tray', async () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByText('Burgers'))
 
@@ -246,16 +247,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('adds a thumbs-up reaction to an idea via the card reaction button', async () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
 
@@ -293,16 +292,14 @@ describe('DayDetailView ideas and reactions', () => {
       },
     )
 
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByTestId('idea-reaction-idea-1'))
 
@@ -318,16 +315,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('adds a thumbs-up reaction to a meal via the meal card reaction button', async () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
 
@@ -365,16 +360,14 @@ describe('DayDetailView ideas and reactions', () => {
       },
     )
 
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: 'member',
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     fireEvent.click(screen.getByTestId('meal-reaction-meal-1'))
 
@@ -390,16 +383,14 @@ describe('DayDetailView ideas and reactions', () => {
   })
 
   it('does not render meal reaction button when current user has no role', () => {
-    render(
-      createElement(DayDetailView, {
+    renderDay({
         date: '2026-04-20',
         household,
         currentRole: null,
         onBack: vi.fn(),
         onAddMeal: vi.fn(),
         onEditMeal: vi.fn(),
-      }),
-    )
+      })
 
     expect(screen.queryByTestId('meal-reaction-meal-1')).toBeNull()
   })

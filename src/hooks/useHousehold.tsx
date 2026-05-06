@@ -1,24 +1,17 @@
-import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react'
-import { useQueryClient, useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import { HouseholdRealtimeManager } from '../lib/realtime'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from './useAuth'
+import { useMemberships, type MembershipView } from './useMemberships'
+import { useHouseholdRealtime } from './useHouseholdRealtime'
 import type { Database } from '../types/database'
 import type { Role } from '../lib/permissions'
 import { pickInitialHousehold, lastHouseholdStorageKey } from '../lib/householdSelection'
 
 type Household = Database['public']['Tables']['households']['Row']
 
-interface MembershipWithHousehold {
-  household_id: string
-  role: string
-  households: Household | null
-}
-
 interface HouseholdContextType {
   households: Household[]
   /** All memberships the current user has (one per household). */
-  memberships: { household: Household; role: Role }[]
+  memberships: MembershipView[]
   currentHousehold: Household | null
   currentRole: Role | null
   switchHousehold: (householdId: string) => void
@@ -27,49 +20,28 @@ interface HouseholdContextType {
 
 const HouseholdContext = createContext<HouseholdContextType | undefined>(undefined)
 
+/**
+ * Compose the three single-purpose hooks into the public household API.
+ * The split mirrors the recommendation in `docs/state-management.md`:
+ *
+ *   - `useMemberships`        — TanStack Query for the user's memberships.
+ *   - `useHouseholdRealtime`  — Realtime subscription lifecycle.
+ *   - This provider           — selection state (`currentHouseholdId`) +
+ *                               persistence to localStorage.
+ *
+ * `useHousehold()` is preserved as a thin re-export so consumers don't
+ * need to change. Components that only need one slice (e.g. the list of
+ * memberships) can import the smaller hook directly.
+ */
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const queryClient = useQueryClient()
-  const realtimeRef = useRef<HouseholdRealtimeManager | null>(null)
+  const { households, memberships, isLoading } = useMemberships()
   const [currentHouseholdId, setCurrentHouseholdId] = useState<string | null>(null)
 
-  // Initialize realtime manager
-  useEffect(() => {
-    realtimeRef.current = new HouseholdRealtimeManager(supabase, queryClient)
-    return () => {
-      realtimeRef.current?.unsubscribe()
-    }
-  }, [queryClient])
-
-  // Fetch user's households via memberships
-  const { data: memberships = [], isLoading: membershipsLoading } = useQuery({
-    queryKey: ['my-households', user?.id],
-    queryFn: async () => {
-      if (!user) return []
-      const { data, error } = await supabase
-        .from('household_members')
-        .select('household_id, role, households(*)')
-        .eq('user_id', user.id)
-
-      if (error) throw error
-      return (data ?? []) as unknown as MembershipWithHousehold[]
-    },
-    enabled: !!user,
-  })
-
-  const households = memberships
-    .map((m) => m.households)
-    .filter((h): h is Household => h !== null)
-
-  const allMemberships = memberships
-    .filter((m): m is MembershipWithHousehold & { households: Household } => m.households !== null)
-    .map((m) => ({ household: m.households, role: m.role as Role }))
-
-  // Pick which household should be active. If the user has previously chosen
-  // one (and they're still a member), keep using it. Otherwise fall back to
-  // the first available household. The selection rule itself is a pure
-  // function (`pickInitialHousehold`) so it can be reasoned about and tested
-  // independently of React.
+  // Pick the active household. We prefer (a) an explicit in-memory choice
+  // from `switchHousehold`, then (b) the last household this user used on
+  // this device, then (c) the first available membership. Selection is a
+  // pure function so it can be unit-tested independently of React.
   const storedId =
     currentHouseholdId ??
     (user && typeof window !== 'undefined'
@@ -78,22 +50,19 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const currentHousehold = pickInitialHousehold(storedId, households)
 
   const currentMembership = memberships.find(
-    (m) => m.households?.id === currentHousehold?.id
+    (m) => m.household.id === currentHousehold?.id,
   )
-  const currentRole = (currentMembership?.role as Role) ?? null
+  const currentRole = currentMembership?.role ?? null
 
-  // Auto-select first household and reconcile our internal state when the
-  // stored id is no longer a valid membership (e.g. the user was removed
-  // from that household between sessions). This mirrors the original
-  // "auto-select first household" guard — it is idempotent so it doesn't
-  // cause render loops.
+  // Reconcile internal state with the resolved household — covers the
+  // "stored id is no longer a valid membership" case (e.g. removed from
+  // a household between sessions). Idempotent.
   if (currentHousehold && currentHouseholdId !== currentHousehold.id) {
     setCurrentHouseholdId(currentHousehold.id)
   }
 
-  // Persist the active household id so we can pick it up next time the
-  // user logs in. Writing to localStorage is the canonical "sync external
-  // system" use case for an effect.
+  // Persist the active selection so the next session opens the same
+  // household. This is the canonical "sync external system" effect.
   useEffect(() => {
     if (!currentHousehold || !user || typeof window === 'undefined') return
     window.localStorage.setItem(
@@ -102,32 +71,28 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     )
   }, [currentHousehold, user])
 
-  // Subscribe to Realtime when household changes
-  useEffect(() => {
-    if (currentHousehold && realtimeRef.current) {
-      if (realtimeRef.current.householdId !== currentHousehold.id) {
-        realtimeRef.current.subscribe(currentHousehold.id)
-      }
-    }
-  }, [currentHousehold])
+  // Hand the resolved household id off to the realtime hook — its only
+  // job is to keep the websocket pinned to that household.
+  useHouseholdRealtime(currentHousehold?.id ?? null)
 
   const switchHousehold = (householdId: string) => {
     setCurrentHouseholdId(householdId)
     if (user && typeof window !== 'undefined') {
       window.localStorage.setItem(lastHouseholdStorageKey(user.id), householdId)
     }
-    realtimeRef.current?.subscribe(householdId)
+    // The realtime hook will pick up the change via the household id
+    // dependency — no manual subscribe needed here any more.
   }
 
   return (
     <HouseholdContext.Provider
       value={{
         households,
-        memberships: allMemberships,
+        memberships,
         currentHousehold,
         currentRole,
         switchHousehold,
-        isLoading: membershipsLoading,
+        isLoading,
       }}
     >
       {children}

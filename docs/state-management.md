@@ -1,16 +1,17 @@
 # State Management Review
 
 This document is a snapshot review of how state is managed in the Planny Planny
-React app today, where it's hurting, and whether a dedicated state-management
-library would help. It is intentionally a *recommendation* document — no code
-behaviour changes — so future contributors have a shared baseline before
-reaching for Zustand / Redux / Jotai / etc.
+React app, where it used to hurt, and what we've done about it. It originally
+recommended a series of refactors; those refactors have now landed (see the
+"Update — implemented" notes inline). It still serves as a shared baseline so
+future contributors don't reach for Zustand / Redux / Jotai / etc. without good
+reason.
 
 > **TL;DR** — The current stack (TanStack Query + a small set of focused React
 > Contexts + Supabase Realtime) is the *right shape* for this app. We do **not**
-> need a global state library. The pain points are not "we need Redux", they
-> are "a handful of components and one provider have grown too much". The
-> targeted refactors at the bottom of this doc address them with the tools we
+> need a global state library. The pain points were not "we need Redux", they
+> were "a handful of components and one provider had grown too much". The
+> targeted refactors at the bottom of this doc addressed them with the tools we
 > already have.
 
 ---
@@ -28,19 +29,25 @@ common reason people reach for a state library when they don't need to.
 | **Local UI state** | which modal is open, form inputs, infinite-scroll page count | Component `useState` |
 | **Device-local persistence** | dismissed cupboard items | `localStorage` via `useSyncExternalStore` (`useStoreCupboard`) |
 
-Concrete inventory:
+Concrete inventory (post-refactor):
 
-- **22 hooks in `src/hooks/`**, the majority being TanStack Query wrappers
+- **24 hooks in `src/hooks/`**, the majority being TanStack Query wrappers
   (`useMealPlans`, `useMealIdeas`, `useTodos`, `useIngredients`,
-  `useDayPlaceholders`, `usePlanStreak`, plus query keys for `day-contexts`
-  and `reactions`).
-- **5 React Contexts**: `AuthContext`, `HouseholdContext`, `ToastContext`,
-  `HeaderOverrideContext`, `CalendarDirectionContext`.
+  `useDayPlaceholders`, `usePlanStreak`, plus the household-shaped trio
+  `useMemberships`, `useHouseholdRealtime`, `useHousehold`).
+- **6 React Contexts**: `AuthContext`, `HouseholdContext`, `OverlayContext`,
+  `ToastContext`, `HeaderOverrideContext`, `CalendarDirectionContext`.
 - **1 Realtime subscription manager** (`src/lib/realtime.ts`,
   `HouseholdRealtimeManager`) that turns Postgres change events into
-  `queryClient.invalidateQueries(...)` calls.
+  `invalidateAfter(...)` calls via the centralised dependency graph in
+  `src/lib/queryKeys.ts`.
+- **1 query-key + invalidation graph module** (`src/lib/queryKeys.ts`) used
+  by every mutation `onSuccess` and the realtime manager so the dependency
+  graph lives in one place.
+- **Optimistic updates** for reactions (`useUpsertReaction`,
+  `useDeleteReaction`) and todo tick / un-tick (`useCompleteTodo`,
+  `useReopenTodo`). Other mutations remain non-optimistic by design.
 - **No `useReducer` anywhere** in `src/`.
-- **No optimistic updates** (`onMutate` / rollback) anywhere in `src/`.
 - **No global state library** (no Zustand, Redux, Jotai, Recoil, Valtio).
   `package.json` only carries `@tanstack/react-query` and
   `@supabase/supabase-js` for state-ish concerns.
@@ -99,61 +106,66 @@ Even though the *architecture* is sound, several places are starting to ache.
 These are the ones worth tracking. Severity is from the perspective of
 "how much does this slow down adding the next feature?".
 
-### 🟠 H1. `useHousehold` is doing three jobs at once
+### 🟠 ~~H1. `useHousehold` is doing three jobs at once~~ ✅ Implemented
 
-`src/hooks/useHousehold.tsx` (~117 LOC) currently mixes:
+`src/hooks/useHousehold.tsx` used to mix the membership query, selection
+state, and the realtime lifecycle. It is now a thin composition of three
+single-purpose pieces:
 
-- the **TanStack Query** that fetches memberships
-  (`useQuery(['my-households', user.id], ...)`),
-- the **selection state** (`currentHouseholdId` + `switchHousehold`),
-- the **lifecycle of `HouseholdRealtimeManager`** (subscribe on mount /
-  household change, unsubscribe on the way out).
+- `useMemberships()` (`src/hooks/useMemberships.ts`) — TanStack Query for
+  the user's memberships, returns `{ households, memberships, isLoading }`.
+- `useHouseholdRealtime(householdId)` (`src/hooks/useHouseholdRealtime.ts`) —
+  owns the `HouseholdRealtimeManager` lifecycle, has no other responsibilities.
+- `HouseholdProvider` (`src/hooks/useHousehold.tsx`) — owns selection state
+  and persistence to localStorage, composes the two hooks above.
 
-This is the single most coupled file in the app. It also means every
-component that just wants the current `role` re-renders whenever the
-membership query refetches.
+`useHousehold()` is preserved as the public API, plus a new `memberships`
+field. Components that only need a list of households can import
+`useMemberships` directly.
 
-**Why it matters:** changing how households are picked (e.g. "remember the
-last selected household across reloads", or "deep link
-`/households/:householdId` that pre-selects a household") today requires
-touching the Realtime lifecycle code, which is unrelated.
+### 🟠 ~~H2. Cache-invalidation graph is hand-maintained in two places~~ ✅ Implemented
 
-### 🟠 H2. Cache-invalidation graph is hand-maintained in two places
+The dependency graph now lives in **one** place: `src/lib/queryKeys.ts`.
 
-Mutations call `invalidateQueries` for *every* derived cache they touch — for
-example `useCopyMealPlan` invalidates `meal-plans`, `plan-streak`, **and**
-`ingredient-usage-stats`. The Realtime manager **also** maps tables to query
-keys (e.g. `meal_plans` → `meal-plans` + `plan-streak`,
-`meal_plan_ingredients` → `meal_plan_ingredients` + `meal_plans`).
+- `queryKeys.mealPlans(householdId, ...)` etc. are the canonical builders;
+  every mutation, every realtime channel, and every test uses them.
+- `invalidateAfter(qc, table, householdId)` is the single source of truth for
+  "what cached queries are stale after a row in `table` changed?". Both
+  mutation `onSuccess` callbacks **and** the realtime websocket handler call
+  it, so the graph cannot drift between the two.
 
-**Why it matters:** the next time we add a derived query (say, a "weekly
-balance" view), we have to find every mutation and every Realtime case that
-might affect it and edit them. There is no single dependency graph that
-makes "what does this depend on?" answerable in one place.
+Adding a derived query (e.g. a "weekly balance" view) is now a one-line
+edit in `INVALIDATIONS`.
 
-### 🟡 M1. `DayDetailView.tsx` (716 LOC) is too big
+### 🟡 ~~M1. `DayDetailView.tsx` (716 LOC) is too big~~ ✅ Implemented
 
-It currently:
+`DayDetailView` is now ~200 LOC of layout + cross-section coordination. The
+per-section concerns live in their own files:
 
-- runs **7 dependent queries** in one component (`useMealPlans`,
-  `useDayContexts`, `useDayPlaceholders`, `useMealIdeas`, `useTodos`, two
-  `useReactions` calls keyed on derived id arrays);
-- holds **8 `useState`s** for modals, edit ids and tray content;
-- derives **~10 `useMemo`s** for reaction maps and permission flags.
+- `DayHeaderStrip` — pure presentational header badges.
+- `DayEventsSection` — events list + add-event flow.
+- `DayIdeasSection` — ideas list + add-idea tray + idea-detail tray, owns
+  its own `useReactions` query for `meal_idea` targets.
+- `DayMealsSection` — meals list + AI prompt tray + copy-meal tray, owns
+  its own `useReactions` query for `meal_plan` targets.
 
-The reaction queries are downstream of the meal/idea queries (their keys
-depend on the loaded ids), which is a small loading waterfall.
+`thumbsByIdeaId` (the only piece of derived data shared between the meals
+and ideas sections) lives in `src/components/calendar/dayIdeas.ts` so each
+section can import it without depending on the other. TanStack Query's
+cache dedupes the duplicate `useReactions(meal_idea, ideaIds)` call that
+the parent issues alongside the section.
 
-**Why it matters:** the file is hard to read, hard to test, and most edits
-to it touch unrelated state. Splitting this up — *not* adding a store —
-is the fix.
+### 🟡 ~~M2. Modal / tray open state is scattered~~ ✅ Implemented (cheap option)
 
-### 🟡 M2. Modal / tray open state is scattered
+We took the cheap option from the original recommendation: a single
+`useOverlay(id)` hook backed by `OverlayProvider`
+(`src/components/ui/OverlayProvider.tsx`). Only one overlay can ever be
+open at a time — opening a second one closes the first.
 
-Each component invents its own `[showXxxTray, setShowXxxTray]` boolean.
-There is no shared overlay stack and nothing prevents two trays from being
-open at once. Animations and "press back to close" can't be coordinated
-globally because the truth lives in many tiny components.
+`DayDetailView`'s four trays (add idea, idea detail, AI prompt, copy meal)
+all route through it. We did **not** add Zustand: the heavier option from
+the original doc remains deferred unless we end up with stacked overlays
+or animated transitions between overlays.
 
 ### 🟡 M3. Form state is hand-rolled `useState`
 
@@ -161,12 +173,22 @@ globally because the truth lives in many tiny components.
 `useState`s for fields plus ad-hoc validation. We don't yet feel this pain
 hard, but the next form with cross-field validation will.
 
-### 🟡 M4. No optimistic updates
+### 🟡 ~~M4. No optimistic updates~~ ✅ Implemented (for high-frequency mutations)
 
-Every mutation waits for the server. Most actions are tiny so this is fine,
-but on flaky mobile connections a thumbs-up takes a visible beat.
-TanStack Query's `onMutate` / `onError` rollback pattern is the right tool —
-we just haven't picked it up yet.
+Reactions (`useUpsertReaction`, `useDeleteReaction`) and todo
+tick / un-tick (`useCompleteTodo`, `useReopenTodo`) now use TanStack
+Query's `onMutate` / `onError` rollback pattern.
+
+The cache is updated optimistically by walking every matching
+`['reactions', householdId, targetType, ...]` (or `['todo-items',
+householdId, ...]`) entry, snapshotting the previous value, and
+applying the edit. On error we restore the snapshot; on settle we
+invalidate so the optimistic placeholder is swapped for the real
+server row (with a server-issued id and joined profile).
+
+Heavier mutations (`useCopyMealPlan`, `useSetMealIngredients`,
+meal create/update/delete) remain non-optimistic — the user already
+expects a brief save spinner for those.
 
 ### 🟢 L1. Prop drilling on navigation handlers
 
@@ -223,61 +245,26 @@ Let's evaluate the usual candidates against what's actually painful.
 
 ---
 
-## 5. Recommended next steps (in priority order)
+## 5. Recommended next steps
 
-These are concrete enough to turn into issues. Each one stands alone — none
-of them is a prerequisite for any of the others.
+Status as of the most recent state-management refactor PR:
 
-1. **Split `useHousehold` (H1).**
-   Extract three pieces:
-   - `useMemberships()` — pure TanStack Query hook returning
-     `{ households, memberships, isLoading }`.
-   - `HouseholdSelectionProvider` — owns *only* `currentHouseholdId` and
-     `switchHousehold(id)`. (Persisting the selection across reloads is a
-     separate, optional follow-up; the split is valuable on its own.)
-   - `useHouseholdRealtime(householdId)` — owns the
-     `HouseholdRealtimeManager` lifecycle, lives near the root, has no
-     other responsibilities.
-
-   Keep the existing `useHousehold()` as a thin re-export so consumers
-   don't churn.
-
-2. **Centralise the cache-invalidation graph (H2).**
-   Add `src/lib/queryKeys.ts` with two things:
-   - canonical `queryKeys.mealPlans(householdId, ...)` builders so query
-     keys are typed and never stringly defined inline;
-   - a single `invalidateAfter(table, householdId)` function used by both
-     mutations and the Realtime manager, so the "what depends on what"
-     graph lives in one place.
-
-3. **Break up `DayDetailView` (M1).**
-   Pull each section into its own component (`DayHeader`, `DayMealsList`,
-   `DayIdeasList`, `DayTodosList`, `DayContextStrip`). Each one fetches its
-   own slice and owns its own modal state. The parent shrinks to layout +
-   navigation. No new dependencies needed.
-
+1. **Split `useHousehold` (H1).** ✅ **Done.** See H1 above.
+2. **Centralise the cache-invalidation graph (H2).** ✅ **Done.** See H2
+   above. Lives in `src/lib/queryKeys.ts`.
+3. **Break up `DayDetailView` (M1).** ✅ **Done.** See M1 above.
 4. **Adopt optimistic updates for the high-frequency mutations (M4).**
-   Specifically: `useUpsertReaction` / `useDeleteReaction` (taps on the
-   thumbs-up button) and `useCompleteTodo` / `useReopenTodo`. Use TanStack
-   Query's `onMutate` / `onError` rollback pattern. Keep the heavier
-   mutations (`useCopyMealPlan`, `useSetMealIngredients`) as-is.
-
-5. **Decide the overlay-stack story (M2).**
-   Two options, in increasing weight:
-   - Cheap: a single `useOverlay()` hook backed by Context that holds
-     "which overlay is currently open" as a discriminated union.
-     No new dependency.
-   - Heavier: introduce Zustand purely for an `overlayStore`. Do this
-     **only** if we end up with 3+ stacked overlays or animated
-     transitions between them.
-
+   ✅ **Done** for reactions and todo tick/un-tick. Other mutations remain
+   non-optimistic by design.
+5. **Decide the overlay-stack story (M2).** ✅ **Done** with the cheap
+   option (`useOverlay` + `OverlayProvider`). Zustand was not adopted.
 6. **(Future) Pick a form library when needed (M3).**
    Don't migrate existing forms. The next time we build a form with
    cross-field validation (e.g. invite-and-set-role, household settings
    with conflicting toggles), reach for React Hook Form.
 
-None of the steps above add a global state library. Each one is small
-enough to ship behind its own PR.
+None of the above adds a global state library. Each one shipped behind
+its own diff inside one PR.
 
 ---
 
@@ -287,13 +274,14 @@ enough to ship behind its own PR.
 | --- | --- |
 | Adopt Redux / RTK Query | ❌ Rejected — overlaps with TanStack Query |
 | Adopt Zustand for app-wide state | ❌ Rejected — duplicates server cache |
-| Adopt Zustand narrowly (overlay stack) | 🟡 Open — only if step 5 proves the cheap option insufficient |
+| Adopt Zustand narrowly (overlay stack) | ❌ Not needed — `useOverlay` Context covers it |
 | Adopt Jotai / Recoil | ❌ Rejected — no atom-shaped pain |
 | Adopt a form library | 🟢 Deferred — pick React Hook Form when the next complex form lands |
-| Split `useHousehold` | ✅ Recommended (H1) |
-| Centralise query-key + invalidation graph | ✅ Recommended (H2) |
-| Break up `DayDetailView` | ✅ Recommended (M1) |
-| Add optimistic updates for reactions / todos | ✅ Recommended (M4) |
+| Split `useHousehold` (H1) | ✅ Implemented |
+| Centralise query-key + invalidation graph (H2) | ✅ Implemented |
+| Break up `DayDetailView` (M1) | ✅ Implemented |
+| Add overlay coordination (M2, cheap option) | ✅ Implemented |
+| Add optimistic updates for reactions / todos (M4) | ✅ Implemented |
 
 If you make one of these calls differently, please update this document in
 the same PR so the next person knows why.

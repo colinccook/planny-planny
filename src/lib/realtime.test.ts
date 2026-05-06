@@ -197,7 +197,7 @@ describe('HouseholdRealtimeManager', () => {
   })
 
   describe('cache invalidation callbacks', () => {
-    it('invalidates correct query keys for household-filtered tables', () => {
+    it('invalidates meal-plans AND plan-streak when meal_plans changes', () => {
       manager.subscribe('hh-1')
 
       // Find the meal_plans channel callback
@@ -213,6 +213,9 @@ describe('HouseholdRealtimeManager', () => {
 
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['meal-plans', 'hh-1'],
+      })
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['plan-streak', 'hh-1'],
       })
     })
 
@@ -231,6 +234,11 @@ describe('HouseholdRealtimeManager', () => {
 
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['household', 'hh-1'],
+      })
+      // Membership-listing query is also stale because the household
+      // metadata it joins to may have changed.
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['my-households'],
       })
     })
 
@@ -252,6 +260,26 @@ describe('HouseholdRealtimeManager', () => {
       })
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
         queryKey: ['meal-plans', 'hh-1'],
+      })
+      // ingredient usage stats also depend on this join table
+      expect(mockQueryClient.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['ingredient-usage-stats', 'hh-1'],
+      })
+    })
+  })
+
+  describe('queryKeys.invalidateAfter (used by mutations too)', () => {
+    it('exposes the same dependency graph the realtime manager uses', async () => {
+      const { invalidateAfter } = await import('./queryKeys')
+      const qc = createMockQueryClient()
+
+      invalidateAfter(qc, 'meal_plans', 'hh-1')
+
+      expect(qc.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['meal-plans', 'hh-1'],
+      })
+      expect(qc.invalidateQueries).toHaveBeenCalledWith({
+        queryKey: ['plan-streak', 'hh-1'],
       })
     })
   })

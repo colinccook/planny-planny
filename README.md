@@ -290,11 +290,14 @@ After authentication, all data flows through Supabase Realtime (WebSockets). Whe
 ### State Management
 
 Server state is owned by Postgres and cached in TanStack Query, kept fresh by
-Supabase Realtime. UI / session state lives in a small set of focused React
-Contexts (auth, household, toast, header override, calendar direction). There
-is intentionally **no global state library** — see
-[`docs/state-management.md`](docs/state-management.md) for the full review,
-the current growing pains, and the rationale.
+Supabase Realtime. Selected mutations (reactions, todo tick / un-tick) use
+optimistic updates so high-frequency taps feel instant. UI / session state
+lives in a small set of focused React Contexts (auth, household, overlay,
+toast, header override, calendar direction). There is intentionally **no
+global state library** — see [`docs/state-management.md`](docs/state-management.md)
+for the full review and the rationale, and
+[`docs/walkthrough.md`](docs/walkthrough.md) for a friendly tour of the
+codebase aimed at developers new to TypeScript or Supabase.
 
 ### Database
 
@@ -342,12 +345,17 @@ src/
 │   └── database.ts                      # Supabase generated types
 ├── lib/
 │   ├── supabase.ts                      # Supabase client
-│   └── realtime.ts                      # Realtime subscription manager
+│   ├── realtime.ts                      # Realtime subscription manager
+│   ├── queryKeys.ts                     # Canonical query keys + invalidation graph
+│   └── permissions.ts                   # Role predicates
 ├── hooks/
 │   ├── useAuth.tsx                       # Auth context and provider
-│   ├── useHousehold.tsx                  # Household context, switching, realtime
+│   ├── useHousehold.tsx                  # Composes membership, selection, realtime
+│   ├── useMemberships.ts                 # Pure membership query
+│   ├── useHouseholdRealtime.ts           # Owns the realtime subscription lifecycle
 │   ├── useMealPlans.ts                   # Meal plan, day context, placeholder queries
-│   ├── useMealIdeas.ts                   # Meal ideas and reaction queries
+│   ├── useMealIdeas.ts                   # Meal ideas and (optimistic) reaction queries
+│   ├── useTodos.ts                       # Todo queries with optimistic complete/reopen
 │   ├── useIngredients.ts                 # Ingredient CRUD queries
 │   └── useDayPlaceholders.ts             # Day placeholder queries
 ├── components/

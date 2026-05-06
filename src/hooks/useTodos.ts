@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 import { groupTodosByDay, type TodoItem } from '../lib/todos'
+import { invalidateAfter, queryKeys } from '../lib/queryKeys'
 
 export type { TodoItem } from '../lib/todos'
 export { groupTodosByDay, todoBelongsOnDay } from '../lib/todos'
@@ -27,7 +28,7 @@ export function useTodos(
   endDate: string,
 ) {
   return useQuery({
-    queryKey: ['todo-items', householdId, startDate, endDate],
+    queryKey: queryKeys.todoItems(householdId, startDate, endDate),
     queryFn: async () => {
       if (!householdId) return []
       const { data, error } = await supabase
@@ -61,11 +62,59 @@ export function useCreateTodo() {
       return data as TodoItem
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['todo-items', variables.household_id],
-      })
+      invalidateAfter(queryClient, 'todo_items', variables.household_id)
     },
   })
+}
+
+// ── Optimistic helpers for tick / un-tick ───────────────────
+//
+// Marking a todo done is a high-frequency one-tap interaction; we want the
+// UI to flip instantly rather than wait for the round-trip. We update every
+// cached todo-items list for the household, snapshot the previous value
+// for rollback, then re-sync from the server when the mutation settles.
+
+interface TodoCacheCtx {
+  previous: [unknown[], TodoItem[] | undefined][]
+}
+
+async function patchTodoInCache(
+  qc: ReturnType<typeof useQueryClient>,
+  householdId: string,
+  todoId: string,
+  patch: Partial<TodoItem>,
+): Promise<TodoCacheCtx> {
+  // `cancelQueries` is async — without awaiting it a slow in-flight fetch
+  // can resolve after we mutate the cache below and overwrite the
+  // optimistic state, leaving the checkbox flipping back briefly.
+  await qc.cancelQueries({ queryKey: queryKeys.todoItems(householdId) })
+
+  // Snapshot every matching cache entry *before* mutating, so `onError`
+  // can put each one back exactly as it was.
+  const previous = qc
+    .getQueryCache()
+    .findAll({ queryKey: queryKeys.todoItems(householdId) })
+    .map((q): [unknown[], TodoItem[] | undefined] => [
+      q.queryKey as unknown[],
+      q.state.data as TodoItem[] | undefined,
+    ])
+
+  qc.setQueriesData<TodoItem[]>(
+    { queryKey: queryKeys.todoItems(householdId) },
+    (old) => (old ? old.map((t) => (t.id === todoId ? { ...t, ...patch } : t)) : old),
+  )
+
+  return { previous }
+}
+
+function rollbackTodos(
+  qc: ReturnType<typeof useQueryClient>,
+  ctx: TodoCacheCtx | undefined,
+): void {
+  if (!ctx) return
+  for (const [key, data] of ctx.previous) {
+    qc.setQueryData(key, data)
+  }
 }
 
 interface CompleteTodoArgs {
@@ -93,8 +142,14 @@ export function useCompleteTodo() {
       if (error) throw error
       return data as TodoItem
     },
-    onSuccess: (_data, { householdId }) => {
-      queryClient.invalidateQueries({ queryKey: ['todo-items', householdId] })
+    onMutate: ({ id, householdId, completedOn }) =>
+      patchTodoInCache(queryClient, householdId, id, {
+        completed_on: completedOn,
+        completed_at: new Date().toISOString(),
+      }),
+    onError: (_err, _variables, context) => rollbackTodos(queryClient, context),
+    onSettled: (_data, _err, { householdId }) => {
+      invalidateAfter(queryClient, 'todo_items', householdId)
     },
   })
 }
@@ -119,8 +174,14 @@ export function useReopenTodo() {
       if (error) throw error
       return data as TodoItem
     },
-    onSuccess: (_data, { householdId }) => {
-      queryClient.invalidateQueries({ queryKey: ['todo-items', householdId] })
+    onMutate: ({ id, householdId }) =>
+      patchTodoInCache(queryClient, householdId, id, {
+        completed_on: null,
+        completed_at: null,
+      }),
+    onError: (_err, _variables, context) => rollbackTodos(queryClient, context),
+    onSettled: (_data, _err, { householdId }) => {
+      invalidateAfter(queryClient, 'todo_items', householdId)
     },
   })
 }
@@ -139,7 +200,7 @@ export function useDeleteTodo() {
       if (error) throw error
     },
     onSuccess: (_data, { householdId }) => {
-      queryClient.invalidateQueries({ queryKey: ['todo-items', householdId] })
+      invalidateAfter(queryClient, 'todo_items', householdId)
     },
   })
 }
