@@ -21,11 +21,14 @@ export default function HouseholdSettings() {
 
   useEffect(() => {
     if (currentHousehold) {
+      // Sync external household record into local form state when it changes.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setName(currentHousehold.name)
       setAlias(currentHousehold.alias ?? '')
       setDefaultAdults(currentHousehold.default_adults)
       setDefaultChildren(currentHousehold.default_children)
       setDefaultBabies(currentHousehold.default_babies)
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [currentHousehold])
 
