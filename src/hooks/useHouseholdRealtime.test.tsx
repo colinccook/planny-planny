@@ -19,6 +19,7 @@ vi.mock('../lib/realtime', () => {
     unsubscribe = vi.fn(() => {
       this.householdId = null
     })
+    setEventListener = vi.fn()
     householdId: string | null = null
     constructor() {
       instances.push(this)

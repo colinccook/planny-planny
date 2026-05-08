@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { HouseholdRealtimeManager } from '../lib/realtime'
+import {
+  HouseholdRealtimeManager,
+  type RealtimeEventListener,
+} from '../lib/realtime'
 
 /**
  * Owns the lifecycle of a single `HouseholdRealtimeManager` for the
@@ -17,8 +20,14 @@ import { HouseholdRealtimeManager } from '../lib/realtime'
  * `householdId` changes we re-subscribe (the manager itself tears down
  * the old channels first). Subscribing to the same household twice is a
  * no-op — see `HouseholdRealtimeManager.subscribe`.
+ *
+ * An optional `onEvent` listener is forwarded to the manager and used
+ * by the sound layer to play subtle pings in time with incoming changes.
  */
-export function useHouseholdRealtime(householdId: string | null | undefined): void {
+export function useHouseholdRealtime(
+  householdId: string | null | undefined,
+  onEvent?: RealtimeEventListener,
+): void {
   const queryClient = useQueryClient()
   const managerRef = useRef<HouseholdRealtimeManager | null>(null)
 
@@ -32,6 +41,16 @@ export function useHouseholdRealtime(householdId: string | null | undefined): vo
       managerRef.current = null
     }
   }, [queryClient])
+
+  // Keep the listener fresh without reaching back through subscribe()
+  // — listeners change every render (new closures from `useSounds`),
+  // but the underlying channels do not.
+  useEffect(() => {
+    managerRef.current?.setEventListener(onEvent ?? null)
+    return () => {
+      managerRef.current?.setEventListener(null)
+    }
+  }, [onEvent])
 
   // (Re-)subscribe whenever the active household changes. When the active
   // household disappears (logout, removed from the household, deleted the

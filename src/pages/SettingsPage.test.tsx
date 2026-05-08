@@ -55,6 +55,9 @@ vi.mock('../components/settings/DeleteHousehold', () => ({
 vi.mock('../components/settings/DeleteAccount', () => ({
   default: () => createElement('div', { 'data-testid': 'delete-account' }),
 }))
+vi.mock('../components/settings/PreferencesSettings', () => ({
+  default: () => createElement('div', { 'data-testid': 'preferences-settings' }),
+}))
 
 import SettingsPage from './SettingsPage'
 

@@ -18,18 +18,24 @@ export interface Database {
           display_name: string
           avatar_url: string | null
           created_at: string
+          last_household_id: string | null
+          sound_effects_enabled: boolean
         }
         Insert: {
           id: string
           display_name: string
           avatar_url?: string | null
           created_at?: string
+          last_household_id?: string | null
+          sound_effects_enabled?: boolean
         }
         Update: {
           id?: string
           display_name?: string
           avatar_url?: string | null
           created_at?: string
+          last_household_id?: string | null
+          sound_effects_enabled?: boolean
         }
         Relationships: []
       }

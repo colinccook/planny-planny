@@ -7,6 +7,15 @@ import {
   type HouseholdTable,
 } from './queryKeys'
 
+/** Postgres operation type as reported by Supabase Realtime payloads. */
+export type RealtimeEventType = 'INSERT' | 'UPDATE' | 'DELETE'
+
+/** Callback fired for every realtime payload routed through the manager. */
+export type RealtimeEventListener = (
+  table: HouseholdTable,
+  event: RealtimeEventType,
+) => void
+
 /**
  * Manages Supabase Realtime subscriptions scoped to a single household.
  * When the user switches households, the old channels are torn down
@@ -22,10 +31,30 @@ export class HouseholdRealtimeManager {
   private client: SupabaseClient<Database>
   private queryClient: QueryClient
   private currentHouseholdId: string | null = null
+  private listener: RealtimeEventListener | null = null
 
   constructor(client: SupabaseClient<Database>, queryClient: QueryClient) {
     this.client = client
     this.queryClient = queryClient
+  }
+
+  /**
+   * Register (or replace) a callback that fires for every realtime row
+   * change routed through this manager. Used to drive subtle sound
+   * effects in sync with incoming events. Pass `null` to clear.
+   */
+  setEventListener(listener: RealtimeEventListener | null): void {
+    this.listener = listener
+  }
+
+  private emit(table: HouseholdTable, event: string | undefined): void {
+    if (!this.listener) return
+    if (event !== 'INSERT' && event !== 'UPDATE' && event !== 'DELETE') return
+    try {
+      this.listener(table, event)
+    } catch {
+      // Listener errors must never break realtime invalidation.
+    }
   }
 
   subscribe(householdId: string): void {
@@ -46,7 +75,10 @@ export class HouseholdRealtimeManager {
             table,
             filter: `household_id=eq.${householdId}`,
           },
-          () => invalidateAfter(this.queryClient, table, householdId),
+          (payload: { eventType?: string }) => {
+            invalidateAfter(this.queryClient, table, householdId)
+            this.emit(table, payload?.eventType)
+          },
         )
         .subscribe()
 
@@ -66,7 +98,10 @@ export class HouseholdRealtimeManager {
           table: 'households',
           filter: `id=eq.${householdId}`,
         },
-        () => invalidateAfter(this.queryClient, 'households', householdId),
+        (payload: { eventType?: string }) => {
+          invalidateAfter(this.queryClient, 'households', householdId)
+          this.emit('households', payload?.eventType)
+        },
       )
       .subscribe()
 
@@ -84,7 +119,10 @@ export class HouseholdRealtimeManager {
           schema: 'public',
           table: 'meal_plan_ingredients',
         },
-        () => invalidateAfter(this.queryClient, 'meal_plan_ingredients', householdId),
+        (payload: { eventType?: string }) => {
+          invalidateAfter(this.queryClient, 'meal_plan_ingredients', householdId)
+          this.emit('meal_plan_ingredients', payload?.eventType)
+        },
       )
       .subscribe()
 
