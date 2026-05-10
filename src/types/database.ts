@@ -435,9 +435,10 @@ export interface Database {
     // object) because Supabase's relationship inference for nested
     // `select(...)` queries (e.g. `meal_plans → meal_plan_ingredients`)
     // breaks when this type is narrowed to specific function signatures.
-    // RPCs are called with a string-cast key — see comment at the top of
-    // src/lib/supabase.ts. If we ever switch to typed RPCs we'll need
-    // generated types from `supabase gen types`.
+    // Hand-rolled RPCs (e.g. `get_public_stat`) cast the function name
+    // and arguments to `never` at the call site to bypass this.
+    // If we ever switch to typed RPCs we'll need generated types from
+    // `supabase gen types`.
     Functions: Record<string, never>
     Enums: Record<string, never>
   }

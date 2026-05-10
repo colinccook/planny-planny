@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { Database } from '../../types/database'
 import {
   useMealPlans,
@@ -6,8 +6,15 @@ import {
   useDayPlaceholders,
 } from '../../hooks/useMealPlans'
 import { useMealIdeas } from '../../hooks/useMealIdeas'
+import { useMealOutcomes } from '../../hooks/useMealOutcomes'
 import { useTodos, useGroupedTodos } from '../../hooks/useTodos'
-import { generateDateRange, generateBackwardDateRange, toDateString } from '../../lib/dates'
+import {
+  generateDateRange,
+  generateBackwardDateRange,
+  getAdjacentDate,
+  toDateString,
+} from '../../lib/dates'
+import { shouldShowYesterdayGhost } from '../../lib/outcomes'
 import { useCalendarDirection } from '../../hooks/useCalendarDirection'
 import { useAuth } from '../../hooks/useAuth'
 import {
@@ -78,9 +85,17 @@ function CalendarViewInner({
       ? generateDateRange(today, dayCount)
       : generateBackwardDateRange(today, dayCount)
 
-  // For data fetching, we need sorted start/end dates
+  // For data fetching, we need sorted start/end dates. In the forward
+  // view we extend the window one day backwards so we can show the
+  // "yesterday — how did these go?" ghost row when any meal yesterday
+  // is still missing an outcome (see shouldShowYesterdayGhost).
+  const todayStr = toDateString(today)
+  const yesterdayStr = getAdjacentDate(todayStr, -1)
   const sortedDates = [...dates].sort()
-  const startDate = sortedDates[0]
+  const startDate =
+    direction === 'forward' && sortedDates.length > 0 && sortedDates[0] === todayStr
+      ? yesterdayStr
+      : sortedDates[0]
   const endDate = sortedDates[sortedDates.length - 1]
 
   const { data: meals = [], isLoading: mealsLoading } = useMealPlans(
@@ -96,8 +111,12 @@ function CalendarViewInner({
   const { data: placeholders = [] } = useDayPlaceholders(household.id)
   const { data: ideas = [] } = useMealIdeas(household.id, startDate, endDate)
   const { data: todos = [] } = useTodos(household.id, startDate, endDate)
+  const { byMealPlanId: outcomesByMealId } = useMealOutcomes(
+    household.id,
+    startDate,
+    endDate,
+  )
   const { user } = useAuth()
-  const todayStr = toDateString(today)
   const todosByDate = useGroupedTodos(todos, dates, todayStr, user?.id)
 
   const isLoading = mealsLoading || contextsLoading
@@ -140,6 +159,22 @@ function CalendarViewInner({
     existing.push(meal)
     mealsByDate.set(meal.date, existing)
   }
+
+  // Decide whether to prepend the "Yesterday — how did these go?" ghost
+  // row. Only rendered in the forward view (the default), and only when
+  // at least one meal yesterday still has no outcome — once they're all
+  // recorded, the row vanishes on the next render.
+  const showYesterdayGhost = useMemo(
+    () =>
+      direction === 'forward' &&
+      shouldShowYesterdayGhost(todayStr, mealsByDate, outcomesByMealId),
+    // mealsByDate is rebuilt each render but its contents only change
+    // when the meals query data changes, so depending on `meals` is
+    // both stable and accurate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [direction, todayStr, meals, outcomesByMealId],
+  )
+  const datesToRender = showYesterdayGhost ? [yesterdayStr, ...dates] : dates
 
   // Group ideas by date — used to render the 💡 badge per day.
   const ideasByDate = new Map<string, typeof ideas>()
@@ -238,10 +273,11 @@ function CalendarViewInner({
         </div>
       )}
 
-      {dates.map((dateStr) => {
+      {datesToRender.map((dateStr) => {
         const [y, m, d] = dateStr.split('-').map(Number)
         const dateObj = new Date(y, m - 1, d)
         const dow = dateObj.getDay()
+        const isGhost = dateStr === yesterdayStr && showYesterdayGhost
 
         return (
           <DayRow
@@ -254,6 +290,7 @@ function CalendarViewInner({
             ideaCount={ideasByDate.get(dateStr)?.length ?? 0}
             todoCount={todosByDate.get(dateStr)?.length ?? 0}
             currentRole={currentRole}
+            ghost={isGhost}
           />
         )
       })}

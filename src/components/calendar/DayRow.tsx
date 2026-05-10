@@ -20,6 +20,11 @@ interface DayRowProps {
   /** Number of todo items currently visible on this day (rendered as ✅ N). */
   todoCount?: number
   currentRole: Audience
+  /** When true, render this row in the "yesterday — outcomes pending"
+   *  ghost style: faded, dashed top border, with a small prompt header.
+   *  The forward calendar view prepends a single ghost row when at
+   *  least one meal from yesterday still needs an outcome. */
+  ghost?: boolean
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -53,6 +58,7 @@ export default function DayRow({
   meals,
   ideaCount = 0,
   todoCount = 0,
+  ghost = false,
 }: DayRowProps) {
   const navigate = useNavigate()
 
@@ -74,9 +80,19 @@ export default function DayRow({
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') navigate(`/calendar/${date}`)
       }}
-      className="cursor-pointer rounded-xl bg-white shadow-sm ring-1 ring-gray-100 transition-colors hover:bg-gray-50 active:bg-gray-100"
+      className={`cursor-pointer rounded-xl bg-white shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-100 ${
+        ghost
+          ? 'border-t-2 border-dashed border-amber-300 opacity-75 ring-1 ring-amber-100'
+          : 'ring-1 ring-gray-100'
+      }`}
       data-testid={`day-row-${date}`}
+      data-ghost={ghost ? 'true' : undefined}
     >
+      {ghost && (
+        <p className="px-4 pt-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
+          Yesterday — how did these go?
+        </p>
+      )}
       {/* Day header */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3 pb-2">
         <h3 className="text-base font-bold text-gray-900">

@@ -9,3 +9,13 @@ Feature: Tab Navigation
     Given I am not authenticated
     When I navigate to the ingredients page
     Then I should be redirected to the login page
+
+  Scenario: The settings tab route is protected
+    Given I am not authenticated
+    When I navigate to the settings page
+    Then I should be redirected to the login page
+
+  Scenario: The store cupboard tab route is protected
+    Given I am not authenticated
+    When I navigate to the store cupboard page
+    Then I should be redirected to the login page
