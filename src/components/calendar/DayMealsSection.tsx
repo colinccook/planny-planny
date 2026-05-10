@@ -10,10 +10,14 @@ import {
   useDeleteReaction,
   type ReactionWithProfile,
 } from '../../hooks/useMealIdeas'
+import { useMealOutcomes } from '../../hooks/useMealOutcomes'
 import { useAuth } from '../../hooks/useAuth'
+import { canRecordOutcomes, type Audience } from '../../lib/permissions'
+import { canRecordOutcomeOn, todayString } from '../../lib/outcomes'
 import { useOverlay } from '../ui/OverlayProvider'
 import MealCard from './MealCard'
 import CopyMealTray from './CopyMealTray'
+import OutcomeTray from './OutcomeTray'
 import MealPromptGenerator from './MealPromptGenerator'
 import Tray from '../ui/Tray'
 import type { Reactor } from '../ui/ReactionButton'
@@ -45,6 +49,11 @@ interface DayMealsSectionProps {
   dayThemeLabel: string | null
   canEdit: boolean
   canVoteHere: boolean
+  /** The current user's audience for *this* household. Used to gate
+   *  the OutcomeButton (separately from canEdit, because future role
+   *  divergence between meal-edit and outcome-record permissions is
+   *  expected — see canRecordOutcomes in src/lib/permissions.ts). */
+  currentRole: Audience
   onAddMeal: () => void
   onEditMeal: (mealId: string) => void
 }
@@ -68,6 +77,7 @@ export default function DayMealsSection({
   dayThemeLabel,
   canEdit,
   canVoteHere,
+  currentRole,
   onAddMeal,
   onEditMeal,
 }: DayMealsSectionProps) {
@@ -77,8 +87,30 @@ export default function DayMealsSection({
   const removeReaction = useDeleteReaction()
 
   const [copyingMeal, setCopyingMeal] = useState<MealPlanWithIngredients | null>(null)
+  const [outcomeMeal, setOutcomeMeal] = useState<MealPlanWithIngredients | null>(null)
+  // The set of meal_plan ids whose outcome was just-set this session.
+  // Drives the one-shot flourish animation on the meal card. Kept in
+  // state (rather than a ref) so updating it triggers a re-render and
+  // so the React 19 lint rule `react-hooks/refs` is happy with us
+  // reading it during render.
+  const [justSetOutcomeIds, setJustSetOutcomeIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  )
   const promptTray = useOverlay(`day-detail:${date}:ai-prompt`)
   const copyTray = useOverlay(`day-detail:${date}:copy-meal`)
+  const outcomeTray = useOverlay(`day-detail:${date}:outcome`)
+
+  // Outcomes for this day's meals. We fetch with a single-day window
+  // so the cache key matches the calendar's window queries — see
+  // useMealOutcomes.
+  const { byMealPlanId: outcomesByMealId } = useMealOutcomes(
+    household.id,
+    date,
+    date,
+  )
+
+  const today = todayString()
+  const canRecord = canRecordOutcomes(currentRole) && canRecordOutcomeOn(today, date)
 
   const mealIdsKey = meals.map((m) => m.id).join('|')
   const mealIds = useMemo(
@@ -127,6 +159,16 @@ export default function DayMealsSection({
   const stopCopy = () => {
     setCopyingMeal(null)
     copyTray.close()
+  }
+
+  const startOutcome = (meal: MealPlanWithIngredients) => {
+    setOutcomeMeal(meal)
+    outcomeTray.open()
+  }
+
+  const stopOutcome = () => {
+    setOutcomeMeal(null)
+    outcomeTray.close()
   }
 
   return (
@@ -181,6 +223,7 @@ export default function DayMealsSection({
           const reactors = buildReactors(mealRxns, user?.id)
           const currentUserEmoji =
             mealRxns.find((r) => r.user_id === user?.id && r.emoji === '👍')?.emoji ?? null
+          const outcome = outcomesByMealId.get(meal.id)
           return (
             <MealCard
               key={meal.id}
@@ -194,6 +237,10 @@ export default function DayMealsSection({
               onReact={(emoji) => handleReact(meal.id, emoji)}
               onUnreact={() => handleUnreact(meal.id)}
               canReact={canVoteHere && !!user}
+              outcome={outcome}
+              canRecordOutcome={canRecord}
+              onOpenOutcome={canRecord ? () => startOutcome(meal) : undefined}
+              flourish={justSetOutcomeIds.has(meal.id)}
             />
           )
         })}
@@ -216,6 +263,26 @@ export default function DayMealsSection({
           onClose={stopCopy}
           meal={copyingMeal}
           sourceDate={date}
+        />
+      )}
+
+      {outcomeMeal && (
+        <OutcomeTray
+          key={outcomeMeal.id}
+          isOpen={outcomeTray.isOpen}
+          onClose={stopOutcome}
+          mealPlanId={outcomeMeal.id}
+          householdId={household.id}
+          mealTitle={outcomeMeal.title}
+          existing={outcomesByMealId.get(outcomeMeal.id)}
+          onJustSet={() => {
+            setJustSetOutcomeIds((prev) => {
+              if (prev.has(outcomeMeal.id)) return prev
+              const next = new Set(prev)
+              next.add(outcomeMeal.id)
+              return next
+            })
+          }}
         />
       )}
     </>

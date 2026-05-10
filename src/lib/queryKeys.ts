@@ -33,6 +33,7 @@ export type HouseholdTable =
   | 'household_members'
   | 'households'
   | 'meal_plan_ingredients'
+  | 'meal_outcomes'
 
 type Hh = string | undefined
 
@@ -84,6 +85,15 @@ export const queryKeys = {
     'meal-plan-ingredients',
     householdId,
   ],
+  /** Outcomes for the meals in a date window — same window as
+   *  `mealPlans` so the calendar renders both with one fetch shape. */
+  mealOutcomes: (householdId: Hh, startDate?: string, endDate?: string): QueryKey =>
+    startDate !== undefined && endDate !== undefined
+      ? ['meal-outcomes', householdId, startDate, endDate]
+      : ['meal-outcomes', householdId],
+  /** Cached "headline" stat shown on the unauthenticated welcome
+   *  screen ("Successfully helped families plan N meals"). */
+  publicStat: (key: string): QueryKey => ['public-stat', key],
   /** Top-level: every household the current user is a member of. */
   myHouseholds: (userId?: string): QueryKey =>
     userId !== undefined ? ['my-households', userId] : ['my-households'],
@@ -138,6 +148,16 @@ const INVALIDATIONS: Record<HouseholdTable, Invalidator> = {
     qc.invalidateQueries({ queryKey: queryKeys.mealPlans(hh) })
     qc.invalidateQueries({ queryKey: queryKeys.ingredientUsageStats(hh) })
   },
+  meal_outcomes: (qc, hh) => {
+    qc.invalidateQueries({ queryKey: queryKeys.mealOutcomes(hh) })
+    // The meal cards show outcome state inline, so refresh meal plans
+    // too so styling (happy / neutral) updates with realtime changes.
+    qc.invalidateQueries({ queryKey: queryKeys.mealPlans(hh) })
+    // The cached public counter aggregates over meal_outcomes — bump
+    // it so a tab on the welcome page sees changes within one
+    // refetch interval rather than waiting for the daily cron.
+    qc.invalidateQueries({ queryKey: queryKeys.publicStat('successful_meals_total') })
+  },
 }
 
 /**
@@ -163,4 +183,5 @@ export const HOUSEHOLD_FILTERED_TABLES: readonly HouseholdTable[] = [
   'ingredients',
   'day_placeholders',
   'household_members',
+  'meal_outcomes',
 ] as const

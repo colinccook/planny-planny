@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import type { MealPlanWithIngredients } from '../../hooks/useMealPlans'
+import type { MealOutcome } from '../../hooks/useMealOutcomes'
 import IngredientTag from '../ingredients/IngredientTag'
 import ReactionButton, {
   type Reactor,
   type ReactionOption,
 } from '../ui/ReactionButton'
+import OutcomeButton from './OutcomeButton'
 
 const THUMB_OPTIONS: ReactionOption[] = [{ emoji: '👍', label: 'Thumbs up' }]
 
@@ -19,6 +21,17 @@ interface MealCardProps {
   onReact?: (emoji: string) => void | Promise<void>
   onUnreact?: () => void | Promise<void>
   canReact?: boolean
+  /** The outcome row for this meal, if any. Drives the happy/neutral
+   *  card styling and the OutcomeButton state. */
+  outcome?: MealOutcome
+  /** True when the parent decides this meal is eligible for outcome
+   *  recording (today or earlier + the user has the permission). */
+  canRecordOutcome?: boolean
+  /** Open the OutcomeTray for this meal. */
+  onOpenOutcome?: () => void
+  /** True when the outcome was just-set this session — drives the
+   *  one-shot "flourish" celebration animation. */
+  flourish?: boolean
 }
 
 export default function MealCard({
@@ -32,6 +45,10 @@ export default function MealCard({
   onReact,
   onUnreact,
   canReact,
+  outcome,
+  canRecordOutcome,
+  onOpenOutcome,
+  flourish,
 }: MealCardProps) {
   const [confirming, setConfirming] = useState(false)
 
@@ -44,12 +61,31 @@ export default function MealCard({
     }
   }
 
+  // Visual state: outcomes drive a "happy" or "neutral" skin on the
+  // card. The default (neither set, or unset) keeps the existing
+  // emerald-tinted card.
+  const isHappy = outcome?.status === 'as_planned'
+  const isNeutralOutcome = outcome?.status === 'did_not_happen'
+
+  const containerClasses = [
+    'group rounded-lg px-3 py-2.5 transition-shadow',
+    isHappy
+      ? 'bg-emerald-100 ring-1 ring-emerald-300'
+      : isNeutralOutcome
+        ? 'bg-gray-50'
+        : 'bg-emerald-50/60',
+    flourish ? 'motion-reduce:animate-none animate-flourish' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <div
-      className="group rounded-lg bg-emerald-50/60 px-3 py-2.5 transition-shadow"
+      className={containerClasses}
       data-testid="meal-card"
       data-meal-card="true"
       data-meal-id={meal.id}
+      data-outcome-status={outcome?.status ?? 'unset'}
     >
       <div className="flex items-start justify-between gap-2">
         <button
@@ -57,7 +93,18 @@ export default function MealCard({
           className="flex-1 text-left"
           onClick={canEdit ? onEdit : undefined}
         >
-          <p className="font-semibold text-gray-900">{meal.title}</p>
+          <p
+            className={`font-semibold ${
+              isHappy
+                ? 'text-emerald-900'
+                : isNeutralOutcome
+                  ? 'text-gray-600'
+                  : 'text-gray-900'
+            }`}
+          >
+            {isHappy && <span aria-hidden>🌱 </span>}
+            {meal.title}
+          </p>
           {meal.description && (
             <p className="mt-0.5 text-sm text-gray-500">{meal.description}</p>
           )}
@@ -157,6 +204,16 @@ export default function MealCard({
             size="sm"
             targetLabel={meal.title}
             testId={`meal-reaction-${meal.id}`}
+          />
+        </div>
+      )}
+
+      {canRecordOutcome && onOpenOutcome && (
+        <div className="mt-2">
+          <OutcomeButton
+            outcome={outcome}
+            onClick={onOpenOutcome}
+            mealTitle={meal.title}
           />
         </div>
       )}

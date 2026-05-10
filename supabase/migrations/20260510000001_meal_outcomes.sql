@@ -65,10 +65,23 @@ create index meal_outcomes_status_idx
 alter table public.meal_outcomes enable row level security;
 
 -- ── RLS ─────────────────────────────────────────────────────
+-- Mirrors the JS predicates in src/lib/permissions.ts.
+--
 -- Read: any signed-in member of the household, OR an anonymous
 --       viewer of a household that has a public share token.
--- Write: anyone who can_edit_meals (owner / member / honoured_guest).
---        Voting guests and public viewers cannot record outcomes.
+-- Write: anyone who can_record_outcomes (== can_edit_meals today:
+--        owner / member / honoured_guest). Voting guests and
+--        public viewers cannot record outcomes.
+
+-- Capability helper. Aliased to can_edit_meals today; kept as a
+-- separate function so future divergence (e.g. allowing voting
+-- guests to record outcomes) is a one-line change in both the
+-- DB and the front-end predicate.
+create or replace function public.can_record_outcomes(p_household_id uuid)
+returns boolean as $$
+  select public.can_edit_meals(p_household_id)
+$$ language sql security definer stable;
+
 create policy "Members can view meal outcomes"
   on public.meal_outcomes for select
   using (public.user_household_role(household_id) is not null);
@@ -85,8 +98,8 @@ create policy "Public can view shared meal outcomes"
 
 create policy "Editors can manage meal outcomes"
   on public.meal_outcomes for all
-  using (public.can_edit_meals(household_id))
-  with check (public.can_edit_meals(household_id));
+  using (public.can_record_outcomes(household_id))
+  with check (public.can_record_outcomes(household_id));
 
 -- ── Realtime ────────────────────────────────────────────────
 -- Mirror the meal_plans publication so optimistic updates from

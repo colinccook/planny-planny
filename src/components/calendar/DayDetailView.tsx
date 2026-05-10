@@ -213,6 +213,7 @@ export default function DayDetailView({
             dayThemeLabel={placeholder?.label ?? null}
             canEdit={canEdit}
             canVoteHere={canVoteHere}
+            currentRole={currentRole}
             onAddMeal={onAddMeal}
             onEditMeal={onEditMeal}
           />

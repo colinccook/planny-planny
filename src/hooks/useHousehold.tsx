@@ -109,6 +109,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       // bookkeeping (membership churn, household metadata edits) noisy.
       if (event === 'INSERT') {
         if (table === 'reactions') return play('react')
+        // Recording an outcome (the headline metric of the app) gets
+        // the celebratory `done` chime — same sound as completing a
+        // todo, since both signal "this thing actually got finished".
+        if (table === 'meal_outcomes') return play('done')
         if (
           table === 'meal_plans' ||
           table === 'meal_ideas' ||
@@ -126,7 +130,8 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         if (
           table === 'todo_items' ||
           table === 'meal_plans' ||
-          table === 'meal_ideas'
+          table === 'meal_ideas' ||
+          table === 'meal_outcomes'
         ) {
           return play('update')
         }

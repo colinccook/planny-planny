@@ -357,8 +357,87 @@ export interface Database {
         }
         Relationships: []
       }
+      meal_outcomes: {
+        Row: {
+          id: string
+          meal_plan_id: string
+          household_id: string
+          status: 'as_planned' | 'did_not_happen'
+          reason:
+            | 'no_shopping'
+            | 'ate_out'
+            | 'unexpected_event'
+            | 'didnt_fancy_it'
+            | 'other'
+            | null
+          note: string | null
+          recorded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          meal_plan_id: string
+          household_id: string
+          status: 'as_planned' | 'did_not_happen'
+          reason?:
+            | 'no_shopping'
+            | 'ate_out'
+            | 'unexpected_event'
+            | 'didnt_fancy_it'
+            | 'other'
+            | null
+          note?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          meal_plan_id?: string
+          household_id?: string
+          status?: 'as_planned' | 'did_not_happen'
+          reason?:
+            | 'no_shopping'
+            | 'ate_out'
+            | 'unexpected_event'
+            | 'didnt_fancy_it'
+            | 'other'
+            | null
+          note?: string | null
+          recorded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      public_stats: {
+        Row: {
+          key: string
+          value: number
+          refreshed_at: string
+        }
+        Insert: {
+          key: string
+          value?: number
+          refreshed_at?: string
+        }
+        Update: {
+          key?: string
+          value?: number
+          refreshed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
+    // Note: must remain `Record<string, never>` (rather than a populated
+    // object) because Supabase's relationship inference for nested
+    // `select(...)` queries (e.g. `meal_plans → meal_plan_ingredients`)
+    // breaks when this type is narrowed to specific function signatures.
+    // RPCs are called with a string-cast key — see comment at the top of
+    // src/lib/supabase.ts. If we ever switch to typed RPCs we'll need
+    // generated types from `supabase gen types`.
     Functions: Record<string, never>
     Enums: Record<string, never>
   }
