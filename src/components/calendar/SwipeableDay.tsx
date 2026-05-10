@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useSwipe } from '../../hooks/useSwipe'
+import { useSounds } from '../../hooks/useSounds'
 
 interface SwipeableDayProps {
   /** YYYY-MM-DD; used as React key so child mounts fresh per day. */
@@ -33,9 +34,13 @@ export default function SwipeableDay({
   onMealSwipe,
   children,
 }: SwipeableDayProps) {
+  const { play } = useSounds()
   const { ref, dragX, isDragging } = useSwipe<HTMLDivElement>({
     threshold: SWIPE_THRESHOLD,
     onSwipe: (dir) => {
+      // Subtle "swish" in time with the slide-in animation that's about
+      // to play on the new day's view.
+      play('swish')
       if (dir === 'left') onSwipeLeft()
       else onSwipeRight()
     },

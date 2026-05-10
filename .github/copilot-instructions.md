@@ -73,3 +73,25 @@ For every new feature request you must:
 - Supabase types are in `src/types/database.ts` — regenerate with `supabase gen types typescript`.
 - Each household is isolated: ingredients, meal plans, settings are household-scoped.
 - Users can belong to multiple households.
+
+## Sound Effects
+
+The app plays subtle, friendly UI sounds (synthesised on the fly via Web Audio in `src/lib/sounds.ts` — no audio files). Users can opt out via the "Sound effects" toggle in Settings; the preference is stored on `profiles.sound_effects_enabled` and defaults to `true`.
+
+For every new feature, decide whether it should make a sound and, if so, **wire it in**:
+
+1. **Pick from the existing palette** in `src/lib/sounds.ts` (`swish`, `pop`, `done`, `react`, `update`) when one fits. Add a new entry only if no existing sound captures the moment — keep it short (< 250 ms), quiet (peak gain < 0.1), and friendly (sine/triangle waves, major intervals).
+2. **Sync sounds with animations** so they feel like one effect, not two (e.g. `swish` plays the moment a swipe commits, in time with the slide).
+3. **Use the right entry point**:
+   - In components: `const { play } = useSounds()` then `play('pop')`. The hook respects the user's opt-out automatically.
+   - In non-component modules (mutation `onMutate`, etc.): `playSoundIfEnabled('done')` from `src/lib/sounds`.
+4. **Realtime events**: `useHousehold` already routes Supabase `postgres_changes` payloads to the sound layer. Hook into that map (in `useHousehold.tsx`) for new tables rather than wiring sounds at every call site.
+5. **Don't overdo it**: collaboration signals (new meal/idea/todo, reactions, completions) deserve a sound. Background bookkeeping (membership churn, household metadata edits, deletes) should stay silent.
+6. **No BDD tests for sounds.** Sounds are an audio-only side effect and intentionally outside the BDD coverage. Pure unit tests for the sound palette and any new gating logic are welcome.
+
+## User Preferences
+
+Preferences that should follow a user across devices live on the `profiles` row and are read/written through `src/hooks/useUserPreferences.ts`. Anything device-local (scroll position, expanded sections, etc.) belongs in `localStorage`, not on `profiles`. The current preferences are:
+
+- `last_household_id` — remembers which household the user was in so the app drops them straight back into it on the next sign-in (anywhere).
+- `sound_effects_enabled` — see "Sound Effects" above.

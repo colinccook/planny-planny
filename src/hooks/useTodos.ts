@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import type { Database } from '../types/database'
 import { groupTodosByDay, type TodoItem } from '../lib/todos'
 import { invalidateAfter, queryKeys } from '../lib/queryKeys'
+import { playSoundIfEnabled } from '../lib/sounds'
 
 export type { TodoItem } from '../lib/todos'
 export { groupTodosByDay, todoBelongsOnDay } from '../lib/todos'
@@ -142,11 +143,18 @@ export function useCompleteTodo() {
       if (error) throw error
       return data as TodoItem
     },
-    onMutate: ({ id, householdId, completedOn }) =>
-      patchTodoInCache(queryClient, householdId, id, {
+    onMutate: ({ id, householdId, completedOn }) => {
+      // Play the warm "done" chime in time with the optimistic tick —
+      // the realtime echo deliberately doesn't celebrate completions
+      // (it can't tell apart a complete from a re-open or an edit).
+      // `playSoundIfEnabled` reads the user preference mirrored from
+      // `useUserPreferences`, so opt-outs are honoured here too.
+      playSoundIfEnabled('done')
+      return patchTodoInCache(queryClient, householdId, id, {
         completed_on: completedOn,
         completed_at: new Date().toISOString(),
-      }),
+      })
+    },
     onError: (_err, _variables, context) => rollbackTodos(queryClient, context),
     onSettled: (_data, _err, { householdId }) => {
       invalidateAfter(queryClient, 'todo_items', householdId)

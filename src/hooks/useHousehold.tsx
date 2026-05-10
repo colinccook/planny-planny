@@ -1,9 +1,13 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from './useAuth'
 import { useMemberships, type MembershipView } from './useMemberships'
 import { useHouseholdRealtime } from './useHouseholdRealtime'
+import { useUserPreferences } from './useUserPreferences'
+import { useSounds } from './useSounds'
 import type { Database } from '../types/database'
 import type { Role } from '../lib/permissions'
+import type { HouseholdTable } from '../lib/queryKeys'
+import type { RealtimeEventType } from '../lib/realtime'
 import { pickInitialHousehold, lastHouseholdStorageKey } from '../lib/householdSelection'
 
 type Household = Database['public']['Tables']['households']['Row']
@@ -26,8 +30,14 @@ const HouseholdContext = createContext<HouseholdContextType | undefined>(undefin
  *
  *   - `useMemberships`        — TanStack Query for the user's memberships.
  *   - `useHouseholdRealtime`  — Realtime subscription lifecycle.
+ *   - `useUserPreferences`    — server-side per-user settings, including
+ *                               the last household the user was in. This
+ *                               is what makes "remember my household"
+ *                               work across devices, not just on the
+ *                               device where it was last set.
  *   - This provider           — selection state (`currentHouseholdId`) +
- *                               persistence to localStorage.
+ *                               persistence to the database (with
+ *                               localStorage as a fast first-paint hint).
  *
  * `useHousehold()` is preserved as a thin re-export so consumers don't
  * need to change. Components that only need one slice (e.g. the list of
@@ -36,17 +46,26 @@ const HouseholdContext = createContext<HouseholdContextType | undefined>(undefin
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const { households, memberships, isLoading } = useMemberships()
+  const { preferences, setPreferences } = useUserPreferences()
   const [currentHouseholdId, setCurrentHouseholdId] = useState<string | null>(null)
 
-  // Pick the active household. We prefer (a) an explicit in-memory choice
-  // from `switchHousehold`, then (b) the last household this user used on
-  // this device, then (c) the first available membership. Selection is a
-  // pure function so it can be unit-tested independently of React.
-  const storedId =
-    currentHouseholdId ??
-    (user && typeof window !== 'undefined'
+  // Pick the active household. Preference order is, top to bottom:
+  //   1. an explicit in-memory choice from `switchHousehold`,
+  //   2. the server-stored `last_household_id` for this user — this is
+  //      what makes "remember my household across devices" work,
+  //   3. the last household this user used on this device (localStorage)
+  //      — covers the brief window before the preferences query lands,
+  //      so a returning user on the same device sees the right household
+  //      on first paint without waiting for a network round-trip,
+  //   4. the first available membership.
+  // Selection itself is a pure function so it can be unit-tested
+  // independently of React.
+  const localStorageId =
+    user && typeof window !== 'undefined'
       ? window.localStorage.getItem(lastHouseholdStorageKey(user.id))
-      : null)
+      : null
+  const storedId =
+    currentHouseholdId ?? preferences.lastHouseholdId ?? localStorageId
   const currentHousehold = pickInitialHousehold(storedId, households)
 
   const currentMembership = memberships.find(
@@ -62,7 +81,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   }
 
   // Persist the active selection so the next session opens the same
-  // household. This is the canonical "sync external system" effect.
+  // household. We write to localStorage on every change so the next
+  // visit on this device doesn't briefly flash the wrong household
+  // before the server preferences query resolves. The server-side
+  // write happens *only* in `switchHousehold` (an explicit user
+  // action) — otherwise on a fresh sign-in we'd race the preferences
+  // query and overwrite a `last_household_id` set from another device
+  // with whatever first-membership we happened to resolve while
+  // loading.
   useEffect(() => {
     if (!currentHousehold || !user || typeof window === 'undefined') return
     window.localStorage.setItem(
@@ -72,14 +98,53 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   }, [currentHousehold, user])
 
   // Hand the resolved household id off to the realtime hook — its only
-  // job is to keep the websocket pinned to that household.
-  useHouseholdRealtime(currentHousehold?.id ?? null)
+  // job is to keep the websocket pinned to that household. We also wire
+  // a listener that turns row-level events into subtle sound effects.
+  const { play } = useSounds()
+  const onRealtimeEvent = useCallback(
+    (table: HouseholdTable, event: RealtimeEventType) => {
+      // Map (table, event) → friendly sound. The intent is to celebrate
+      // useful collaboration signals (a new meal/idea/todo, a reaction
+      // landing, a task being ticked off) without making low-level
+      // bookkeeping (membership churn, household metadata edits) noisy.
+      if (event === 'INSERT') {
+        if (table === 'reactions') return play('react')
+        if (
+          table === 'meal_plans' ||
+          table === 'meal_ideas' ||
+          table === 'todo_items'
+        ) {
+          return play('pop')
+        }
+        return
+      }
+      if (event === 'UPDATE') {
+        // Realtime UPDATEs don't tell us *what* changed, so we keep
+        // them to the very gentle `update` blip. The warm "done" chime
+        // for completing a todo is fired locally from the completion
+        // mutation in `useTodos` instead, which knows the user's intent.
+        if (
+          table === 'todo_items' ||
+          table === 'meal_plans' ||
+          table === 'meal_ideas'
+        ) {
+          return play('update')
+        }
+        return
+      }
+      // DELETEs intentionally stay silent — we don't want to draw
+      // attention to disappearing rows.
+    },
+    [play],
+  )
+  useHouseholdRealtime(currentHousehold?.id ?? null, onRealtimeEvent)
 
   const switchHousehold = (householdId: string) => {
     setCurrentHouseholdId(householdId)
     if (user && typeof window !== 'undefined') {
       window.localStorage.setItem(lastHouseholdStorageKey(user.id), householdId)
     }
+    setPreferences({ lastHouseholdId: householdId })
     // The realtime hook will pick up the change via the household id
     // dependency — no manual subscribe needed here any more.
   }

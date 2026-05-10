@@ -12,6 +12,7 @@ import MyMemberships from '../components/settings/MyMemberships'
 import AccessLevelsLink from '../components/settings/AccessLevelsLink'
 import DeleteHousehold from '../components/settings/DeleteHousehold'
 import DeleteAccount from '../components/settings/DeleteAccount'
+import PreferencesSettings from '../components/settings/PreferencesSettings'
 import CollapsibleSection from '../components/ui/CollapsibleSection'
 import { SkeletonSettingsCard } from '../components/ui/Skeleton'
 
@@ -70,6 +71,8 @@ export default function SettingsPage() {
                   <DeleteHousehold />
                 </>
               )}
+
+              <PreferencesSettings />
 
               <CollapsibleSection title="Account">
                 <div className="p-4">
