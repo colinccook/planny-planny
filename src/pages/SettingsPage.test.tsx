@@ -46,9 +46,6 @@ vi.mock('../components/settings/PublicShareToggle', () => ({
 vi.mock('../components/settings/MyMemberships', () => ({
   default: () => createElement('div', { 'data-testid': 'my-memberships' }),
 }))
-vi.mock('../components/settings/AccessLevelsLink', () => ({
-  default: () => createElement('div', { 'data-testid': 'access-levels-link' }),
-}))
 vi.mock('../components/settings/DeleteHousehold', () => ({
   default: () => createElement('div', { 'data-testid': 'delete-household' }),
 }))
@@ -107,7 +104,6 @@ describe('SettingsPage', () => {
     expect(screen.getByTestId('member-list')).toBeDefined()
     expect(screen.getByTestId('invite-manager')).toBeDefined()
     expect(screen.getByTestId('public-share-toggle')).toBeDefined()
-    expect(screen.getByTestId('access-levels-link')).toBeDefined()
     expect(screen.getByText('test@example.com')).toBeDefined()
   })
 

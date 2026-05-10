@@ -9,7 +9,6 @@ import MemberList from '../components/settings/MemberList'
 import InviteManager from '../components/settings/InviteManager'
 import PublicShareToggle from '../components/settings/PublicShareToggle'
 import MyMemberships from '../components/settings/MyMemberships'
-import AccessLevelsLink from '../components/settings/AccessLevelsLink'
 import DeleteHousehold from '../components/settings/DeleteHousehold'
 import DeleteAccount from '../components/settings/DeleteAccount'
 import PreferencesSettings from '../components/settings/PreferencesSettings'
@@ -33,11 +32,14 @@ export default function SettingsPage() {
   const hasMemberships = memberships.length > 0
 
   return (
-    <div className="mx-auto max-w-sm space-y-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xl font-bold text-gray-900">Settings</h2>
-        {!isLoading && <AccessLevelsLink />}
-      </div>
+    <div className="mx-auto max-w-sm space-y-4 p-4" data-testid="settings-page">
+      {/* Heading only — the "What do these levels mean?" link lives inside
+          the My Memberships card (the first card on the page) so we don't
+          render it twice. Putting it here as well used to (a) duplicate the
+          `data-testid="access-levels-link"` (breaking single-element queries
+          in tests) and (b) on narrow phones squeeze the header into a
+          two-line layout that overlapped the safe-area inset. */}
+      <h2 className="text-xl font-bold text-gray-900">Settings</h2>
 
       <AnimatePresence mode="wait">
         {isLoading ? (

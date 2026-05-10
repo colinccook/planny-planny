@@ -41,7 +41,12 @@ export default function TabBar() {
 
   return (
     <nav
-      className={`fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white transition-transform duration-300 ease-out ${
+      // `z-40` keeps the tab bar above page content (anything could grow a
+      // stacking context — e.g. an animated card or a transformed list —
+      // and silently render over an unstyled `position: fixed` element).
+      // It deliberately sits *below* `z-50` (Tray, Toast) so dialogs still
+      // overlay it.
+      className={`fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white transition-transform duration-300 ease-out ${
         isHidden ? 'translate-y-full' : 'translate-y-0'
       }`}
       aria-hidden={isHidden}
