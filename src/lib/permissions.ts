@@ -69,6 +69,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add and edit events (visitors etc.)',
       'Propose ideas and vote',
       'Add, edit and tick off todo items (with notes & due dates)',
+      'Record meal outcomes (did it actually happen?)',
       'See who voted',
       'Invite new members',
     ],
@@ -84,6 +85,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add and edit events (visitors etc.)',
       'Propose ideas and vote',
       'Add, edit and tick off todo items (with notes & due dates)',
+      'Record meal outcomes (did it actually happen?)',
       'See who voted',
     ],
     cannot: ['Invite new members'],
@@ -102,6 +104,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add, move or delete meals',
       'Add or edit events',
       'Add, edit or tick off todo items',
+      'Record meal outcomes',
       'Invite new members',
     ],
   },
@@ -113,11 +116,12 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'See upcoming meals',
       'See meal ideas',
       'See vote counts',
+      'See which meals actually happened',
     ],
     cannot: [
       'See events (visitors, schedule changes)',
       'See who voted',
-      'Vote, propose or edit anything',
+      'Vote, propose, edit or record outcomes',
     ],
   },
 ]
@@ -194,6 +198,21 @@ export function canSeeMeals(audience: Audience): boolean {
  *  see only the title and the thumbs-up count. */
 export function canSeeIdeas(audience: Audience): boolean {
   return audience !== null
+}
+
+/** Owner / member / honoured guest — same audience as meal
+ *  editing today. Controls who can record whether a planned
+ *  meal actually happened (the headline metric of the whole
+ *  app). Voting guests and public viewers cannot record
+ *  outcomes — recording one is a privileged act that affects
+ *  the household's success rate.
+ *
+ *  Kept distinct from `canEditMeals` so future divergence
+ *  (e.g. allowing voting guests to confirm "yes, that one
+ *  happened") only requires a one-line change here and a
+ *  matching one in supabase/migrations/…_meal_outcomes.sql. */
+export function canRecordOutcomes(audience: Audience): boolean {
+  return canEditMeals(audience)
 }
 
 /** Owners and members can issue invite links. Honoured guests

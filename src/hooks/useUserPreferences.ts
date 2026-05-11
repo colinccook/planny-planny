@@ -65,27 +65,34 @@ export function useUserPreferences() {
   })
 
   // Live-sync from another device.
+  //
+  // Depend on `user.id` rather than the whole `user` object — the auth
+  // hook recreates the user reference on every refresh of the JWT, and
+  // re-subscribing to a Supabase channel on every render thrashes the
+  // websocket and (occasionally on flaky mobile networks) causes the
+  // app to appear unresponsive while channels reconnect.
+  const userId = user?.id
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
     const channel = supabase
-      .channel(`profile-${user.id}`)
+      .channel(`profile-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=eq.${user.id}`,
+          filter: `id=eq.${userId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: userPreferencesKey(user.id) })
+          queryClient.invalidateQueries({ queryKey: userPreferencesKey(userId) })
         },
       )
       .subscribe()
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, queryClient])
+  }, [userId, queryClient])
 
   const mutate = useMutation({
     mutationFn: async (patch: Partial<UserPreferences>) => {

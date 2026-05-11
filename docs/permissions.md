@@ -66,6 +66,7 @@ The module is the **single source of truth**. It exports:
 | Predicate           | True for                                              |
 | ------------------- | ----------------------------------------------------- |
 | `canEditMeals`      | owner / member / honoured_guest                       |
+| `canRecordOutcomes` | same as `canEditMeals` — gates [outcomes](outcomes.md) |
 | `canManageEvents`   | same as `canEditMeals`                                |
 | `canProposeIdeas`   | same as `canEditMeals`                                |
 | `canVote`           | every signed-in role                                  |

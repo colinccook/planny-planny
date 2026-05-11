@@ -52,6 +52,31 @@ vi.mock('../../hooks/useAuth', () => ({
   useAuth: (...args: unknown[]) => mockUseAuth(...args),
 }))
 
+// useMealOutcomes makes a TanStack Query call inside DayMealsSection;
+// the existing tests don't set up a QueryClientProvider, so stub the
+// hook out. Returns an empty Map → no outcomes, no happy state, no
+// flourish — all defaults match the original DayMealsSection behaviour
+// before the outcomes feature.
+vi.mock('../../hooks/useMealOutcomes', async () => {
+  const actual = await vi.importActual<typeof import('../../hooks/useMealOutcomes')>(
+    '../../hooks/useMealOutcomes',
+  )
+  return {
+    ...actual,
+    useMealOutcomes: () => ({ byMealPlanId: new Map(), data: [] }),
+    useUpsertMealOutcome: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+    }),
+    useDeleteMealOutcome: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn().mockResolvedValue(undefined),
+      isPending: false,
+    }),
+  }
+})
+
 vi.mock('./MealPromptGenerator', () => ({
   default: () => null,
 }))

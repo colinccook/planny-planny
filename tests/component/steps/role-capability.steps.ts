@@ -8,6 +8,7 @@ import {
   canManageTodos,
   canInviteMembers,
   canProposeIdeas,
+  canRecordOutcomes,
   canSeeEvents,
   canSeeIdeas,
   canSeeMeals,
@@ -47,6 +48,7 @@ const CAPABILITIES: Record<string, (a: Audience) => boolean> = {
   'see ideas': canSeeIdeas,
   'see vote counts': canSeeVoteCounts,
   'delete household': canDeleteHousehold,
+  'record outcomes': canRecordOutcomes,
 }
 
 interface MatrixWorld {

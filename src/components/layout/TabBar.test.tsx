@@ -120,6 +120,17 @@ describe('TabBar visibility', () => {
     expect(getNav().className).toContain('transition-transform')
   })
 
+  it('uses a z-index that keeps it above page content but below trays/toasts', () => {
+    // Tap targets must never be obscured by transformed page content
+    // (a fixed element with no z-index can be silently overlaid by any
+    // sibling that creates a stacking context).
+    renderTabBarWithOverride(false)
+    const cls = getNav().className
+    expect(cls).toContain('z-40')
+    // Trays and toasts use `z-50`, so the tab bar must sit below them.
+    expect(cls).not.toContain('z-50')
+  })
+
   it('makes hidden tab links non-interactive', () => {
     renderTabBarWithOverride(true)
 
