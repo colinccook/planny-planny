@@ -5,6 +5,8 @@ import { setSoundsEnabled } from '../lib/sounds'
 import { useAuth } from './useAuth'
 import type { Database } from '../types/database'
 
+let profileChannelSeq = 0
+
 /**
  * Per-user preferences stored on the `profiles` row.
  *
@@ -74,8 +76,12 @@ export function useUserPreferences() {
   const userId = user?.id
   useEffect(() => {
     if (!userId) return
+    // Use a unique channel name per effect run so StrictMode mount/unmount
+    // cycles never attempt to call `.on()` against an already-subscribed
+    // reused channel instance.
+    const channelName = `profile-${userId}-${++profileChannelSeq}`
     const channel = supabase
-      .channel(`profile-${userId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
