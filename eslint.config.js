@@ -21,4 +21,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Playwright fixtures expose a `use()` callback for the
+    // setup/teardown contract — it is NOT React's `use` Hook, so the
+    // react-hooks rules don't apply here.
+    files: ['tests/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+    },
+  },
 ])

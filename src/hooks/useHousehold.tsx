@@ -50,7 +50,9 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [currentHouseholdId, setCurrentHouseholdId] = useState<string | null>(null)
 
   // Pick the active household. Preference order is, top to bottom:
-  //   1. an explicit in-memory choice from `switchHousehold`,
+  //   1. an explicit in-memory choice from `switchHousehold` (sticky
+  //      for the rest of this session — the user's most recent action
+  //      always wins),
   //   2. the server-stored `last_household_id` for this user — this is
   //      what makes "remember my household across devices" work,
   //   3. the last household this user used on this device (localStorage)
@@ -73,12 +75,22 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   )
   const currentRole = currentMembership?.role ?? null
 
-  // Reconcile internal state with the resolved household — covers the
-  // "stored id is no longer a valid membership" case (e.g. removed from
-  // a household between sessions). Idempotent.
-  if (currentHousehold && currentHouseholdId !== currentHousehold.id) {
-    setCurrentHouseholdId(currentHousehold.id)
-  }
+  // NB: we deliberately do NOT mirror `currentHousehold.id` back into
+  // `currentHouseholdId` during render. An earlier version did, but it
+  // caused two problems:
+  //   (a) it was a render-time `setState` — fragile under StrictMode
+  //       and a known foot-gun for "Maximum update depth exceeded"
+  //       crashes when a child component (e.g. PreferencesSettings on
+  //       the Settings page) re-rendered for unrelated reasons;
+  //   (b) once mirrored, `currentHouseholdId` won the `??` chain
+  //       above forever, so the server-stored `last_household_id`
+  //       (which arrives a few ms after localStorage) was silently
+  //       ignored — breaking the cross-device persistence the
+  //       persistence migration was added for.
+  // `currentHouseholdId` therefore stays `null` until the user makes
+  // an explicit choice via `switchHousehold`. The derived
+  // `currentHousehold` already handles the "stored id is no longer a
+  // valid membership" case via `pickInitialHousehold`'s fallback.
 
   // Persist the active selection so the next session opens the same
   // household. We write to localStorage on every change so the next
