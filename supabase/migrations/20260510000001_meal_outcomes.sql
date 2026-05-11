@@ -78,9 +78,14 @@ alter table public.meal_outcomes enable row level security;
 -- guests to record outcomes) is a one-line change in both the
 -- DB and the front-end predicate.
 create or replace function public.can_record_outcomes(p_household_id uuid)
-returns boolean as $$
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
   select public.can_edit_meals(p_household_id)
-$$ language sql security definer stable;
+$$;
 
 create policy "Members can view meal outcomes"
   on public.meal_outcomes for select

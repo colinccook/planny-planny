@@ -109,10 +109,15 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       // bookkeeping (membership churn, household metadata edits) noisy.
       if (event === 'INSERT') {
         if (table === 'reactions') return play('react')
-        // Recording an outcome (the headline metric of the app) gets
-        // the celebratory `done` chime — same sound as completing a
-        // todo, since both signal "this thing actually got finished".
-        if (table === 'meal_outcomes') return play('done')
+        // NB: meal_outcomes INSERT is intentionally *not* mapped here.
+        // Supabase Realtime echoes writes back to the originating
+        // client, and the `useUpsertMealOutcome` mutation already
+        // plays the right sound locally (`done` for as_planned,
+        // `pop` for did_not_happen) — the realtime payload doesn't
+        // carry the status, so we'd either double up the sound or
+        // play the wrong one for misses. This mirrors the same
+        // "fire from the mutation, not realtime" pattern todos use
+        // for completion (see useTodos).
         if (
           table === 'meal_plans' ||
           table === 'meal_ideas' ||
@@ -127,6 +132,10 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         // them to the very gentle `update` blip. The warm "done" chime
         // for completing a todo is fired locally from the completion
         // mutation in `useTodos` instead, which knows the user's intent.
+        // meal_outcomes UPDATE stays in the gentle-blip group: when
+        // *another* device on the household changes an outcome, a
+        // soft `update` is appropriate; the celebratory done/pop is
+        // owned by the originating client's mutation.
         if (
           table === 'todo_items' ||
           table === 'meal_plans' ||

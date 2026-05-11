@@ -55,7 +55,11 @@ on conflict (key) do nothing;
 -- Runs as SECURITY DEFINER so it can read meal_outcomes
 -- regardless of who triggered it (including anon).
 create or replace function public.refresh_public_stat(p_key text)
-returns bigint as $$
+returns bigint
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
 declare
   v_count bigint;
 begin
@@ -75,17 +79,35 @@ begin
 
   return v_count;
 end;
-$$ language plpgsql security definer;
+$$;
 
+-- This function performs a full count over meal_outcomes — we don't
+-- want unauthenticated callers to be able to force the recompute on
+-- every request (which would defeat the whole point of caching).
+-- Only trusted server-side roles (service_role for Edge Functions,
+-- postgres for pg_cron) may invoke it directly. Anon/authenticated
+-- read the cached value through get_public_stat() instead, which
+-- itself only triggers a refresh once per 24 hours.
 revoke all on function public.refresh_public_stat(text) from public;
-grant execute on function public.refresh_public_stat(text) to anon, authenticated;
+revoke all on function public.refresh_public_stat(text) from anon, authenticated;
+grant execute on function public.refresh_public_stat(text) to service_role, postgres;
 
 -- ── Public read RPC ─────────────────────────────────────────
 -- Returns the cached value, lazily refreshing it if older than
 -- one day. Safe to call from anon — never reveals individual
 -- household data, only the global aggregate.
 create or replace function public.get_public_stat(p_key text)
-returns bigint as $$
+returns bigint
+language plpgsql
+security definer
+-- Marked VOLATILE (the default) rather than STABLE because the lazy
+-- branch below calls refresh_public_stat() which writes to
+-- public.public_stats. Mis-labelling write paths as STABLE can let
+-- the planner cache results across statements and produces undefined
+-- behaviour in some contexts.
+volatile
+set search_path = public, pg_temp
+as $$
 declare
   v_row public.public_stats%rowtype;
 begin
@@ -104,7 +126,7 @@ begin
 
   return v_row.value;
 end;
-$$ language plpgsql security definer stable;
+$$;
 
 revoke all on function public.get_public_stat(text) from public;
 grant execute on function public.get_public_stat(text) to anon, authenticated;
