@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { getAdminClient } from './supabaseAdmin'
 
 /**
@@ -52,8 +53,9 @@ export interface SeededUser {
 }
 
 function uniqueSuffix(): string {
-  // Short, URL-safe, collision-resistant enough for parallel tests.
-  return Math.random().toString(36).slice(2, 10)
+  // Cryptographically random + collision-resistant for parallel tests.
+  // We strip dashes and trim to keep emails / display names readable.
+  return randomUUID().replace(/-/g, '').slice(0, 12)
 }
 
 /**

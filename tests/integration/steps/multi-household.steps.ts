@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
-import { test } from '../../support/fixtures'
+import {
+  test,
+  type AuthedUserHandle,
+  type SessionHandle,
+} from '../../support/fixtures'
 
 const { Given, When, Then } = createBdd(test)
 
@@ -21,17 +25,14 @@ Given(
 // Helper: any step that needs the seeded user assumes the Given step
 // has already run. This guard turns a confusing "cannot read property
 // of null" into a clear test failure if the Background is misordered.
-function requireAuthedUser(session: { authedUser: unknown }) {
+function requireAuthedUser(session: SessionHandle): AuthedUserHandle {
   if (!session.authedUser) {
     throw new Error(
       'No authedUser on session — did the "I am signed in as …" Given ' +
         'step run before this one?',
     )
   }
-  return session.authedUser as NonNullable<typeof session.authedUser> & {
-    households: { id: string; name: string }[]
-    signIn: (page: import('@playwright/test').Page) => Promise<void>
-  }
+  return session.authedUser
 }
 
 // ──────────────────────────────────────────────────────────
