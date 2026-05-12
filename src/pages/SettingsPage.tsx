@@ -13,6 +13,7 @@ import DeleteHousehold from '../components/settings/DeleteHousehold'
 import DeleteAccount from '../components/settings/DeleteAccount'
 import PreferencesSettings from '../components/settings/PreferencesSettings'
 import CollapsibleSection from '../components/ui/CollapsibleSection'
+import ErrorBoundary from '../components/ui/ErrorBoundary'
 import { SkeletonSettingsCard } from '../components/ui/Skeleton'
 
 function SettingsSkeleton() {
@@ -41,7 +42,12 @@ export default function SettingsPage() {
           two-line layout that overlapped the safe-area inset. */}
       <h2 className="text-xl font-bold text-gray-900">Settings</h2>
 
-      <AnimatePresence mode="wait">
+      {/* Defensive boundary: a render-time exception inside any card
+          (e.g. PreferencesSettings, MyMemberships) used to take the
+          whole app blank — this keeps it scoped to the Settings page
+          and shows a self-diagnosing fallback. */}
+      <ErrorBoundary area="Settings">
+        <AnimatePresence mode="wait">
         {isLoading ? (
           <motion.div
             key="skeleton"
@@ -92,7 +98,8 @@ export default function SettingsPage() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </ErrorBoundary>
     </div>
   )
 }

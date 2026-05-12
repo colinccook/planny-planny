@@ -6,13 +6,21 @@ import { defineBddConfig } from 'playwright-bdd';
 // - component:   in-step HTML harnesses (page.setContent) — no backend
 const integrationTestDir = defineBddConfig({
   features: 'tests/integration/features/**/*.feature',
-  steps: 'tests/integration/steps/**/*.ts',
+  steps: [
+    'tests/integration/steps/**/*.ts',
+    // The shared `test` instance lives here. It must be discoverable by
+    // bddgen so it knows which `base.extend()` produced the fixtures.
+    'tests/support/fixtures.ts',
+  ],
   outputDir: '.features-gen/integration',
 });
 
 const componentTestDir = defineBddConfig({
   features: 'tests/component/features/**/*.feature',
-  steps: 'tests/component/steps/**/*.ts',
+  steps: [
+    'tests/component/steps/**/*.ts',
+    'tests/support/fixtures.ts',
+  ],
   outputDir: '.features-gen/component',
 });
 
