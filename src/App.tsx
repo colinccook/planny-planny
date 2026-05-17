@@ -3,6 +3,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { HouseholdProvider } from './hooks/useHousehold'
 import ToastProvider from './components/ui/Toast'
 import { OverlayProvider } from './components/ui/OverlayProvider'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 import ProtectedRoute from './components/layout/ProtectedRoute'
 import AppShell from './components/layout/AppShell'
 import LoginPage from './pages/LoginPage'
@@ -22,10 +23,44 @@ function App() {
     <AuthProvider>
       <ToastProvider>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/invite/:token" element={<JoinInvitePage />} />
-        <Route path="/shared/:token" element={<PublicHouseholdPage />} />
+        {/* Unauthenticated and public routes are wrapped in their own
+            ErrorBoundary so a render-time exception in one page can
+            never blank the whole app shell. Authenticated pages are
+            wrapped by the boundary inside AppShell (per-route, keyed
+            on location.pathname so it resets on navigation). See
+            docs/error-boundaries.md. */}
+        <Route
+          path="/login"
+          element={
+            <ErrorBoundary area="Sign in">
+              <LoginPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <ErrorBoundary area="Register">
+              <RegisterPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/invite/:token"
+          element={
+            <ErrorBoundary area="Invite">
+              <JoinInvitePage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/shared/:token"
+          element={
+            <ErrorBoundary area="Shared household">
+              <PublicHouseholdPage />
+            </ErrorBoundary>
+          }
+        />
         <Route
           path="/*"
           element={
