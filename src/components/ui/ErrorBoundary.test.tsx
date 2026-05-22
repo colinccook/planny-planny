@@ -48,9 +48,9 @@ describe('ErrorBoundary', () => {
         <Boom message="oops" />
       </ErrorBoundary>,
     )
-    const fallback = screen.getByTestId('error-boundary-fallback')
-    expect(fallback.textContent).toContain('Something went wrong')
-    expect(fallback.textContent).not.toContain('loading ')
+    screen.getByTestId('error-boundary-fallback')
+    const heading = screen.getByRole('heading', { level: 2 })
+    expect(heading.textContent).toBe('Something went wrong.')
   })
 })
 
