@@ -1,0 +1,363 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Planny Planny",
+    "description": "Interact with your Planny Planny household: check and create todo items, browse and add meals to the plan, propose meal ideas, and view upcoming events.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://<YOUR_PROJECT_REF>.supabase.co/functions/v1",
+      "description": "Replace <YOUR_PROJECT_REF> with your Supabase project reference"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Supabase user JWT. Obtain one by signing in via the Supabase Auth REST API (see docs/chatgpt-plugin.md)."
+      }
+    },
+    "schemas": {
+      "Todo": {
+        "type": "object",
+        "properties": {
+          "id":           { "type": "string", "format": "uuid" },
+          "title":        { "type": "string" },
+          "note":         { "type": ["string", "null"] },
+          "date":         { "type": "string", "format": "date" },
+          "completed_on": { "type": ["string", "null"], "format": "date" },
+          "user_id":      { "type": ["string", "null"], "format": "uuid" },
+          "created_at":   { "type": "string", "format": "date-time" }
+        }
+      },
+      "Meal": {
+        "type": "object",
+        "properties": {
+          "id":          { "type": "string", "format": "uuid" },
+          "date":        { "type": "string", "format": "date" },
+          "title":       { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "created_at":  { "type": "string", "format": "date-time" }
+        }
+      },
+      "Idea": {
+        "type": "object",
+        "properties": {
+          "id":          { "type": "string", "format": "uuid" },
+          "title":       { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "date":        { "type": ["string", "null"], "format": "date" },
+          "created_at":  { "type": "string", "format": "date-time" }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id":             { "type": "string", "format": "uuid" },
+          "date":           { "type": "string", "format": "date" },
+          "event_name":     { "type": ["string", "null"] },
+          "extra_adults":   { "type": "integer" },
+          "extra_children": { "type": "integer" },
+          "created_at":     { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        },
+        "required": ["error"]
+      }
+    }
+  },
+  "paths": {
+    "/chatgpt-plugin/todos": {
+      "get": {
+        "operationId": "listTodos",
+        "summary": "List household todo items",
+        "description": "Returns incomplete household-level todo items by default. Pass completed=true to see ticked-off items instead.",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "description": "UUID of the household. Defaults to the user's last active household.",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "completed",
+            "in": "query",
+            "description": "Filter by completion state. Omit or set to false for open todos; true for completed.",
+            "schema": { "type": "string", "enum": ["true", "false"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of todo items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "todos": { "type": "array", "items": { "$ref": "#/components/schemas/Todo" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createTodo",
+        "summary": "Create a todo item",
+        "description": "Adds a new household-level todo item for the given date.",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "description": "UUID of the household. Defaults to the user's last active household.",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": { "type": "string", "description": "Short description of the task." },
+                  "date":  { "type": "string", "format": "date", "description": "ISO date the todo is pinned to. Defaults to today." },
+                  "note":  { "type": "string", "description": "Optional longer note." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created todo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "todo": { "$ref": "#/components/schemas/Todo" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/chatgpt-plugin/meals": {
+      "get": {
+        "operationId": "listMeals",
+        "summary": "List meal plans",
+        "description": "Returns planned meals for the given date range (default: today + 6 days).",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start date (ISO 8601). Defaults to today.",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End date (ISO 8601). Defaults to today + 6 days.",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of meal plan entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "meals": { "type": "array", "items": { "$ref": "#/components/schemas/Meal" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createMeal",
+        "summary": "Add a meal to the plan",
+        "description": "Creates a new meal plan entry for a specific date.",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "date"],
+                "properties": {
+                  "title":       { "type": "string" },
+                  "date":        { "type": "string", "format": "date" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created meal plan entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "meal": { "$ref": "#/components/schemas/Meal" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/chatgpt-plugin/ideas": {
+      "get": {
+        "operationId": "listIdeas",
+        "summary": "List meal ideas",
+        "description": "Returns the household's meal idea backlog (most recent first, up to 50).",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of meal ideas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ideas": { "type": "array", "items": { "$ref": "#/components/schemas/Idea" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      },
+      "post": {
+        "operationId": "createIdea",
+        "summary": "Propose a meal idea",
+        "description": "Adds a new meal idea to the household backlog. Optionally pin it to a date.",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title":       { "type": "string" },
+                  "description": { "type": "string" },
+                  "date":        { "type": "string", "format": "date", "description": "Optional date to pin the idea to." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created meal idea",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "idea": { "$ref": "#/components/schemas/Idea" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/chatgpt-plugin/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "List upcoming events",
+        "description": "Returns day-context events (visitors, schedule changes) for the given date range (default: today + 6 days).",
+        "parameters": [
+          {
+            "name": "household_id",
+            "in": "query",
+            "schema": { "type": "string", "format": "uuid" }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Start date (ISO 8601). Defaults to today.",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "End date (ISO 8601). Defaults to today + 6 days.",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": { "type": "array", "items": { "$ref": "#/components/schemas/Event" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  }
+}
