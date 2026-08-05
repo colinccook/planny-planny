@@ -87,8 +87,8 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
   // Build a client that carries the caller's JWT so RLS applies.
   const authHeader = req.headers.get('Authorization') ?? ''
@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
     )
   }
 
-  const hid = householdId!
+  const hid = householdId ?? ''
 
   // ═══════════════════════════════════════════════════════════
   // TODOS
@@ -620,7 +620,7 @@ Deno.serve(async (req: Request) => {
 
     if (error) return err(error.message, 500)
 
-    type IngEntry = {
+    interface IngEntry {
       id: string; name: string; starred: boolean; warning: boolean
       meal_count: number; meals: { title: string; date: string }[]
     }

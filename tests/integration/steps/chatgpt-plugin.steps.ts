@@ -132,7 +132,7 @@ Given('I am signed in as an owner of a household for the plugin', async ({ sessi
 
 // ── Auth guard ───────────────────────────────────────────────────────
 
-When('I call the plugin endpoint GET /todos without authentication', async () => {
+When(/I call the plugin endpoint GET \/todos without authentication/, async () => {
   world.lastResponse = await pluginFetch('/todos', {}, null)
   world.lastBody = await readBody(world.lastResponse)
 })
