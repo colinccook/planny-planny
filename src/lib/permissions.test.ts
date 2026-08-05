@@ -15,6 +15,7 @@ import {
   canSeeVoters,
   canVote,
   canDeleteHousehold,
+  canUsePlugin,
   roleLabel,
   type Audience,
 } from './permissions'
@@ -47,16 +48,17 @@ type Row = [
   boolean, // canSeeVoteCounts
   boolean, // canDeleteHousehold
   boolean, // canRecordOutcomes
+  boolean, // canUsePlugin
 ]
 
 const MATRIX: Row[] = [
-  // audience       edit  events propose todos vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts deleteHH outcomes
-  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
-  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true,  false, true],
-  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, true,  false, true],
-  ['voting_guest',   false, false, false, false, true,  true,  true,  true,  true,  false, false, true,  false, false],
-  ['public',         false, false, false, false, false, false, false, true,  true,  false, false, true,  false, false],
-  [null,             false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  // audience       edit  events propose todos vote seeVoters seeEvents seeMeals seeIdeas invite manage seeCounts deleteHH outcomes plugin
+  ['owner',          true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  true],
+  ['member',         true,  true,  true,  true,  true,  true,  true,  true,  true,  true,  false, true,  false, true,  true],
+  ['honoured_guest', true,  true,  true,  true,  true,  true,  true,  true,  true,  false, false, true,  false, true,  true],
+  ['voting_guest',   false, false, false, false, true,  true,  true,  true,  true,  false, false, true,  false, false, false],
+  ['public',         false, false, false, false, false, false, false, true,  true,  false, false, true,  false, false, false],
+  [null,             false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
 ]
 
 describe('permissions', () => {
@@ -78,6 +80,7 @@ describe('permissions', () => {
       seeCounts,
       deleteHousehold,
       outcomes,
+      plugin,
     ) => {
       it(`canEditMeals = ${edit}`, () => {
         expect(canEditMeals(audience)).toBe(edit)
@@ -120,6 +123,9 @@ describe('permissions', () => {
       })
       it(`canRecordOutcomes = ${outcomes}`, () => {
         expect(canRecordOutcomes(audience)).toBe(outcomes)
+      })
+      it(`canUsePlugin = ${plugin}`, () => {
+        expect(canUsePlugin(audience)).toBe(plugin)
       })
     },
   )

@@ -16,6 +16,7 @@ import {
   canSeeVoters,
   canVote,
   canDeleteHousehold,
+  canUsePlugin,
   type Audience,
 } from '../../../src/lib/permissions'
 
@@ -49,6 +50,7 @@ const CAPABILITIES: Record<string, (a: Audience) => boolean> = {
   'see vote counts': canSeeVoteCounts,
   'delete household': canDeleteHousehold,
   'record outcomes': canRecordOutcomes,
+  'use plugin': canUsePlugin,
 }
 
 interface MatrixWorld {

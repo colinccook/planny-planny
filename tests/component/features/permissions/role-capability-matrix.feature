@@ -30,6 +30,7 @@ Feature: Permission rules — role × capability matrix
       | owner | see events                   | true    |
       | owner | record outcomes              | true    |
       | owner | delete household             | true    |
+      | owner | use plugin                   | true    |
 
     Examples: Members — full edit, no member management
       | role   | capability                  | allowed |
@@ -44,6 +45,7 @@ Feature: Permission rules — role × capability matrix
       | member | see events                  | true    |
       | member | record outcomes             | true    |
       | member | delete household            | false   |
+      | member | use plugin                  | true    |
 
     Examples: Honoured guests — full edit except invites
       | role           | capability      | allowed |
@@ -58,6 +60,7 @@ Feature: Permission rules — role × capability matrix
       | honoured_guest | see events      | true    |
       | honoured_guest | record outcomes | true    |
       | honoured_guest | delete household | false  |
+      | honoured_guest | use plugin      | true    |
 
     Examples: Voting guests — vote only
       | role         | capability      | allowed |
@@ -72,6 +75,7 @@ Feature: Permission rules — role × capability matrix
       | voting_guest | see events      | true    |
       | voting_guest | record outcomes | false   |
       | voting_guest | delete household | false  |
+      | voting_guest | use plugin      | false   |
 
     Examples: Public — counts only
       | role   | capability      | allowed |
@@ -89,3 +93,4 @@ Feature: Permission rules — role × capability matrix
       | public | see vote counts | true    |
       | public | record outcomes | false   |
       | public | delete household | false  |
+      | public | use plugin      | false   |

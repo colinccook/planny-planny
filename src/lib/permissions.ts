@@ -56,6 +56,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Change anyone\u2019s access level',
       'Toggle the public share link',
       'Delete the household permanently',
+      'Use the ChatGPT plugin to manage the household',
     ],
     cannot: [],
   },
@@ -72,6 +73,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Record meal outcomes (did it actually happen?)',
       'See who voted',
       'Invite new members',
+      'Use the ChatGPT plugin to manage the household',
     ],
     cannot: ['Remove other members', 'Change other people\u2019s access levels'],
   },
@@ -87,6 +89,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add, edit and tick off todo items (with notes & due dates)',
       'Record meal outcomes (did it actually happen?)',
       'See who voted',
+      'Use the ChatGPT plugin to manage the household',
     ],
     cannot: ['Invite new members'],
   },
@@ -106,6 +109,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'Add, edit or tick off todo items',
       'Record meal outcomes',
       'Invite new members',
+      'Use the ChatGPT plugin',
     ],
   },
   {
@@ -122,6 +126,7 @@ export const ACCESS_LEVELS: AccessLevelInfo[] = [
       'See events (visitors, schedule changes)',
       'See who voted',
       'Vote, propose, edit or record outcomes',
+      'Use the ChatGPT plugin',
     ],
   },
 ]
@@ -239,4 +244,13 @@ export function canSeeVoteCounts(audience: Audience): boolean {
  *  and all its data (meals, members, invites). */
 export function canDeleteHousehold(audience: Audience): boolean {
   return audience === 'owner'
+}
+
+/** Owner / member / honoured guest — the same audience that can edit
+ *  meals. They may authenticate the ChatGPT plugin and interact with
+ *  the household via the API. Voting guests and public viewers cannot
+ *  use the plugin because it exposes write operations (create todo,
+ *  add meal, propose idea). */
+export function canUsePlugin(audience: Audience): boolean {
+  return canEditMeals(audience)
 }
