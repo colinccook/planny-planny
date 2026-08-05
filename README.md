@@ -23,6 +23,7 @@ Meal planning is hard and easily neglected — it's too easy to skip it and orde
 - **Per-email Invites** — Owners and members invite people by email. The invite link only works for that address and is consumed automatically when the person joins.
 - **Meal Ideas, Meals & Reactions** — Add lightweight meal ideas per day and react to ideas or meal plans with 👍. Tap the reaction button to like/unlike; long press to see who reacted.
 - **AI Meal Suggestions (Magic Wand)** — Generate a tailored prompt to paste into ChatGPT. Pulls in household headcount, events, day theme, suggested ingredients, and household meal ideas. Choose to exclude ideas, include all, or only thumbed-up ones — multiple thumbs-up ideas ask the AI for three recipes per idea.
+- **ChatGPT Plugin** — Connect Planny Planny directly to ChatGPT as a Custom Action. Ask "What's for dinner this week?", "Add a todo to buy milk", "Mark last night's curry as done", "What do we need to shop for?" — everything you can do in the app, conversationally. Full setup guide in [`docs/chatgpt-plugin.md`](docs/chatgpt-plugin.md).
 
 ## 🏗️ Tech Stack
 
