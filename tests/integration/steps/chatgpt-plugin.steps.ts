@@ -141,7 +141,7 @@ When(/I call the plugin endpoint GET \/todos without authentication/, async () =
 
 When(
   'I call the plugin endpoint GET {word}',
-  async (_page, resource: string) => {
+  async ({ page: _page }, resource: string) => {
     world.lastResponse = await pluginFetch(`/${resource}`)
     world.lastBody = await readBody(world.lastResponse)
   },
@@ -149,7 +149,7 @@ When(
 
 When(
   'I call the plugin endpoint GET {word} with params {string}',
-  async (_page, resource: string, params: string) => {
+  async ({ page: _page }, resource: string, params: string) => {
     const hid = world.householdId
     const qs = hid ? `?household_id=${hid}&${params}` : `?${params}`
     const url = `${FUNCTION_URL}/${resource}${qs}`
@@ -165,7 +165,7 @@ When(
 
 When(
   'I call the plugin endpoint POST {word} with body:',
-  async (_page, resource: string, body: string) => {
+  async ({ page: _page }, resource: string, body: string) => {
     // Replace :id / :meal_id tokens with the last created resource id.
     const resolved = resolveIdTokens(resource)
     world.lastResponse = await pluginFetch(`/${resolved}`, {
@@ -179,7 +179,7 @@ When(
 
 When(
   'I call the plugin endpoint PATCH {word} with body:',
-  async (_page, resource: string, body: string) => {
+  async ({ page: _page }, resource: string, body: string) => {
     const resolved = resolveIdTokens(resource)
     world.lastResponse = await pluginFetch(`/${resolved}`, {
       method: 'PATCH',
@@ -191,7 +191,7 @@ When(
 
 When(
   'I call the plugin endpoint PUT {word} with body:',
-  async (_page, resource: string, body: string) => {
+  async ({ page: _page }, resource: string, body: string) => {
     const resolved = resolveIdTokens(resource)
     world.lastResponse = await pluginFetch(`/${resolved}`, {
       method: 'PUT',
@@ -203,7 +203,7 @@ When(
 
 When(
   'I call the plugin endpoint DELETE {word}',
-  async (_page, resource: string) => {
+  async ({ page: _page }, resource: string) => {
     const resolved = resolveIdTokens(resource)
     world.lastResponse = await pluginFetch(`/${resolved}`, { method: 'DELETE' })
     world.lastBody = await readBody(world.lastResponse)
@@ -214,7 +214,7 @@ When(
 
 Given(
   'I have created a plugin todo titled {string} for date {string}',
-  async (_page, title: string, date: string) => {
+  async ({ page: _page }, title: string, date: string) => {
     const res = await pluginFetch('/todos', {
       method: 'POST',
       body: JSON.stringify({ title, date }),
@@ -227,7 +227,7 @@ Given(
 
 Given(
   'I have created a plugin meal titled {string} for date {string}',
-  async (_page, title: string, date: string) => {
+  async ({ page: _page }, title: string, date: string) => {
     const res = await pluginFetch('/meals', {
       method: 'POST',
       body: JSON.stringify({ title, date }),
@@ -240,7 +240,7 @@ Given(
 
 Given(
   'I have proposed a plugin idea titled {string}',
-  async (_page, title: string) => {
+  async ({ page: _page }, title: string) => {
     const res = await pluginFetch('/ideas', {
       method: 'POST',
       body: JSON.stringify({ title }),
@@ -253,7 +253,7 @@ Given(
 
 Given(
   'I have created a plugin event named {string} on date {string}',
-  async (_page, event_name: string, date: string) => {
+  async ({ page: _page }, event_name: string, date: string) => {
     const res = await pluginFetch('/events', {
       method: 'POST',
       body: JSON.stringify({ event_name, date }),
@@ -310,7 +310,7 @@ When('I delete the plugin event', async () => {
 
 // ── Assertion steps ───────────────────────────────────────────────────
 
-Then('the plugin response status is {int}', async (_page, status: number) => {
+Then('the plugin response status is {int}', async ({ page: _page }, status: number) => {
   expect(world.lastResponse?.status).toBe(status)
 })
 
@@ -319,12 +319,12 @@ Then('the plugin response contains an error', async () => {
   expect(typeof (world.lastBody as { error?: unknown }).error).toBe('string')
 })
 
-Then('the plugin response contains a {string} array', async (_page, key: string) => {
+Then('the plugin response contains a {string} array', async ({ page: _page }, key: string) => {
   expect(world.lastBody).toHaveProperty(key)
   expect(Array.isArray((world.lastBody as Record<string, unknown>)[key])).toBe(true)
 })
 
-Then('the plugin response contains an {string} array', async (_page, key: string) => {
+Then('the plugin response contains an {string} array', async ({ page: _page }, key: string) => {
   expect(world.lastBody).toHaveProperty(key)
   expect(Array.isArray((world.lastBody as Record<string, unknown>)[key])).toBe(true)
 })
@@ -333,35 +333,35 @@ Then('the plugin response contains deleted true', async () => {
   expect((world.lastBody as { deleted?: boolean })?.deleted).toBe(true)
 })
 
-Then('the plugin response contains moved {word}', async (_page, value: string) => {
+Then('the plugin response contains moved {word}', async ({ page: _page }, value: string) => {
   expect((world.lastBody as { moved?: boolean })?.moved).toBe(value === 'true')
 })
 
-Then('the plugin response contains a todo with title {string}', async (_page, title: string) => {
+Then('the plugin response contains a todo with title {string}', async ({ page: _page }, title: string) => {
   const todo = (world.lastBody as { todo?: { title: string; id: string } })?.todo
   expect(todo?.title).toBe(title)
   if (todo?.id) world.lastTodoId = todo.id
 })
 
-Then('the plugin response contains a meal with title {string}', async (_page, title: string) => {
+Then('the plugin response contains a meal with title {string}', async ({ page: _page }, title: string) => {
   const meal = (world.lastBody as { meal?: { title: string; id: string } })?.meal
   expect(meal?.title).toBe(title)
   if (meal?.id) world.lastMealId = meal.id
 })
 
-Then('the plugin response contains an idea with title {string}', async (_page, title: string) => {
+Then('the plugin response contains an idea with title {string}', async ({ page: _page }, title: string) => {
   const idea = (world.lastBody as { idea?: { title: string; id: string } })?.idea
   expect(idea?.title).toBe(title)
   if (idea?.id) world.lastIdeaId = idea.id
 })
 
-Then('the plugin response contains an event named {string}', async (_page, name: string) => {
+Then('the plugin response contains an event named {string}', async ({ page: _page }, name: string) => {
   const event = (world.lastBody as { event?: { event_name: string; id: string } })?.event
   expect(event?.event_name).toBe(name)
   if (event?.id) world.lastEventId = event.id
 })
 
-Then('the outcome status is {string}', async (_page, status: string) => {
+Then('the outcome status is {string}', async ({ page: _page }, status: string) => {
   const outcome = (world.lastBody as { outcome?: { status: string } })?.outcome
   expect(outcome?.status).toBe(status)
 })
@@ -378,7 +378,7 @@ Then('the todo has no completed_on date', async () => {
 
 Then(
   'the {string} array includes an item titled {string}',
-  async (_page, arrayKey: string, title: string) => {
+  async ({ page: _page }, arrayKey: string, title: string) => {
     const arr = world.lastBody?.[arrayKey]
     expect(Array.isArray(arr)).toBe(true)
     const items = arr as { title: string }[]
