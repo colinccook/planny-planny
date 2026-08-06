@@ -129,6 +129,7 @@ jobs:
             --override-name api.url=SUPABASE_URL \
             --override-name auth.anon_key=SUPABASE_ANON_KEY \
             --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            | sed -e 's/="/=/' -e 's/"$//' \
             >> "$GITHUB_ENV"
 
       - name: Resolve Playwright version
