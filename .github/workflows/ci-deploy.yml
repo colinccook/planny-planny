@@ -153,6 +153,13 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      - name: Verify service role bypass
+        run: |
+          status=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1")
+          echo "profiles select HTTP status: $status"
+
       - name: Run BDD integration tests
         run: |
           VITE_SUPABASE_URL="$SUPABASE_URL" \
