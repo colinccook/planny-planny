@@ -390,15 +390,18 @@ Then(
 
 /** Replace :id / :meal_id tokens in a path with last-created resource ids. */
 function resolveIdTokens(path: string): string {
+  // The {word} cucumber parameter captures the leading "/" from steps like
+  // "PATCH /todos/:id", so prefix checks below must ignore it.
+  const bare = path.replace(/^\//, '')
   return path
     .replace(':meal_id', world.lastMealId ?? ':meal_id')
     .replace(':id', (() => {
       // Pick the most recently created resource id based on the path prefix.
-      if (path.startsWith('todos')) return world.lastTodoId ?? ':id'
-      if (path.startsWith('meals')) return world.lastMealId ?? ':id'
-      if (path.startsWith('ideas')) return world.lastIdeaId ?? ':id'
-      if (path.startsWith('events')) return world.lastEventId ?? ':id'
-      if (path.startsWith('outcomes')) return world.lastMealId ?? ':id'
+      if (bare.startsWith('todos')) return world.lastTodoId ?? ':id'
+      if (bare.startsWith('meals')) return world.lastMealId ?? ':id'
+      if (bare.startsWith('ideas')) return world.lastIdeaId ?? ':id'
+      if (bare.startsWith('events')) return world.lastEventId ?? ':id'
+      if (bare.startsWith('outcomes')) return world.lastMealId ?? ':id'
       return ':id'
     })())
 }

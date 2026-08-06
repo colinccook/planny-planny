@@ -177,8 +177,13 @@ function CalendarViewInner({
   const datesToRender = showYesterdayGhost ? [yesterdayStr, ...dates] : dates
 
   // Group ideas by date — used to render the 💡 badge per day.
+  // Ideas without a date (e.g. proposed via the ChatGPT plugin before
+  // being scheduled) aren't tied to any day in this view, so they're
+  // skipped here; the day-range query this data comes from already
+  // excludes them in practice.
   const ideasByDate = new Map<string, typeof ideas>()
   for (const idea of ideas) {
+    if (!idea.date) continue
     const existing = ideasByDate.get(idea.date) ?? []
     existing.push(idea)
     ideasByDate.set(idea.date, existing)
