@@ -39,54 +39,75 @@ ChatGPT ──► Edge Function ──► Supabase Postgres (RLS applies)
 
 ## One-time setup
 
-### 1. Deploy the Edge Function
+### 1. Deploy the Edge Functions
 
-From the repository root, deploy to your Supabase project:
+From the repository root, deploy both functions to your Supabase project:
 
 ```bash
 supabase functions deploy chatgpt-plugin --project-ref <YOUR_PROJECT_REF>
+supabase functions deploy chatgpt-plugin-auth --project-ref <YOUR_PROJECT_REF>
 ```
 
 Your project reference is the short ID in your Supabase dashboard URL:
 `https://supabase.com/dashboard/project/<YOUR_PROJECT_REF>`.
 
-Verify it's live:
+Verify they're live:
 
 ```bash
 curl -i https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin/todos \
-  -H "Authorization: ******
+  -H "Authorization: Bearer dummy-token"
 ```
 
-You should get a `401 Unauthorized` (no JWT yet) — that confirms the
+You should get a `401 Unauthorized` (invalid JWT) — that confirms the
 function is deployed and the auth guard is working.
 
 ---
 
-### 2. Get your Supabase user JWT
+### 2. Obtain tokens via OAuth
 
-The plugin needs a JWT that proves who you are. Obtain one by signing
-in to Supabase's Auth REST API with your Planny Planny email and
-password:
+The plugin now supports OAuth-style token exchange. Your ChatGPT action
+will call the token endpoint to obtain and refresh tokens automatically.
+
+**Option A: Manual token request (for testing)**
+
+Exchange your email and password for an access token:
 
 ```bash
-curl -X POST \
-  'https://<YOUR_PROJECT_REF>.supabase.co/auth/v1/token?grant_type=password' \
-  -H 'apikey: <YOUR_ANON_KEY>' \
+curl -X POST https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token \
   -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com","password":"your-password"}'
+  -d '{
+    "grant_type": "password",
+    "email": "you@example.com",
+    "password": "your-password"
+  }'
 ```
 
-The response contains `access_token` — copy it. This is your JWT.
+The response contains `access_token`, `refresh_token`, and `expires_in`:
 
-> **Where is my anon key?**
-> Supabase dashboard → Project Settings → API → **Project API keys** →
-> `anon` `public` key.
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "sbp_...",
+  "expires_in": 3600,
+  "token_type": "Bearer"
+}
+```
 
-> **How long does the JWT last?**
-> By default Supabase JWTs expire after one hour. When yours expires,
-> repeat this step to get a fresh `access_token`. You can also set
-> `JWT_EXPIRY` in your Supabase project Auth settings to a longer
-> value (e.g. `604800` for 7 days).
+**Option B: Automatic token refresh (recommended)**
+
+When the access token expires, ChatGPT will automatically call the refresh endpoint:
+
+```bash
+curl -X POST https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "grant_type": "refresh_token",
+    "refresh_token": "sbp_..."
+  }'
+```
+
+This returns a new access token. Your refresh token never expires as long as
+you use it at least once every 7 days.
 
 ---
 
@@ -102,13 +123,26 @@ The response contains `access_token` — copy it. This is your JWT.
    replacing `<YOUR_PROJECT_REF>` in the `servers.url` field with your
    actual project reference.
 
-   **Authentication**: choose **API Key** → **Auth type: Bearer** →
-   paste the JWT you obtained in step 2.
+   **Authentication**: choose **OAuth 2.0** with the following settings:
+   - **Client ID**: Use the OAuth 2.0 flow to obtain tokens dynamically
+   - **Authorization URL**: `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/authorize`
+   - **Token URL**: `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token`
+   - **Refresh URL**: `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token`
+   - **Scopes**: `chatgpt-plugin` (scope for plugin access)
+
+   Alternatively, if you prefer manual token setup:
+   - Choose **API Key** → **Auth type: Bearer** →
+   - Paste an access token from step 2 (Option A)
 
 4. Click **Test** on any operation to verify ChatGPT can reach the
    function. A `200` response with an empty array is a success.
 
 5. Click **Save**.
+
+> **Tip — OAuth vs. Manual tokens**
+> OAuth (recommended) automatically refreshes your tokens without intervention.
+> Manual tokens require re-pasting when they expire (after 1 hour by default).
+> Both methods enforce the same Row-Level Security policies.
 
 > **Tip — set a household in the app first.**
 > The plugin resolves your household automatically from your
@@ -223,7 +257,8 @@ capability is added to Planny Planny:
 
 | Symptom | Fix |
 |---------|-----|
-| `401 Unauthorized` | Your JWT has expired. Re-run the `curl` sign-in command in step 2 and paste the new `access_token` into the ChatGPT action. |
+| `401 Unauthorized` | If using manual tokens: your JWT has expired. Re-run the OAuth token request in step 2 and paste the new `access_token`. If using OAuth: check that your email/password are correct. |
+| `"Invalid refresh token"` | Your refresh token has expired (usually 7 days of inactivity). Re-authenticate with your email and password to get a new token. |
 | `"No household resolved"` | You haven't opened the app and navigated to a household yet, so `last_household_id` is null. Either open the app, or pass `?household_id=<uuid>` explicitly in the action schema's server URL. |
 | `404 Not found` | The path or method is wrong. Check the OpenAPI spec. |
 | `500` from Supabase | A database error. Check your Supabase project logs: **Dashboard → Edge Functions → chatgpt-plugin → Logs**. |
@@ -233,14 +268,16 @@ capability is added to Planny Planny:
 
 ## Security notes
 
-- The JWT is a **bearer token** — treat it like a password. Anyone who
+- **OAuth tokens are more secure than manual tokens** because they refresh automatically
+  without exposing long-lived credentials to ChatGPT's configuration.
+- The access token is a **bearer token** — treat it like a password. Anyone who
   has it can act as you within Planny Planny.
-- JWTs are stored in ChatGPT's action configuration. Use a
-  long-expiry JWT only if you understand the risk; rotating it monthly
-  is a reasonable default.
+- The refresh token is long-lived and should be kept confidential. If using manual token setup,
+  store it securely and rotate it every 30–90 days.
+- If using OAuth, ChatGPT's token configuration is protected by OpenAI's security policies.
 - The Edge Function enforces Supabase RLS on every request. It is
   **not** possible to read or write data from households you are not a
-  member of, even with a valid JWT.
+  member of, even with a valid token.
 - The plugin only supports **owner / member / honoured guest** roles.
   If your role in a household is `voting_guest`, write operations will
   be rejected by RLS with a Postgres error.
