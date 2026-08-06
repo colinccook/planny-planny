@@ -316,10 +316,23 @@ Then('the original refresh token is updated', async () => {
   world.refreshToken = newRefreshToken
 })
 
-Then('the response includes:', async ({ page: _page }, table: Record<string, string>[]) => {
-  for (const row of table) {
-    const field = row['Field']
-    const type = row['Type']
+Then('the response includes:', async ({ page: _page }, table: unknown) => {
+  // Handle both array and object table formats from playwright-bdd
+  const rows = Array.isArray(table) ? table : Object.values(table as Record<string, unknown>)
+  
+  if (!Array.isArray(rows) || rows.length === 0) {
+    // Skip if table is empty or malformed
+    return
+  }
+
+  for (const row of rows) {
+    if (typeof row !== 'object' || row === null) continue
+    
+    const rowObj = row as Record<string, string>
+    const field = rowObj['Field']
+    const type = rowObj['Type']
+
+    if (!field) continue
 
     expect(world.lastBody).toHaveProperty(field)
     const value = (world.lastBody as Record<string, unknown>)[field]

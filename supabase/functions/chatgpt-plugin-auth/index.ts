@@ -114,7 +114,12 @@ Deno.serve(async (req: Request) => {
   }
 
   const url = new URL(req.url)
-  const pathname = url.pathname.replace(/^\/functions\/v1\/chatgpt-plugin-auth/, '')
+  let pathname = url.pathname
+    .replace(/^\/functions\/v1\/chatgpt-plugin-auth/, '')
+    .replace(/^\/chatgpt-plugin-auth/, '')
+  if (!pathname || pathname === '/') {
+    pathname = ''
+  }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -125,7 +130,7 @@ Deno.serve(async (req: Request) => {
   // GET /authorize — OAuth Authorization Endpoint
   // ─────────────────────────────────────────────────────────
 
-  if (pathname === '/authorize' && req.method === 'GET') {
+  if ((pathname === '/authorize' || pathname === 'authorize') && req.method === 'GET') {
     const clientId = url.searchParams.get('client_id')
     const redirectUri = url.searchParams.get('redirect_uri')
     const state = url.searchParams.get('state') ?? ''
@@ -207,7 +212,7 @@ Deno.serve(async (req: Request) => {
   // POST /token — OAuth Token Endpoint
   // ─────────────────────────────────────────────────────────
 
-  if (pathname === '/token' && req.method === 'POST') {
+  if ((pathname === '/token' || pathname === 'token') && req.method === 'POST') {
     const body = await parseBody(req)
     if (body instanceof Response) return body
 
