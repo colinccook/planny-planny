@@ -265,24 +265,27 @@ export interface Database {
         Row: {
           id: string
           household_id: string
-          date: string
+          date: string | null
           title: string
+          description: string | null
           created_by: string | null
           created_at: string
         }
         Insert: {
           id?: string
           household_id: string
-          date: string
+          date?: string | null
           title: string
+          description?: string | null
           created_by?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           household_id?: string
-          date?: string
+          date?: string | null
           title?: string
+          description?: string | null
           created_by?: string | null
           created_at?: string
         }

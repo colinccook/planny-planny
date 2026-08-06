@@ -354,6 +354,15 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+[functions.chatgpt-plugin]
+# The function implements its own manual `supabase.auth.getUser()`
+# check (see supabase/functions/chatgpt-plugin/index.ts) so it can
+# return a JSON `{ "error": "..." }` body with the right shape for
+# missing/invalid JWTs. Leaving the default `verify_jwt = true` means
+# the gateway rejects unauthenticated requests before they ever reach
+# the function, returning its own differently-shaped error instead.
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

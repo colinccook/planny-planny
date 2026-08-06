@@ -159,7 +159,7 @@ The Settings tab lets you manage your household:
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v20+
+- [Node.js](https://nodejs.org/) v24 LTS
 - [Docker](https://www.docker.com/) (for local Supabase)
 - [Supabase CLI](https://supabase.com/docs/guides/cli)
 

@@ -28,6 +28,17 @@ const DEFAULT_LOCAL_SERVICE_ROLE_KEY =
 const SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ?? DEFAULT_LOCAL_SERVICE_ROLE_KEY
 
+if (process.env.DEBUG_SUPABASE_KEY === 'true' && SERVICE_ROLE_KEY) {
+  const parts = SERVICE_ROLE_KEY.split('.')
+  const payload =
+    parts.length === 3
+      ? (JSON.parse(globalThis.atob(parts[1])) as { role?: string })
+      : null
+  console.error(
+    `[supabaseAdmin] key length=${SERVICE_ROLE_KEY.length} role=${payload?.role ?? 'invalid JWT'}`,
+  )
+}
+
 let cached: SupabaseClient<Database> | null = null
 
 /**
