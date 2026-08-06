@@ -123,6 +123,14 @@ jobs:
         # has no rows so we don't lose seeding either.
         run: supabase start
 
+      - name: Export local Supabase credentials
+        run: |
+          supabase status -o env \
+            --override-name api.url=SUPABASE_URL \
+            --override-name auth.anon_key=SUPABASE_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            >> "$GITHUB_ENV"
+
       - name: Resolve Playwright version
         id: playwright-version
         run: |
@@ -145,7 +153,7 @@ jobs:
         run: npx playwright install-deps chromium
 
       - name: Run BDD integration tests
-        run: npm run test:integration
+        run: VITE_SUPABASE_URL="$SUPABASE_URL" VITE_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" npm run test:integration
         env:
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
