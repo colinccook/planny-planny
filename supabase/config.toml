@@ -363,6 +363,13 @@ allow_dynamic_registration = false
 # the function, returning its own differently-shaped error instead.
 verify_jwt = false
 
+[functions.chatgpt-plugin-auth]
+# OAuth endpoints for ChatGPT plugin authentication.
+# These endpoints are public (no auth required) to support:
+#   - GET /authorize — browser redirect flow
+#   - POST /token — token exchange (doesn't use bearer token)
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
