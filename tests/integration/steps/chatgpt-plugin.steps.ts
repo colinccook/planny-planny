@@ -148,7 +148,7 @@ When(
 )
 
 When(
-  'I call the plugin endpoint GET {word} with params {string}',
+  'I call the plugin endpoint GET {word} with params {word}',
   async ({ page: _page }, resource: string, params: string) => {
     const hid = world.householdId
     const qs = hid ? `?household_id=${hid}&${params}` : `?${params}`
