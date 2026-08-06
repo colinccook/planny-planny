@@ -153,12 +153,17 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
-      - name: Run BDD integration tests
-        run: VITE_SUPABASE_URL="$SUPABASE_URL" VITE_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" npm run test:integration
-        env:
-          VITE_SUPABASE_URL: http://127.0.0.1:54321
-          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+      - name: Debug Supabase credentials
+        run: |
+          echo "url=$SUPABASE_URL"
+          echo "anon length=${#SUPABASE_ANON_KEY}"
+          echo "service length=${#SUPABASE_SERVICE_ROLE_KEY}"
+          echo "service prefix=${SUPABASE_SERVICE_ROLE_KEY:0:20}"
 
+      - name: Run BDD integration tests
+        run: VITE_SUPABASE_URL="$SUPABASE_URL" VITE_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" DEBUG_SUPABASE_KEY=true npm run test:integration
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
       - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         if: failure()
