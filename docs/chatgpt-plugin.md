@@ -3,13 +3,129 @@
 Connect Planny Planny to ChatGPT so you can manage your household
 meal plan and todo list through natural conversation.
 
+There are **two ways** to connect, depending on which ChatGPT flow you use:
+
+| Flow | When to use |
+|------|-------------|
+| **[New Plugin / MCP](#option-a-new-plugin-form-mcp)** | chatgpt.com → Explore GPTs → ＋ Add Plugin or chatgpt.com → your plugin list → New Plugin |
+| **[Custom GPT Action / REST](#option-b-custom-gpt-action-rest)** | My GPTs → Create/Edit a GPT → Configure → Add action |
+
+Both flows enforce the same Row-Level Security policies and OAuth token exchange.
+
 > **Who can use it?** Owners, members, and honoured guests.
 > Voting guests and public-link viewers cannot use the plugin because
 > it exposes write operations.
 
 ---
 
-## What you can do via ChatGPT
+## Option A — New Plugin form (MCP)
+
+This is the form shown when you tap **＋ Add Plugin** on chatgpt.com (see screenshot below):
+
+```
+┌──────────────────────────────────────────────────────┐
+│ New Plugin                                    ×       │
+│                                                       │
+│  Icon (optional)   PNG only, 256 × 256 px, max 10 KB │
+│                                                       │
+│  Name              [Custom Tool            ]          │
+│                                                       │
+│  Description (opt) [Explain what it does…  ]          │
+│                                                       │
+│  Connection     ● Server URL   ○ Tunnel               │
+│                 [https://example.com/sse   ]          │
+│                                                       │
+│  Authentication    [OAuth              ▾  ]           │
+│  ▶ Advanced OAuth settings                            │
+└──────────────────────────────────────────────────────┘
+```
+
+### Prerequisites
+
+Find your **Supabase project reference** — it is the short ID in your
+dashboard URL:
+
+```
+https://supabase.com/dashboard/project/<YOUR_PROJECT_REF>
+```
+
+Replace every `<YOUR_PROJECT_REF>` below with that value.
+
+### Step 1 — Deploy the Edge Functions
+
+```bash
+supabase functions deploy chatgpt-plugin       --project-ref <YOUR_PROJECT_REF>
+supabase functions deploy chatgpt-plugin-auth  --project-ref <YOUR_PROJECT_REF>
+```
+
+Smoke-test the MCP endpoint (expect `{"jsonrpc":"2.0",...}` back):
+
+```bash
+curl -s -X POST \
+  https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin/sse \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}'
+```
+
+You should see:
+
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"Planny Planny","version":"1.0.0"}}}
+```
+
+### Step 2 — Fill in the New Plugin form
+
+Open chatgpt.com → click your name/avatar → **My ChatGPT** →
+**Plugins** → **＋ New Plugin** (or **Explore GPTs** → **＋ Add**).
+
+Enter the following values in each field:
+
+| Field | Value |
+|-------|-------|
+| **Icon** | *Skip, or upload a 256 × 256 PNG logo (max 10 KB)* |
+| **Name** | `Planny Planny` |
+| **Description** | `Manage your household meal plan, todos, events, and shopping list` |
+| **Connection → Server URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin/sse` |
+| **Authentication** | `OAuth` *(select from the dropdown)* |
+
+> **Important — the Server URL must end in `/sse`.**
+> That path is the MCP Streamable-HTTP endpoint. It is different from
+> the REST base URL used by Custom GPT Actions.
+
+### Step 3 — Fill in the Advanced OAuth settings
+
+After selecting **OAuth**, expand **Advanced OAuth settings** and enter:
+
+| OAuth field | Value |
+|-------------|-------|
+| **Authorization URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/authorize` |
+| **Token URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token` |
+| **Refresh URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token` |
+| **Client ID** | *(leave blank)* |
+| **Client Secret** | *(leave blank)* |
+| **Scope** | `chatgpt-plugin` |
+| **Token exchange method** | `POST request body` |
+
+### Step 4 — Authenticate and test
+
+1. Click **Save** — ChatGPT will walk you through the OAuth consent.
+2. Sign in with your Planny Planny email and password when prompted.
+3. ChatGPT will call `tools/list` automatically. You should see all 22
+   Planny Planny tools listed.
+4. Try a message: *"What todos do I have this week?"*
+
+> **Tip — set your household first.**
+> Open the Planny Planny app and navigate to the household you want
+> ChatGPT to use before your first conversation. The plugin picks up
+> `last_household_id` from your profile automatically.
+
+---
+
+## Option B — Custom GPT Action (REST)
+
+Use this if you are building your own GPT (My GPTs → Create/Edit → Configure → Add action).
+
+### What you can do via ChatGPT
 
 | Topic | What you can say |
 |---|---|
@@ -37,7 +153,7 @@ ChatGPT ──► Edge Function ──► Supabase Postgres (RLS applies)
 
 ---
 
-## One-time setup
+### One-time setup
 
 ### 1. Deploy the Edge Functions
 
