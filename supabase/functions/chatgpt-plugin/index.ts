@@ -885,7 +885,10 @@ async function handleMcp(
         content: [{ type: 'text', text: JSON.stringify(result) }],
       })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
+      // Log the full error server-side; only the message (never a stack trace)
+      // is returned to the client.
+      console.error('MCP tools/call error:', e)
+      const msg = e instanceof Error ? e.message : 'Internal error'
       return mcpError(id, -32603, msg)
     }
   }
