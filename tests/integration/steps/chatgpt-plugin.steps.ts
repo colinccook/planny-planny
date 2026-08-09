@@ -482,7 +482,7 @@ When('I send an MCP initialize request', async () => {
   world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
 })
 
-When('I send an MCP tools\\/list request', async ({}) => {
+When('I send an MCP tools\\/list request', async () => {
   world.lastMcpResponse = await mcpFetch(
     { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
     null,
@@ -490,7 +490,7 @@ When('I send an MCP tools\\/list request', async ({}) => {
   world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
 })
 
-When('I send an MCP notifications\\/initialized message', async ({}) => {
+When('I send an MCP notifications\\/initialized message', async () => {
   world.lastMcpResponse = await mcpFetch(
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     null,
