@@ -56,15 +56,15 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders, ...headers, 'Content-Type': 'application/json' },
   })
 }
 
-function err(message: string, status = 400): Response {
-  return json({ error: message }, status)
+function err(message: string, status = 400, headers: Record<string, string> = {}): Response {
+  return json({ error: message }, status, headers)
 }
 
 // ─── OAuth discovery helpers ────────────────────────────────────────────
@@ -983,7 +983,15 @@ Deno.serve(async (req: Request) => {
   // Verify the caller is authenticated.
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
-    return err('Unauthorised — provide a valid Supabase JWT in the Authorization header', 401)
+    // Per the MCP Authorization spec, any 401 on this resource must carry a
+    // WWW-Authenticate challenge pointing at our protected-resource metadata
+    // so OAuth-aware clients (ChatGPT) can discover the auth flow instead of
+    // concluding the server "does not implement OAuth". This covers plain
+    // GET probes on /sse and any other unauthenticated request, not just the
+    // MCP tools/call path (see mcpError below for the JSON-RPC equivalent).
+    return err('Unauthorised — provide a valid Supabase JWT in the Authorization header', 401, {
+      'WWW-Authenticate': `Bearer resource_metadata="${protectedResourceMetadataUrl()}"`,
+    })
   }
 
   // Resolve the household the user wants to interact with.

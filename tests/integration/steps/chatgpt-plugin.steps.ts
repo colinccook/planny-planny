@@ -562,6 +562,11 @@ When('I send a malformed MCP request body', async () => {
   world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
 })
 
+When('I send a plain GET request to the MCP endpoint without authentication', async () => {
+  world.lastMcpResponse = await fetch(MCP_URL)
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
 When(
   'I call MCP tool {string} without authentication',
   async ({ page: _page }, toolName: string) => {
