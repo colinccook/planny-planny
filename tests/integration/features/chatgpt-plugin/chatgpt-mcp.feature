@@ -52,6 +52,11 @@ Feature: ChatGPT MCP Endpoint
     Then the MCP response status is 401
     And the MCP response has a WWW-Authenticate header pointing at the protected resource metadata
 
+  Scenario: A plain unauthenticated GET on the MCP endpoint also returns a WWW-Authenticate challenge
+    When I send a plain GET request to the MCP endpoint without authentication
+    Then the MCP response status is 401
+    And the MCP response has a WWW-Authenticate header pointing at the protected resource metadata
+
   # ── OAuth discovery — RFC 9728 (protected resource metadata) ───────────
 
   Scenario: The protected resource metadata endpoint is discoverable without authentication
