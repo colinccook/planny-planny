@@ -47,6 +47,19 @@ Feature: ChatGPT MCP Endpoint
     Then the MCP response is a valid JSON-RPC 2.0 error
     And the MCP error code is -32001
 
+  Scenario: tools/call without authentication returns a 401 with a WWW-Authenticate challenge
+    When I call MCP tool "list_todos" without authentication
+    Then the MCP response status is 401
+    And the MCP response has a WWW-Authenticate header pointing at the protected resource metadata
+
+  # ── OAuth discovery — RFC 9728 (protected resource metadata) ───────────
+
+  Scenario: The protected resource metadata endpoint is discoverable without authentication
+    When I request the MCP protected resource metadata
+    Then the discovery response status is 200
+    And the discovery response contains a "resource" field
+    And the discovery response contains an "authorization_servers" array
+
   Scenario: list_todos tool returns todos array
     When I call MCP tool "list_todos" with arguments:
       """

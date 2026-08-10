@@ -61,6 +61,65 @@ async function parseBody(req: Request): Promise<Record<string, unknown> | Respon
   }
 }
 
+// ─── OAuth discovery helpers ────────────────────────────────────────────
+//
+// See the matching comment in chatgpt-plugin/index.ts — `req.url`'s origin
+// is always the internal Kong→edge-runtime address, never the public URL,
+// so the metadata's issuer/endpoint URLs come from the same
+// `PLUGIN_PUBLIC_URL` secret instead.
+
+function publicFunctionsBase(): string {
+  return Deno.env.get('PLUGIN_PUBLIC_URL') ?? 'http://127.0.0.1:54321/functions/v1'
+}
+
+function authServerBase(): string {
+  return `${publicFunctionsBase()}/chatgpt-plugin-auth`
+}
+
+// ─── PKCE (RFC 7636) ─────────────────────────────────────────────────────
+
+function base64UrlEncode(bytes: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
+async function sha256Base64Url(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return base64UrlEncode(digest)
+}
+
+function randomClientId(): string {
+  return 'planny-' + base64UrlEncode(crypto.getRandomValues(new Uint8Array(24)).buffer)
+}
+
+async function storeTokens(
+  adminClient: ReturnType<typeof createClient>,
+  userId: string,
+  accessToken: string,
+  refreshToken: string,
+): Promise<boolean> {
+  const expiresIn = 3600 // 1 hour
+  const expiresAt = new Date(Date.now() + expiresIn * 1000)
+
+  const { error: storeError } = await adminClient
+    .from('chatgpt_oauth_tokens')
+    .upsert({
+      user_id: userId,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      access_token_expires_at: expiresAt.toISOString(),
+    }, { onConflict: 'user_id' })
+
+  if (storeError) {
+    console.error('Failed to store OAuth token:', storeError)
+    return false
+  }
+  return true
+}
+
 async function createTokensForUser(
   supabaseUrl: string,
   supabaseAnonKey: string,
@@ -87,22 +146,8 @@ async function createTokensForUser(
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  const expiresIn = 3600 // 1 hour
-  const expiresAt = new Date(Date.now() + expiresIn * 1000)
-
-  const { error: storeError } = await adminClient
-    .from('chatgpt_oauth_tokens')
-    .upsert({
-      user_id: user.id,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      access_token_expires_at: expiresAt.toISOString(),
-    })
-
-  if (storeError) {
-    console.error('Failed to store OAuth token:', storeError)
-    return null
-  }
+  const stored = await storeTokens(adminClient, user.id, accessToken, refreshToken)
+  if (!stored) return null
 
   return { accessToken, refreshToken }
 }
@@ -125,6 +170,77 @@ Deno.serve(async (req: Request) => {
   const appUrl = Deno.env.get('APP_URL') ?? 'http://localhost:5173'
 
   // ─────────────────────────────────────────────────────────
+  // GET /.well-known/oauth-authorization-server — RFC 8414
+  // ─────────────────────────────────────────────────────────
+  // No auth. Lets OAuth-aware MCP clients (ChatGPT) discover the
+  // authorize/token/register endpoints instead of failing with
+  // "does not implement OAuth".
+
+  if (pathname.endsWith('/.well-known/oauth-authorization-server') && req.method === 'GET') {
+    const base = authServerBase()
+    return json({
+      issuer: base,
+      authorization_endpoint: `${base}/authorize`,
+      token_endpoint: `${base}/token`,
+      registration_endpoint: `${base}/register`,
+      response_types_supported: ['code'],
+      grant_types_supported: ['authorization_code', 'refresh_token'],
+      code_challenge_methods_supported: ['S256'],
+      token_endpoint_auth_methods_supported: ['none'],
+      scopes_supported: ['chatgpt-plugin'],
+    })
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // POST /register — Dynamic Client Registration (RFC 7591)
+  // ─────────────────────────────────────────────────────────
+  // No auth. ChatGPT auto-provisions a client_id here rather than a
+  // developer pasting one into a form. Public client only (PKCE, no
+  // client_secret) since ChatGPT's MCP connector cannot keep a secret.
+
+  if (pathname.endsWith('/register') && req.method === 'POST') {
+    const body = await parseBody(req)
+    if (body instanceof Response) return body
+
+    const redirectUris = body.redirect_uris
+    if (!Array.isArray(redirectUris) || redirectUris.length === 0 ||
+      !redirectUris.every((u) => typeof u === 'string')) {
+      return err('redirect_uris is required and must be a non-empty array of strings')
+    }
+
+    const clientName = typeof body.client_name === 'string' ? body.client_name : null
+    const clientId = randomClientId()
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+
+    const { error: insertError } = await adminClient
+      .from('chatgpt_oauth_clients')
+      .insert({
+        client_id: clientId,
+        client_name: clientName,
+        redirect_uris: redirectUris,
+        token_endpoint_auth_method: 'none',
+      })
+
+    if (insertError) {
+      console.error('Failed to register OAuth client:', insertError)
+      return err('Failed to register client', 500)
+    }
+
+    return json({
+      client_id: clientId,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      redirect_uris: redirectUris,
+      client_name: clientName,
+      token_endpoint_auth_method: 'none',
+      grant_types: ['authorization_code', 'refresh_token'],
+      response_types: ['code'],
+    }, 201)
+  }
+
+  // ─────────────────────────────────────────────────────────
   // GET /authorize — OAuth Authorization Endpoint
   // ─────────────────────────────────────────────────────────
 
@@ -134,9 +250,15 @@ Deno.serve(async (req: Request) => {
     const state = url.searchParams.get('state') ?? ''
     const email = url.searchParams.get('email')
     const password = url.searchParams.get('password')
+    const codeChallenge = url.searchParams.get('code_challenge')
+    const codeChallengeMethod = url.searchParams.get('code_challenge_method')
 
     if (!redirectUri) {
       return err('redirect_uri is required')
+    }
+
+    if (codeChallenge && codeChallengeMethod && codeChallengeMethod !== 'S256') {
+      return err('Only the S256 code_challenge_method is supported')
     }
 
     // If email and password are provided, authenticate directly
@@ -172,6 +294,19 @@ Deno.serve(async (req: Request) => {
 
       const userId = authData.session.user.id
 
+      // Store the tokens now (keyed by user_id) so the token endpoint can
+      // hand them back once the authorization code is exchanged. Without
+      // this, the authorization_code grant has no tokens to return.
+      const tokensStored = await storeTokens(
+        adminClient,
+        userId,
+        authData.session.access_token,
+        authData.session.refresh_token ?? '',
+      )
+      if (!tokensStored) {
+        return err('Failed to store session tokens', 500)
+      }
+
       // Store the authorization code
       const { error: storeError } = await adminClient
         .from('chatgpt_oauth_codes')
@@ -180,6 +315,9 @@ Deno.serve(async (req: Request) => {
           state: state || null,
           user_id: userId,
           redirect_uri: redirectUri,
+          client_id: clientId || null,
+          code_challenge: codeChallenge || null,
+          code_challenge_method: codeChallenge ? 'S256' : null,
         })
 
       if (storeError) {
@@ -202,9 +340,14 @@ Deno.serve(async (req: Request) => {
     loginUrl.searchParams.set('client_id', clientId ?? '')
     loginUrl.searchParams.set('redirect_uri', redirectUri)
     loginUrl.searchParams.set('state', state)
+    if (codeChallenge) {
+      loginUrl.searchParams.set('code_challenge', codeChallenge)
+      loginUrl.searchParams.set('code_challenge_method', 'S256')
+    }
 
     return redirect(loginUrl.toString())
   }
+
 
   // ─────────────────────────────────────────────────────────
   // POST /token — OAuth Token Endpoint
@@ -244,9 +387,31 @@ Deno.serve(async (req: Request) => {
         return err('Invalid or expired authorization code', 401)
       }
 
-      const result = exchangeData as { error?: string; user_id?: string; state?: string }
+      const result = exchangeData as {
+        error?: string
+        user_id?: string
+        state?: string
+        client_id?: string | null
+        code_challenge?: string | null
+        code_challenge_method?: string | null
+      }
       if (result.error) {
         return err(result.error, 401)
+      }
+
+      // PKCE verification (RFC 7636) — required whenever the authorization
+      // request included a code_challenge (e.g. every ChatGPT MCP flow via
+      // Dynamic Client Registration). Skipped only for legacy codes issued
+      // without one, for backward compatibility with the password grant.
+      if (result.code_challenge) {
+        const codeVerifier = body.code_verifier
+        if (typeof codeVerifier !== 'string') {
+          return err('code_verifier is required', 400)
+        }
+        const computedChallenge = await sha256Base64Url(codeVerifier)
+        if (computedChallenge !== result.code_challenge) {
+          return err('code_verifier does not match code_challenge', 400)
+        }
       }
 
       const userId = result.user_id

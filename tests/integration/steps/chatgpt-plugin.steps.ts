@@ -36,6 +36,7 @@ const SUPABASE_ANON_KEY =
   'CRFA0NiK7kyqHDan_WiMe9UYAl1lhTbcECmMEaFzOFo'
 
 const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chatgpt-plugin`
+const AUTH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chatgpt-plugin-auth`
 
 // ── Per-scenario state ───────────────────────────────────────────────
 //
@@ -57,6 +58,21 @@ interface PluginWorld {
   lastMcpResponse: Response | null
   lastMcpBody: Record<string, unknown> | null
   lastMcpTodoId: string | null
+  /** OAuth-specific state (chatgpt-plugin-auth + discovery endpoints). */
+  oauthEmail: string | null
+  oauthPassword: string | null
+  lastDiscoveryResponse: Response | null
+  lastDiscoveryBody: Record<string, unknown> | null
+  pkceVerifier: string | null
+  pkceChallenge: string | null
+  lastRegisterResponse: Response | null
+  lastRegisterBody: Record<string, unknown> | null
+  lastAuthRedirectUrl: URL | null
+  lastAuthCode: string | null
+  lastAuthState: string | null
+  lastTokenResponse: Response | null
+  lastTokenBody: Record<string, unknown> | null
+  lastRefreshToken: string | null
 }
 
 // One world per worker (Playwright runs scenarios sequentially within a
@@ -73,6 +89,20 @@ const world: PluginWorld = {
   lastMcpResponse: null,
   lastMcpBody: null,
   lastMcpTodoId: null,
+  oauthEmail: null,
+  oauthPassword: null,
+  lastDiscoveryResponse: null,
+  lastDiscoveryBody: null,
+  pkceVerifier: null,
+  pkceChallenge: null,
+  lastRegisterResponse: null,
+  lastRegisterBody: null,
+  lastAuthRedirectUrl: null,
+  lastAuthCode: null,
+  lastAuthState: null,
+  lastTokenResponse: null,
+  lastTokenBody: null,
+  lastRefreshToken: null,
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -138,6 +168,28 @@ Given('I am signed in as an owner of a household for the plugin', async ({ sessi
     throw new Error(`Plugin background: could not sign in: ${error?.message}`)
   }
   world.jwt = data.session.access_token
+})
+
+Given('a seeded ChatGPT plugin test user', async ({ session }) => {
+  // Reset OAuth-specific world state for each scenario.
+  world.oauthEmail = null
+  world.oauthPassword = null
+  world.lastDiscoveryResponse = null
+  world.lastDiscoveryBody = null
+  world.pkceVerifier = null
+  world.pkceChallenge = null
+  world.lastRegisterResponse = null
+  world.lastRegisterBody = null
+  world.lastAuthRedirectUrl = null
+  world.lastAuthCode = null
+  world.lastAuthState = null
+  world.lastTokenResponse = null
+  world.lastTokenBody = null
+  world.lastRefreshToken = null
+
+  const user = await session.signInAs([{ name: 'OAuth Test Household', role: 'owner' }])
+  world.oauthEmail = user.email
+  world.oauthPassword = user.password
 })
 
 // ── Auth guard ───────────────────────────────────────────────────────
@@ -562,6 +614,22 @@ Then('the MCP response status is {int}', async ({ page: _page }, status: number)
   expect(world.lastMcpResponse?.status).toBe(status)
 })
 
+Then(
+  'the MCP response has a WWW-Authenticate header pointing at the protected resource metadata',
+  async () => {
+    const header = world.lastMcpResponse?.headers.get('WWW-Authenticate')
+    expect(header).toMatch(/^Bearer resource_metadata="/)
+    expect(header).toContain('/.well-known/oauth-protected-resource')
+  },
+)
+
+When('I request the MCP protected resource metadata', async () => {
+  world.lastDiscoveryResponse = await fetch(
+    `${FUNCTION_URL}/.well-known/oauth-protected-resource`,
+  )
+  world.lastDiscoveryBody = await readBody(world.lastDiscoveryResponse)
+})
+
 Then('the MCP response is a valid JSON-RPC 2.0 result', async () => {
   const body = world.lastMcpBody
   expect(body?.jsonrpc).toBe('2.0')
@@ -647,6 +715,212 @@ Then('the MCP tool result todo has no completed_on date', async () => {
   expect(parsed.todo?.completed_on).toBeNull()
 })
 
+// ══════════════════════════════════════════════════════════════════════════
+// OAuth discovery & flow steps (chatgpt-plugin-auth Edge Function)
+// ══════════════════════════════════════════════════════════════════════════
+
+function base64UrlEncode(bytes: Buffer): string {
+  return bytes
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
+// ── Discovery assertion helpers (shared by MCP + OAuth discovery scenarios) ─
+
+Then('the discovery response status is {int}', async ({ page: _page }, status: number) => {
+  expect(world.lastDiscoveryResponse?.status).toBe(status)
+})
+
+Then('the discovery response contains a {string} field', async ({ page: _page }, key: string) => {
+  expect(world.lastDiscoveryBody).toHaveProperty(key)
+})
+
+Then('the discovery response contains an {string} field', async ({ page: _page }, key: string) => {
+  expect(world.lastDiscoveryBody).toHaveProperty(key)
+})
+
+Then('the discovery response contains an {string} array', async ({ page: _page }, key: string) => {
+  const value = world.lastDiscoveryBody?.[key]
+  expect(Array.isArray(value)).toBe(true)
+})
+
+Then(
+  'the discovery response lists {string} in {string}',
+  async ({ page: _page }, item: string, key: string) => {
+    const value = world.lastDiscoveryBody?.[key] as unknown[] | undefined
+    expect(value).toContain(item)
+  },
+)
+
+// ── OAuth authorization server metadata (RFC 8414) ──────────────────────────
+
+When('I request the OAuth authorization server metadata', async () => {
+  world.lastDiscoveryResponse = await fetch(
+    `${AUTH_FUNCTION_URL}/.well-known/oauth-authorization-server`,
+  )
+  world.lastDiscoveryBody = await readBody(world.lastDiscoveryResponse)
+})
+
+// ── Dynamic Client Registration (RFC 7591) ──────────────────────────────────
+
+When(
+  'I register a new OAuth client with redirect_uris:',
+  async ({ page: _page }, redirectUrisJson: string) => {
+    const redirectUris = JSON.parse(redirectUrisJson) as string[]
+    world.lastRegisterResponse = await fetch(`${AUTH_FUNCTION_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ redirect_uris: redirectUris }),
+    })
+    world.lastRegisterBody = await readBody(world.lastRegisterResponse)
+  },
+)
+
+Then('the registration response status is {int}', async ({ page: _page }, status: number) => {
+  expect(world.lastRegisterResponse?.status).toBe(status)
+})
+
+Then('the registration response contains a {string} field', async ({ page: _page }, key: string) => {
+  expect(world.lastRegisterBody).toHaveProperty(key)
+})
+
+Then(
+  'the registration response contains token_endpoint_auth_method {string}',
+  async ({ page: _page }, method: string) => {
+    expect(world.lastRegisterBody?.token_endpoint_auth_method).toBe(method)
+  },
+)
+
+// ── PKCE authorization code flow ─────────────────────────────────────────────
+
+const OAUTH_REDIRECT_URI = 'https://chatgpt.com/aip/oauth/callback'
+
+Given('a PKCE code verifier and matching code_challenge', async () => {
+  const crypto = await import('node:crypto')
+  const verifierBytes = crypto.randomBytes(32)
+  const verifier = base64UrlEncode(verifierBytes)
+  const challenge = base64UrlEncode(crypto.createHash('sha256').update(verifier).digest())
+  world.pkceVerifier = verifier
+  world.pkceChallenge = challenge
+})
+
+When(
+  'I request an authorization code with email and password and the code_challenge',
+  async () => {
+    const email = world.oauthEmail
+    const password = world.oauthPassword
+    const codeChallenge = world.pkceChallenge
+    if (!email || !password || !codeChallenge) {
+      throw new Error('Missing seeded user credentials or PKCE code_challenge')
+    }
+
+    const authorizeUrl = new URL(`${AUTH_FUNCTION_URL}/authorize`)
+    authorizeUrl.searchParams.set('client_id', 'planny-test-client')
+    authorizeUrl.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI)
+    authorizeUrl.searchParams.set('state', 'test-state-123')
+    authorizeUrl.searchParams.set('email', email)
+    authorizeUrl.searchParams.set('password', password)
+    authorizeUrl.searchParams.set('code_challenge', codeChallenge)
+    authorizeUrl.searchParams.set('code_challenge_method', 'S256')
+
+    const res = await fetch(authorizeUrl.toString(), { redirect: 'manual' })
+    expect(res.status).toBe(302)
+    const location = res.headers.get('Location')
+    if (!location) throw new Error('Expected a Location header on the /authorize redirect')
+    world.lastAuthRedirectUrl = new URL(location)
+  },
+)
+
+Then('I am redirected with an authorization code and the original state', async () => {
+  const redirectUrl = world.lastAuthRedirectUrl
+  expect(redirectUrl).not.toBeNull()
+  world.lastAuthCode = redirectUrl?.searchParams.get('code') ?? null
+  world.lastAuthState = redirectUrl?.searchParams.get('state') ?? null
+  expect(world.lastAuthCode).not.toBeNull()
+  expect(world.lastAuthState).toBe('test-state-123')
+})
+
+async function exchangeAuthCode(codeVerifier?: string): Promise<void> {
+  const code = world.lastAuthCode
+  if (!code) throw new Error('No authorization code captured yet')
+  const body: Record<string, string> = {
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: OAUTH_REDIRECT_URI,
+  }
+  if (codeVerifier !== undefined) body.code_verifier = codeVerifier
+
+  world.lastTokenResponse = await fetch(`${AUTH_FUNCTION_URL}/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  world.lastTokenBody = await readBody(world.lastTokenResponse)
+  const refreshToken = (world.lastTokenBody as { refresh_token?: string })?.refresh_token
+  if (refreshToken) world.lastRefreshToken = refreshToken
+}
+
+When('I exchange the authorization code for tokens using the code_verifier', async () => {
+  const verifier = world.pkceVerifier
+  if (!verifier) throw new Error('No PKCE code_verifier generated yet')
+  await exchangeAuthCode(verifier)
+})
+
+When('I exchange the authorization code for tokens without a code_verifier', async () => {
+  await exchangeAuthCode(undefined)
+})
+
+When('I exchange the authorization code for tokens using a wrong code_verifier', async () => {
+  await exchangeAuthCode('this-is-definitely-the-wrong-verifier')
+})
+
+Then('the OAuth token response contains an access_token and refresh_token', async () => {
+  expect(world.lastTokenResponse?.status).toBe(200)
+  expect(world.lastTokenBody).toHaveProperty('access_token')
+  expect(world.lastTokenBody).toHaveProperty('refresh_token')
+})
+
+Then('the OAuth token exchange fails with status {int}', async ({ page: _page }, status: number) => {
+  expect(world.lastTokenResponse?.status).toBe(status)
+})
+
+// ── Password & refresh grants ────────────────────────────────────────────────
+
+When(
+  "I request tokens with the password grant using the seeded user's credentials",
+  async () => {
+    world.lastTokenResponse = await fetch(`${AUTH_FUNCTION_URL}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type: 'password',
+        email: world.oauthEmail,
+        password: world.oauthPassword,
+      }),
+    })
+    world.lastTokenBody = await readBody(world.lastTokenResponse)
+    const refreshToken = (world.lastTokenBody as { refresh_token?: string })?.refresh_token
+    if (refreshToken) world.lastRefreshToken = refreshToken
+  },
+)
+
+When("I request tokens with the refresh_token grant using the last refresh token", async () => {
+  expect(world.lastRefreshToken).not.toBeNull()
+  world.lastTokenResponse = await fetch(`${AUTH_FUNCTION_URL}/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: world.lastRefreshToken,
+    }),
+  })
+  world.lastTokenBody = await readBody(world.lastTokenResponse)
+  const refreshToken = (world.lastTokenBody as { refresh_token?: string })?.refresh_token
+  if (refreshToken) world.lastRefreshToken = refreshToken
+})
+
 // ── Private helpers ───────────────────────────────────────────────────────
 
 /** Extract the text content from an MCP tools/call result body. */
@@ -657,3 +931,4 @@ function extractMcpText(body: Record<string, unknown> | null): string | null {
   const textItem = content.find((c) => c.type === 'text')
   return textItem?.text ?? null
 }
+

@@ -1,54 +1,78 @@
 Feature: ChatGPT Plugin OAuth Implementation
-  The ChatGPT plugin now supports OAuth 2.0 authentication flow for seamless user login
-  without requiring manual JWT token management.
-
-  This feature allows:
-  - Users to authenticate via OAuth when adding the plugin to ChatGPT
-  - Automatic token refresh without re-authentication
-  - Secure authorization code flow with CSRF protection
-  - Backward compatibility with password grant for CLI testing
+  The ChatGPT plugin supports the OAuth 2.0 authorization code flow (with
+  PKCE) plus password and refresh_token grants, and exposes RFC 8414/7591
+  discovery metadata so ChatGPT's MCP connector can configure itself
+  automatically instead of failing with "does not implement OAuth".
 
   Background:
-    # Verify the OAuth infrastructure exists
-    # The actual Edge Function would be tested via manual deployment
-    # These scenarios describe the expected behavior
+    Given a seeded ChatGPT plugin test user
 
-  Scenario: Authorization code flow is implemented
-    # GET /authorize endpoint exists and:
-    # - Accepts client_id, redirect_uri, state, email, password
-    # - Returns 302 redirect with authorization code
-    # - Includes original state parameter for CSRF protection
+  # ── Discovery — RFC 8414 (authorization server metadata) ───────────────
 
-  Scenario: Token exchange endpoint is implemented
-    # POST /token endpoint exists and supports:
-    # - grant_type: "authorization_code" (code exchange)
-    # - grant_type: "password" (direct email/password)
-    # - grant_type: "refresh_token" (token refresh)
-    # - Returns access_token, refresh_token, expires_in, token_type
+  Scenario: The authorization server metadata endpoint is discoverable without authentication
+    When I request the OAuth authorization server metadata
+    Then the discovery response status is 200
+    And the discovery response contains an "issuer" field
+    And the discovery response contains an "authorization_endpoint" field
+    And the discovery response contains a "token_endpoint" field
+    And the discovery response contains a "registration_endpoint" field
+    And the discovery response lists "S256" in "code_challenge_methods_supported"
 
-  Scenario: Authorization codes are stored securely
-    # - Database table: chatgpt_oauth_codes
-    # - Fields: code, state, user_id, redirect_uri, expires_at, used
-    # - Expires after 10 minutes
-    # - Marked as used after first exchange (one-time only)
+  # ── Dynamic Client Registration — RFC 7591 ──────────────────────────────
 
-  Scenario: Tokens are stored and tracked
-    # - Database table: chatgpt_oauth_tokens
-    # - Fields: user_id, access_token, refresh_token, access_token_expires_at
-    # - RLS policies ensure users only access their own tokens
-    # - Service role function for token refresh
+  Scenario: A new OAuth client can dynamically register itself
+    When I register a new OAuth client with redirect_uris:
+      """
+      ["https://chatgpt.com/aip/oauth/callback"]
+      """
+    Then the registration response status is 201
+    And the registration response contains a "client_id" field
+    And the registration response contains token_endpoint_auth_method "none"
 
-  Scenario: CSRF protection via state parameter
-    # - Authorization endpoint returns state parameter in redirect
-    # - State protects against cross-site request forgery
-    # - Token endpoint validates state matches
+  Scenario: Dynamic Client Registration rejects a request without redirect_uris
+    When I register a new OAuth client with redirect_uris:
+      """
+      []
+      """
+    Then the registration response status is 400
 
-  Scenario: Backward compatibility with password grant
-    # - Password grant still works for CLI/testing
-    # - Direct email/password exchange for tokens
-    # - Falls back when authorization code flow unavailable
+  # ── Authorization code flow (with PKCE) ─────────────────────────────────
 
-  Scenario: Refresh tokens don't expire
-    # - Refresh tokens remain valid for 7 days of inactivity
-    # - Access tokens expire after 1 hour
-    # - Users can automatically refresh without re-authentication
+  Scenario: The full PKCE authorization code flow issues working tokens
+    Given a PKCE code verifier and matching code_challenge
+    When I request an authorization code with email and password and the code_challenge
+    Then I am redirected with an authorization code and the original state
+    When I exchange the authorization code for tokens using the code_verifier
+    Then the OAuth token response contains an access_token and refresh_token
+
+  Scenario: Token exchange rejects a missing code_verifier when a code_challenge was used
+    Given a PKCE code verifier and matching code_challenge
+    When I request an authorization code with email and password and the code_challenge
+    Then I am redirected with an authorization code and the original state
+    When I exchange the authorization code for tokens without a code_verifier
+    Then the OAuth token exchange fails with status 400
+
+  Scenario: Token exchange rejects a code_verifier that does not match the code_challenge
+    Given a PKCE code verifier and matching code_challenge
+    When I request an authorization code with email and password and the code_challenge
+    Then I am redirected with an authorization code and the original state
+    When I exchange the authorization code for tokens using a wrong code_verifier
+    Then the OAuth token exchange fails with status 400
+
+  # ── Password & refresh grants (backward compatible, no PKCE) ────────────
+
+  Scenario: The password grant exchanges credentials for tokens directly
+    When I request tokens with the password grant using the seeded user's credentials
+    Then the OAuth token response contains an access_token and refresh_token
+
+  Scenario: The password grant can be used twice in a row for the same user
+    When I request tokens with the password grant using the seeded user's credentials
+    Then the OAuth token response contains an access_token and refresh_token
+    When I request tokens with the password grant using the seeded user's credentials
+    Then the OAuth token response contains an access_token and refresh_token
+
+  Scenario: The refresh_token grant issues a new access token
+    When I request tokens with the password grant using the seeded user's credentials
+    Then the OAuth token response contains an access_token and refresh_token
+    When I request tokens with the refresh_token grant using the last refresh token
+    Then the OAuth token response contains an access_token and refresh_token
