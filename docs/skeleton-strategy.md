@@ -177,6 +177,16 @@ feature components are pure UI for loaded data.
 
 ---
 
+## Sibling concern: error boundaries
+
+Skeletons answer "what does the user see while data is loading?"
+Error boundaries answer "what does the user see if the render
+throws?" Both are required for every data-fetching view. The error
+side is wired in once at the shell level — see
+[`error-boundaries.md`](./error-boundaries.md).
+
+---
+
 ## Where to look in the code
 
 - Building blocks: [`src/components/ui/Skeleton.tsx`](../src/components/ui/Skeleton.tsx)

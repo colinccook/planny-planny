@@ -89,6 +89,22 @@ For every new feature, decide whether it should make a sound and, if so, **wire 
 5. **Don't overdo it**: collaboration signals (new meal/idea/todo, reactions, completions) deserve a sound. Background bookkeeping (membership churn, household metadata edits, deletes) should stay silent.
 6. **No BDD tests for sounds.** Sounds are an audio-only side effect and intentionally outside the BDD coverage. Pure unit tests for the sound palette and any new gating logic are welcome.
 
+## Error Boundaries & Loading States
+
+Every data-fetching view in this app must answer two questions: **what does the user see while the data is loading?** and **what does the user see if the render throws?** The patterns for both are wired in once and documented end-to-end — read them before adding a new page or data-fetching component.
+
+- **Loading states** use shared skeleton building blocks and a `<AnimatePresence>` cross-fade owned by the page. Full rules, checklist, and rationale in [`docs/skeleton-strategy.md`](../docs/skeleton-strategy.md).
+- **Error boundaries** are wrapped around every page automatically by `AppShell` (per-route, keyed on `location.pathname` so they reset on navigation) and around every public/auth route in `src/App.tsx`. Full rules, the pattern, and when to nest extra boundaries inside a page in [`docs/error-boundaries.md`](../docs/error-boundaries.md).
+
+For **every new feature** that reads data:
+
+1. **Skeleton**: write an `XSkeleton()` function in the page file that mirrors the loaded layout using the shared blocks in `src/components/ui/Skeleton.tsx`. Cross-fade with `<AnimatePresence mode="wait">`. **Never** branch on `isLoading` inside a leaf component (the legitimate exception is a sub-component that owns its own query — see `skeleton-strategy.md`).
+2. **Page-level errors**: nothing to do — the boundary inside `AppShell` already covers the page.
+3. **Isolated section errors (optional)**: if a page has several independent cards and one broken card shouldn't blank the rest, wrap that subtree in `<ErrorBoundary area="…">` from `src/components/ui/ErrorBoundary.tsx`. `SettingsPage` is the canonical example.
+4. **Skeleton tag**: add `data-testid="<thing>-skeleton"` to the skeleton wrapper so BDD scenarios can assert the "showed skeleton then swapped to content" sequence without coupling to Tailwind classes.
+
+If you're adding a brand-new shared block to `Skeleton.tsx`, only do so when the shape is reused on more than one page — otherwise compose `SkeletonBlock` / `SkeletonCard` in place.
+
 ## User Preferences
 
 Preferences that should follow a user across devices live on the `profiles` row and are read/written through `src/hooks/useUserPreferences.ts`. Anything device-local (scroll position, expanded sections, etc.) belongs in `localStorage`, not on `profiles`. The current preferences are:

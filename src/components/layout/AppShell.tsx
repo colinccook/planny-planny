@@ -5,6 +5,7 @@ import { usePlanStreak } from '../../hooks/usePlanStreak'
 import { HeaderOverrideProvider, useHeaderOverride } from '../../hooks/useHeaderOverride'
 import { CalendarDirectionProvider } from '../../hooks/useCalendarDirection'
 import HeaderCountBadge from '../ui/HeaderCountBadge'
+import ErrorBoundary from '../ui/ErrorBoundary'
 import TabBar from './TabBar'
 
 const ALWAYS_ACCESSIBLE = new Set(['/settings'])
@@ -63,7 +64,17 @@ function AppShellInner({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      <main className="flex-1 pb-safe-tab-bar">{children}</main>
+      <main className="flex-1 pb-safe-tab-bar">
+        {/* Per-route error boundary: keyed on pathname so the
+            fallback only sticks for the page that broke, and
+            clears the moment the user navigates elsewhere. This
+            keeps a render-time exception in one page from
+            blanking the whole app (the original "Settings panel
+            renders nothing" bug). See docs/error-boundaries.md. */}
+        <ErrorBoundary key={location.pathname} area={location.pathname}>
+          {children}
+        </ErrorBoundary>
+      </main>
 
       <TabBar />
     </div>

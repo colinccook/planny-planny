@@ -7,7 +7,8 @@
  * `<AnimatePresence>`. Leaf feature components stay pure renderers of
  * loaded data and do not own their own skeletons.
  *
- * See `docs/skeleton-strategy.md` for the full rationale and checklist.
+ * See `docs/skeleton-strategy.md` for the full rationale and checklist,
+ * and `docs/error-boundaries.md` for the sibling error-handling pattern.
  */
 import { clsx } from 'clsx'
 import type { HTMLAttributes } from 'react'
