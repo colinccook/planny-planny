@@ -236,6 +236,19 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
 
+      - name: Set PLUGIN_PUBLIC_URL secret
+        # The chatgpt-plugin / chatgpt-plugin-auth Edge Functions derive all
+        # OAuth discovery/metadata URLs (RFC 9728/8414 .well-known
+        # endpoints, /register, /authorize, /token) from this secret,
+        # since req.url inside an Edge Function is always the internal
+        # Kong→edge-runtime address, never the public Supabase URL.
+        run: |
+          supabase secrets set \
+            PLUGIN_PUBLIC_URL="https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1" \
+            --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
       - name: Deploy Edge Functions
         run: |
           supabase functions deploy chatgpt-plugin --project-ref ${{ vars.SUPABASE_PROJECT_REF }}

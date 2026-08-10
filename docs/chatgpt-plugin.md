@@ -64,6 +64,14 @@ Replace every `<YOUR_PROJECT_REF>` below with that value.
 
 ### Step 1 — Deploy the Edge Functions
 
+> **If you deploy via this repo's GitHub Actions `migrate` job** (the
+> default — it runs on every push to `main`), the `PLUGIN_PUBLIC_URL`
+> secret below is set automatically from the `SUPABASE_PROJECT_REF`
+> repo variable, and the functions are deployed for you. You can skip
+> straight to the smoke test.
+
+If you deploy manually instead:
+
 ```bash
 supabase functions deploy chatgpt-plugin       --project-ref <YOUR_PROJECT_REF>
 supabase functions deploy chatgpt-plugin-auth  --project-ref <YOUR_PROJECT_REF>
