@@ -67,6 +67,31 @@ function err(message: string, status = 400): Response {
   return json({ error: message }, status)
 }
 
+// ─── OAuth discovery helpers ────────────────────────────────────────────
+//
+// Supabase Edge Functions receive requests with a rewritten, *internal*
+// URL (the Kong gateway proxies to the edge runtime container), so
+// `req.url`'s origin is never the public URL ChatGPT/OAuth clients used to
+// reach us. We derive the public base from the `PLUGIN_PUBLIC_URL` secret
+// instead (falls back to the local `supabase start` gateway for dev/CI).
+//   supabase secrets set PLUGIN_PUBLIC_URL=https://<ref>.supabase.co/functions/v1
+
+function publicFunctionsBase(): string {
+  return Deno.env.get('PLUGIN_PUBLIC_URL') ?? 'http://127.0.0.1:54321/functions/v1'
+}
+
+function resourceServerBase(): string {
+  return `${publicFunctionsBase()}/chatgpt-plugin`
+}
+
+function authorizationServerBase(): string {
+  return `${publicFunctionsBase()}/chatgpt-plugin-auth`
+}
+
+function protectedResourceMetadataUrl(): string {
+  return `${resourceServerBase()}/.well-known/oauth-protected-resource`
+}
+
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -371,10 +396,18 @@ function mcpError(
   id: string | number | null | undefined,
   code: number,
   message: string,
+  opts: { status?: number; headers?: Record<string, string> } = {},
 ): Response {
+  // JSON-RPC errors are normally carried over HTTP 200 (the error lives in
+  // the JSON body), but the MCP Authorization spec requires a real HTTP 401
+  // with a `WWW-Authenticate` challenge for auth failures so OAuth-aware
+  // clients (ChatGPT) know to kick off the discovery + login flow.
   return new Response(
     JSON.stringify({ jsonrpc: '2.0', id: id ?? null, error: { code, message } }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    {
+      status: opts.status ?? 200,
+      headers: { ...corsHeaders, ...opts.headers, 'Content-Type': 'application/json' },
+    },
   )
 }
 
@@ -854,7 +887,10 @@ async function handleMcp(
     })
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return mcpError(id, -32001, 'Unauthorised — provide a valid Supabase JWT')
+      return mcpError(id, -32001, 'Unauthorised — provide a valid Supabase JWT', {
+        status: 401,
+        headers: { 'WWW-Authenticate': `Bearer resource_metadata="${protectedResourceMetadataUrl()}"` },
+      })
     }
 
     const toolName = typeof params.name === 'string' ? params.name : ''
@@ -916,8 +952,21 @@ Deno.serve(async (req: Request) => {
     .replace(/^\//, '')
   const pathParts = stripped.split('/').filter(Boolean)
 
-  // resource = "todos" | "meals" | "ideas" | "events" | "outcomes" | "shopping-list" | "sse"
+  // resource = "todos" | "meals" | "ideas" | "events" | "outcomes" | "shopping-list" | "sse" | ".well-known"
   const resource = pathParts[0] ?? ''
+
+  // ── OAuth Protected Resource Metadata (RFC 9728) ─────────────────────
+  // GET /.well-known/oauth-protected-resource — no auth. Tells MCP clients
+  // (like ChatGPT) which authorization server issues tokens for this
+  // resource, so they can discover the OAuth flow instead of failing with
+  // "does not implement OAuth".
+  if (resource === '.well-known' && pathParts[1] === 'oauth-protected-resource' && req.method === 'GET') {
+    return json({
+      resource: `${resourceServerBase()}/sse`,
+      authorization_servers: [authorizationServerBase()],
+      bearer_methods_supported: ['header'],
+    })
+  }
 
   // ── MCP Streamable-HTTP endpoint ─────────────────────────────────────
   // POST /sse — used by chatgpt.com "New Plugin" form.

@@ -16,6 +16,17 @@ Both flows enforce the same Row-Level Security policies and OAuth token exchange
 > Voting guests and public-link viewers cannot use the plugin because
 > it exposes write operations.
 
+> **Known limitation:** the `GET /authorize` endpoint currently only
+> supports signing in by passing `email`/`password` as query
+> parameters (used by the manual `curl` flow and CLI testing). If
+> ChatGPT's connector opens `/authorize` with no credentials, it is
+> redirected to an `/auth/oauth-login` page in the React app that does
+> not exist yet — tracked in
+> [issue #70](https://github.com/colinccook/planny-planny/issues/70).
+> This does not affect the "does not implement OAuth" error this doc
+> otherwise fixes, since discovery (the `.well-known` endpoints)
+> happens before `/authorize` is ever called.
+
 ---
 
 ## Option A — New Plugin form (MCP)
@@ -58,6 +69,16 @@ supabase functions deploy chatgpt-plugin       --project-ref <YOUR_PROJECT_REF>
 supabase functions deploy chatgpt-plugin-auth  --project-ref <YOUR_PROJECT_REF>
 ```
 
+Then set the `PLUGIN_PUBLIC_URL` secret so both functions can build
+correct absolute URLs in their OAuth discovery metadata (inside an Edge
+Function, `req.url`'s origin is always the internal Kong→edge-runtime
+address, never your public Supabase URL):
+
+```bash
+supabase secrets set PLUGIN_PUBLIC_URL=https://<YOUR_PROJECT_REF>.supabase.co/functions/v1 \
+  --project-ref <YOUR_PROJECT_REF>
+```
+
 Smoke-test the MCP endpoint (expect `{"jsonrpc":"2.0",...}` back):
 
 ```bash
@@ -71,6 +92,13 @@ You should see:
 
 ```json
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"Planny Planny","version":"1.0.0"}}}
+```
+
+You can also verify the OAuth discovery metadata is reachable:
+
+```bash
+curl -s https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin/.well-known/oauth-protected-resource
+curl -s https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/.well-known/oauth-authorization-server
 ```
 
 ### Step 2 — Fill in the New Plugin form
@@ -92,17 +120,25 @@ Enter the following values in each field:
 > That path is the MCP Streamable-HTTP endpoint. It is different from
 > the REST base URL used by Custom GPT Actions.
 
-### Step 3 — Fill in the Advanced OAuth settings
+### Step 3 — OAuth is discovered automatically
 
-After selecting **OAuth**, expand **Advanced OAuth settings** and enter:
+As soon as the Server URL is set, ChatGPT calls
+`GET /.well-known/oauth-protected-resource` on it, follows the
+`authorization_servers` entry to
+`GET /.well-known/oauth-authorization-server`, and then registers
+itself as an OAuth client via `POST /register` (RFC 7591 Dynamic
+Client Registration) — no manual "Advanced OAuth settings" fields
+should be required. If ChatGPT's UI still shows those fields (older
+client versions, or if it falls back to manual entry), fill them in
+with:
 
 | OAuth field | Value |
 |-------------|-------|
 | **Authorization URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/authorize` |
 | **Token URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token` |
 | **Refresh URL** | `https://<YOUR_PROJECT_REF>.supabase.co/functions/v1/chatgpt-plugin-auth/token` |
-| **Client ID** | *(leave blank)* |
-| **Client Secret** | *(leave blank)* |
+| **Client ID** | *(leave blank — a client is dynamically registered)* |
+| **Client Secret** | *(leave blank — the client is public and uses PKCE)* |
 | **Scope** | `chatgpt-plugin` |
 | **Token exchange method** | `POST request body` |
 
@@ -373,6 +409,7 @@ capability is added to Planny Planny:
 
 | Symptom | Fix |
 |---------|-----|
+| `"Error fetching OAuth configuration"` / `"does not implement OAuth"` | Confirm both Edge Functions are deployed and `PLUGIN_PUBLIC_URL` is set (Step 1), then re-check the two `.well-known` URLs with `curl`. If they 404, the functions aren't deployed with the latest code; if they time out, check `PLUGIN_PUBLIC_URL` points at your real project ref. |
 | `401 Unauthorized` | If using manual tokens: your JWT has expired. Re-run the OAuth token request in step 2 and paste the new `access_token`. If using OAuth: check that your email/password are correct. |
 | `"Invalid refresh token"` | Your refresh token has expired (usually 7 days of inactivity). Re-authenticate with your email and password to get a new token. |
 | `"No household resolved"` | You haven't opened the app and navigated to a household yet, so `last_household_id` is null. Either open the app, or pass `?household_id=<uuid>` explicitly in the action schema's server URL. |
