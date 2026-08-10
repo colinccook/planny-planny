@@ -53,6 +53,10 @@ interface PluginWorld {
   lastMealId: string | null
   lastIdeaId: string | null
   lastEventId: string | null
+  /** MCP-specific state (POST /sse endpoint). */
+  lastMcpResponse: Response | null
+  lastMcpBody: Record<string, unknown> | null
+  lastMcpTodoId: string | null
 }
 
 // One world per worker (Playwright runs scenarios sequentially within a
@@ -66,6 +70,9 @@ const world: PluginWorld = {
   lastMealId: null,
   lastIdeaId: null,
   lastEventId: null,
+  lastMcpResponse: null,
+  lastMcpBody: null,
+  lastMcpTodoId: null,
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -111,6 +118,9 @@ Given('I am signed in as an owner of a household for the plugin', async ({ sessi
   world.lastMealId = null
   world.lastIdeaId = null
   world.lastEventId = null
+  world.lastMcpResponse = null
+  world.lastMcpBody = null
+  world.lastMcpTodoId = null
 
   const user = await session.signInAs([{ name: 'Plugin Test Household', role: 'owner' }])
   world.householdId = user.households[0].id
@@ -422,4 +432,228 @@ function captureIds(path: string, body: Record<string, unknown> | null) {
   if (path.startsWith('events') && (body as { event?: { id: string } }).event?.id) {
     world.lastEventId = (body as { event: { id: string } }).event.id
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// MCP endpoint steps  (POST /sse — Model Context Protocol)
+// ══════════════════════════════════════════════════════════════════════════
+
+const MCP_URL = `${FUNCTION_URL}/sse`
+
+/** POST a JSON-RPC 2.0 message to the MCP /sse endpoint. */
+async function mcpFetch(
+  body: unknown,
+  jwt?: string | null,
+  householdId?: string | null,
+): Promise<Response> {
+  const hid = householdId ?? world.householdId
+  const token = jwt !== undefined ? jwt : world.jwt
+  const qs = hid ? `?household_id=${hid}` : ''
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = 'Bearer ' + token
+  return fetch(`${MCP_URL}${qs}`, {
+    method: 'POST',
+    headers,
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  })
+}
+
+async function readMcpBody(res: Response): Promise<Record<string, unknown>> {
+  try {
+    return await res.json() as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+// ── Request steps ─────────────────────────────────────────────────────────
+
+When('I send an MCP initialize request', async () => {
+  world.lastMcpResponse = await mcpFetch({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'test', version: '1' },
+    },
+  }, null)  // no auth — initialize is public
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+When('I send an MCP tools\\/list request', async () => {
+  world.lastMcpResponse = await mcpFetch(
+    { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
+    null,
+  )
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+When('I send an MCP notifications\\/initialized message', async () => {
+  world.lastMcpResponse = await mcpFetch(
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    null,
+  )
+})
+
+When('I send an MCP request for method {string}', async ({ page: _page }, method: string) => {
+  world.lastMcpResponse = await mcpFetch(
+    { jsonrpc: '2.0', id: 3, method, params: {} },
+    null,
+  )
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+When('I send a malformed MCP request body', async () => {
+  world.lastMcpResponse = await mcpFetch('{ invalid json !!!', null)
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+When(
+  'I call MCP tool {string} without authentication',
+  async ({ page: _page }, toolName: string) => {
+    world.lastMcpResponse = await mcpFetch(
+      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: toolName, arguments: {} } },
+      null,   // explicitly no auth
+      null,
+    )
+    world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+  },
+)
+
+When(
+  'I call MCP tool {string} with arguments:',
+  async ({ page: _page }, toolName: string, argsJson: string) => {
+    const args = JSON.parse(argsJson) as Record<string, unknown>
+    world.lastMcpResponse = await mcpFetch({
+      jsonrpc: '2.0',
+      id: 5,
+      method: 'tools/call',
+      params: { name: toolName, arguments: args },
+    })
+    world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+
+    // Capture todo id from create_todo results for later steps.
+    if (toolName === 'create_todo') {
+      const text = extractMcpText(world.lastMcpBody)
+      if (text) {
+        const parsed = JSON.parse(text) as { todo?: { id: string } }
+        if (parsed.todo?.id) world.lastMcpTodoId = parsed.todo.id
+      }
+    }
+  },
+)
+
+When('I call MCP tool {string} with the last created todo id', async ({ page: _page }, toolName: string) => {
+  expect(world.lastMcpTodoId).not.toBeNull()
+  world.lastMcpResponse = await mcpFetch({
+    jsonrpc: '2.0',
+    id: 6,
+    method: 'tools/call',
+    params: { name: toolName, arguments: { id: world.lastMcpTodoId } },
+  })
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+// ── Assertion steps ───────────────────────────────────────────────────────
+
+Then('the MCP response status is {int}', async ({ page: _page }, status: number) => {
+  expect(world.lastMcpResponse?.status).toBe(status)
+})
+
+Then('the MCP response is a valid JSON-RPC 2.0 result', async () => {
+  const body = world.lastMcpBody
+  expect(body?.jsonrpc).toBe('2.0')
+  expect(body).toHaveProperty('result')
+  expect(body).not.toHaveProperty('error')
+})
+
+Then('the MCP response is a valid JSON-RPC 2.0 error', async () => {
+  const body = world.lastMcpBody
+  expect(body?.jsonrpc).toBe('2.0')
+  expect(body).toHaveProperty('error')
+})
+
+Then('the MCP error code is {int}', async ({ page: _page }, code: number) => {
+  const error = (world.lastMcpBody as { error?: { code: number } })?.error
+  expect(error?.code).toBe(code)
+})
+
+Then('the MCP result contains protocolVersion {string}', async ({ page: _page }, version: string) => {
+  const result = (world.lastMcpBody as { result?: { protocolVersion: string } })?.result
+  expect(result?.protocolVersion).toBe(version)
+})
+
+Then('the MCP result contains serverInfo name {string}', async ({ page: _page }, name: string) => {
+  const result = (world.lastMcpBody as { result?: { serverInfo?: { name: string } } })?.result
+  expect(result?.serverInfo?.name).toBe(name)
+})
+
+Then('the MCP result has a tools capability', async () => {
+  const result = (world.lastMcpBody as { result?: { capabilities?: { tools?: unknown } } })?.result
+  expect(result?.capabilities?.tools).toBeDefined()
+})
+
+Then('the MCP result contains a tools array', async () => {
+  const result = (world.lastMcpBody as { result?: { tools?: unknown[] } })?.result
+  expect(Array.isArray(result?.tools)).toBe(true)
+})
+
+Then('the tools array includes a tool named {string}', async ({ page: _page }, toolName: string) => {
+  const tools = ((world.lastMcpBody as { result?: { tools?: { name: string }[] } })?.result?.tools) ?? []
+  expect(tools.some((t) => t.name === toolName)).toBe(true)
+})
+
+Then('the MCP tool result content contains a {string} array', async ({ page: _page }, key: string) => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as Record<string, unknown>
+  expect(Array.isArray(parsed[key])).toBe(true)
+})
+
+Then('the MCP tool result content contains an {string} array', async ({ page: _page }, key: string) => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as Record<string, unknown>
+  expect(Array.isArray(parsed[key])).toBe(true)
+})
+
+Then('the MCP tool result content contains a todo titled {string}', async ({ page: _page }, title: string) => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as { todo?: { title: string } }
+  expect(parsed.todo?.title).toBe(title)
+})
+
+Then('the MCP tool result content contains a meal titled {string}', async ({ page: _page }, title: string) => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as { meal?: { title: string } }
+  expect(parsed.meal?.title).toBe(title)
+})
+
+Then('the MCP tool result todo has a completed_on date', async () => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as { todo?: { completed_on: string | null } }
+  expect(parsed.todo?.completed_on).not.toBeNull()
+})
+
+Then('the MCP tool result todo has no completed_on date', async () => {
+  const text = extractMcpText(world.lastMcpBody)
+  expect(text).not.toBeNull()
+  const parsed = JSON.parse(text ?? '') as { todo?: { completed_on: string | null } }
+  expect(parsed.todo?.completed_on).toBeNull()
+})
+
+// ── Private helpers ───────────────────────────────────────────────────────
+
+/** Extract the text content from an MCP tools/call result body. */
+function extractMcpText(body: Record<string, unknown> | null): string | null {
+  if (!body) return null
+  const result = (body as { result?: { content?: { type: string; text: string }[] } })?.result
+  const content = result?.content ?? []
+  const textItem = content.find((c) => c.type === 'text')
+  return textItem?.text ?? null
 }
