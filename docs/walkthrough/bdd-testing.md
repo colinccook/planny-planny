@@ -1,4 +1,6 @@
-# BDD Testing — How It Works and Why You Can Trust It
+# BDD Testing — how it works and why you can trust it
+
+*Chapter 9 of the [walkthrough](README.md).*
 
 Planny Planny uses **[playwright-bdd](https://vitalets.github.io/playwright-bdd/)**
 on top of Playwright to drive its BDD test suite. Specs are written as
@@ -14,7 +16,7 @@ The suite is split into **two BDD projects with different guarantees**:
 
 Both projects emulate a mobile viewport (390×844, touch enabled) and are
 defined as separate Playwright projects in
-[`playwright.config.ts`](../playwright.config.ts) so they can be run,
+[`playwright.config.ts`](../../playwright.config.ts) so they can be run,
 reported on, and gated independently.
 
 If you've ever opened a step file and wondered _"why is there a giant blob of
@@ -68,7 +70,7 @@ HTML in here?"_ — this is the document for you.
 
 ### Configuration
 
-[`playwright.config.ts`](../playwright.config.ts) wires this together with:
+[`playwright.config.ts`](../../playwright.config.ts) wires this together with:
 
 - **Two `defineBddConfig` calls.** One scoped to
   `tests/integration/{features,steps}/**`, one scoped to
@@ -91,20 +93,23 @@ HTML in here?"_ — this is the document for you.
 
 ### CI
 
-[`.github/workflows/ci-deploy.yml`](../.github/workflows/ci-deploy.yml) runs
-the two suites in **separate jobs in parallel** so a broken harness fails
-fast without paying the Supabase boot cost:
+[`.github/workflows/ci-deploy.yml`](../../.github/workflows/ci-deploy.yml) runs
+the two suites in **separate jobs in parallel** on every push to `main`,
+so a broken harness fails fast without paying the Supabase boot cost:
 
 - **`component-tests`** job — installs deps, runs `npm run test:component`.
   No Supabase. Finishes in well under a minute. Caches the Playwright
   browser between runs.
 - **`test`** job — installs deps, builds the app, starts Supabase
-  (`supabase start`), applies every migration in `supabase/migrations/`
-  with `supabase db reset` (with up to 3 retries), then runs
+  (`supabase start`), which applies every migration in
+  `supabase/migrations/` on first boot, then runs
   `npm run test:integration`. On failure the full HTML report is uploaded
   as the `playwright-report` artifact for 7 days.
-- **`lint`** runs alongside both. `migrate` (only on `main`) gates on all
-  three.
+- **`lint`** runs alongside both. `migrate` gates on all three plus
+  Lighthouse before deploying.
+
+Pull requests additionally get the fast Vitest unit suite via
+[`.github/workflows/pr-tests.yml`](../../.github/workflows/pr-tests.yml).
 
 You can reproduce CI locally:
 
@@ -135,12 +140,12 @@ that exercise:
 You can spot them by their step files: every Given/When verb uses
 `page.goto(...)` and the app's real selectors. Examples:
 
-- [`tests/integration/steps/auth.steps.ts`](../tests/integration/steps/auth.steps.ts) — registration & login
-- [`tests/integration/steps/calendar.steps.ts`](../tests/integration/steps/calendar.steps.ts) — protected-route guard
-- [`tests/integration/steps/day-detail.steps.ts`](../tests/integration/steps/day-detail.steps.ts) — day view rendering
-- [`tests/integration/steps/household.steps.ts`](../tests/integration/steps/household.steps.ts) — household settings
-- [`tests/integration/steps/invite.steps.ts`](../tests/integration/steps/invite.steps.ts) — per-email invite flow
-- [`tests/integration/steps/store-cupboard-nav.steps.ts`](../tests/integration/steps/store-cupboard-nav.steps.ts) — store-cupboard nav
+- [`tests/integration/steps/auth.steps.ts`](../../tests/integration/steps/auth.steps.ts) — registration & login
+- [`tests/integration/steps/calendar.steps.ts`](../../tests/integration/steps/calendar.steps.ts) — protected-route guard
+- [`tests/integration/steps/day-detail.steps.ts`](../../tests/integration/steps/day-detail.steps.ts) — day view rendering
+- [`tests/integration/steps/household.steps.ts`](../../tests/integration/steps/household.steps.ts) — household settings
+- [`tests/integration/steps/invite.steps.ts`](../../tests/integration/steps/invite.steps.ts) — per-email invite flow
+- [`tests/integration/steps/store-cupboard-nav.steps.ts`](../../tests/integration/steps/store-cupboard-nav.steps.ts) — store-cupboard nav
 
 These tests are the gold standard. **Always prefer this style for new
 features.** If a regression here passes, you have very high confidence the
@@ -156,9 +161,9 @@ The component suite covers two slightly different flavours of "no backend":
    component's DOM structure, classes, ARIA attributes and interaction
    behaviour, and the BDD steps then exercise it exactly as they would the
    real component.
-2. **Pure-logic scenarios.** [`role-capability-matrix.feature`](../tests/component/features/permissions/role-capability-matrix.feature)
+2. **Pure-logic scenarios.** [`role-capability-matrix.feature`](../../tests/component/features/permissions/role-capability-matrix.feature)
    doesn't touch the DOM at all — it asserts every role × capability
-   directly through the predicates in [`src/lib/permissions.ts`](../src/lib/permissions.ts).
+   directly through the predicates in [`src/lib/permissions.ts`](../../src/lib/permissions.ts).
    It lives here because, like the harnesses, it has no backend dependency
    and runs in milliseconds. So in this codebase **"component" means "no
    backend"** rather than strictly "DOM harness".
@@ -226,9 +231,10 @@ These are the deliberate choices that keep it honest:
    same Postgres schema, the same RLS policies, the same Auth flow, the
    same Realtime server you ship to production are what the integration
    tests run against.
-2. **Migrations are exercised end-to-end.** `supabase db reset` re-applies
-   every migration in `supabase/migrations/` from scratch on every CI run,
-   so a broken migration breaks the test job, not production.
+2. **Migrations are exercised end-to-end.** CI's `supabase start` applies
+   every migration in `supabase/migrations/` from scratch on a fresh
+   database on every run, so a broken migration breaks the test job, not
+   production.
 3. **No cross-test state leaks.** Tests that need data either create it
    inside the scenario or rely on `supabase/seed.sql`. There is no shared
    mutable fixture across scenarios.
@@ -236,9 +242,9 @@ These are the deliberate choices that keep it honest:
    sized viewport with touch enabled. Tests that need pointer/mouse events
    call `page.mouse.*` explicitly so the requirement is visible.
 5. **Permissions are double-locked.**
-   [`tests/component/features/permissions/role-capability-matrix.feature`](../tests/component/features/permissions/role-capability-matrix.feature)
+   [`tests/component/features/permissions/role-capability-matrix.feature`](../../tests/component/features/permissions/role-capability-matrix.feature)
    asserts every role × capability through the real predicates in
-   [`src/lib/permissions.ts`](../src/lib/permissions.ts), and RLS is
+   [`src/lib/permissions.ts`](../../src/lib/permissions.ts), and RLS is
    exercised by the integration tests above. UI predicates and database
    policies cannot drift apart silently.
 6. **Failures are debuggable.** On retry, Playwright captures a trace; on
@@ -271,13 +277,13 @@ The full process when adding a new feature:
      auth steps if needed, drive the real UI with `page.getByRole`,
      `page.getByTestId`, etc.
    - For a component harness: follow the pattern in
-     [`reaction-button.steps.ts`](../tests/component/steps/reaction-button.steps.ts).
+     [`reaction-button.steps.ts`](../../tests/component/steps/reaction-button.steps.ts).
 4. **If the feature touches data**, add a `supabase/migrations/*.sql`
    migration so CI's `db reset` exercises it.
 5. **If the feature touches permissions**, add a row per role to
-   [`role-capability-matrix.feature`](../tests/component/features/permissions/role-capability-matrix.feature)
-   and a predicate in [`src/lib/permissions.ts`](../src/lib/permissions.ts) —
-   see [`docs/permissions.md`](permissions.md) for the full process.
+   [`role-capability-matrix.feature`](../../tests/component/features/permissions/role-capability-matrix.feature)
+   and a predicate in [`src/lib/permissions.ts`](../../src/lib/permissions.ts) —
+   see [`docs/permissions.md`](../permissions.md) for the full process.
 6. **Run it locally:**
    ```bash
    npm run test:component         # fast, no Supabase
@@ -333,3 +339,7 @@ Default to integration. Reach for a component harness only when you need
 to specify a UI contract for a component that doesn't exist yet, and plan
 to back it up with an integration scenario as soon as the component is
 wired up.
+
+---
+
+Previous: [Testing with Vitest](testing.md) · Next: [Codebase tour](codebase-tour.md)
