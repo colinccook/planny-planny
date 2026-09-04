@@ -1,9 +1,11 @@
 name: Test & Deploy
 
+# Runs on pushes to main only: lint, component BDD, integration BDD,
+# Lighthouse, then migrations → Edge Functions → GitHub Pages.
+# Pull requests are covered by .github/workflows/pr-tests.yml (unit tests).
+
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 

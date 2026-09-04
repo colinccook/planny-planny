@@ -26,7 +26,8 @@ const HouseholdContext = createContext<HouseholdContextType | undefined>(undefin
 
 /**
  * Compose the three single-purpose hooks into the public household API.
- * The split mirrors the recommendation in `docs/state-management.md`:
+ * The split mirrors the state-management decision recorded in
+ * `docs/walkthrough/tanstack-query-and-realtime.md`:
  *
  *   - `useMemberships`        — TanStack Query for the user's memberships.
  *   - `useHouseholdRealtime`  — Realtime subscription lifecycle.
