@@ -1,6 +1,6 @@
 # DR-015: README and agent instructions layout
 
-- **Status:** Active
+- **Status:** Superseded by dr-016
 - **Decided:** 2026-09
 - **Theme:** readme-and-agent-instructions
 

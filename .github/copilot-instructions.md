@@ -24,7 +24,10 @@ strict, Tailwind v4) on Supabase (Postgres, Auth, RLS, Realtime).
 - Verify CI is green before considering a task done: unit tests run on
   PRs; lint, type-check, BDD and Lighthouse run on `main`
   ([dr-013](../docs/drs/dr-013-continuous-integration.md)).
-- For any user-facing change, review `README.md` and update it if needed.
+- For any user-facing change, update the README's feature showcase so it
+  reflects every current feature — the README is a showcase for friends,
+  colleagues and potential employers
+  ([dr-016](../docs/drs/dr-016-readme-as-showcase.md)).
 
 ## Engineering rules
 

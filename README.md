@@ -1,37 +1,84 @@
 # 🍽️ Planny Planny
 
-> ⚠️ **This is a prototype.** It's a personal, non-production experiment —
-> expect rough edges, breaking changes, and no promises.
+**A baby-led, healthy family meal planner my partner and I actually use —
+and not a single line of it was written by hand.**
 
-**Planny Planny is a healthy family meal planner that is baby-led /
-child-led: you fit plans around the nutritional needs of the child.**
+Planny Planny is a long-term hobby project and a working experiment in
+**vibe coding**: every feature, database migration, test and document in
+this repository was produced by AI agents under my direction. It will
+never be mainstream, and it doesn't need to be — it's the little tool our
+household plans meals with, and a demonstration that AI-authored software
+can be shipped *confidently* when it's wrapped in serious engineering
+discipline.
 
-Meal planning is hard and easily neglected — it's too easy to skip it and
-order takeaway instead. Planny Planny helps a household plan meals
-collaboratively, keep the child's nutrition at the centre (track
-ingredients, star the ones to use more, flag the ones to use less), adapt
-to real life (visitors, events, busy weeks) — and, crucially, record
-whether the plan actually happened so the household learns over time.
+> ⚠️ **Still a prototype.** Personal, non-production, rough edges and
+> breaking changes expected.
 
-## ✨ Features, at the highest level
+## ⚡ The flagship trick: realtime household collaboration
 
-- **🌱 Outcomes — the headline metric.** Every other feature exists in
-  service of one question: *did the meal we planned actually get cooked
-  and eaten?* Record ✅ "as planned" or a miss with a reason; the welcome
-  screen counts every meal the app has helped happen. → [docs/outcomes.md](docs/outcomes.md)
-- **🗓️ Perpetual calendar.** A mobile-first scrolling calendar of meals,
-  with day themes ("Oily Fish Monday"), per-day headcounts (adults,
-  children, visitors) and swipe-between-days navigation.
+Open the plan on two phones. Change a meal, drop an idea, tick a todo,
+react with a 👍 — and it appears on the other screen **instantly**. No
+refresh, no polling. Every write goes through Supabase's REST API (with
+row-level security deciding who may do what), Postgres broadcasts the
+change over **Supabase Realtime**, and each device's TanStack Query cache
+updates in place — with a little sound effect for the fun moments.
+
+A whole household genuinely plans together on this: five access levels,
+from Owner down to a read-only public share link, all enforced *in the
+database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permissions.md)
+
+## ✨ Everything else it does
+
+- **🗓️ Perpetual calendar.** A mobile-first, swipeable scrolling calendar
+  of meals with day themes ("Oily Fish Monday") and per-day headcounts
+  (adults, children, visitors).
 - **🥕 Ingredient tracking.** Tag meals with ingredients, star favourites
-  to encourage variety, and get warnings when an ingredient is being
-  overused (hello, chicken!).
-- **👨‍👩‍👧 Collaborative households.** Invite family by email; every change
-  appears on everyone's screen instantly. Five access levels from Owner
-  down to a read-only public share link. → [docs/permissions.md](docs/permissions.md)
+  to encourage variety, and get overuse warnings (hello, chicken!).
+- **👨‍👩‍👧 Households.** Invite family by email; users can belong to several
+  households, and every household's data is fully isolated.
 - **💡 Ideas, reactions & todos.** Lightweight meal ideas per day, 👍
   reactions, and a shared todo list ("buy milk") with reminders.
-- **🪄 AI meal suggestions.** A magic-wand prompt builder, and a ChatGPT
-  plugin that lets you manage the plan conversationally. → [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md)
+- **🪄 AI meal suggestions.** A magic-wand prompt builder, plus a ChatGPT
+  plugin that manages the plan conversationally. → [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md)
+- **🌱 Outcomes.** Record whether the planned meal actually got cooked and
+  eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
+
+## 🤖 100% vibe coded — here's why that's safe
+
+I haven't written a line of this app, and I can still change it with
+confidence. That's the interesting part, and it comes down to guardrails,
+not luck:
+
+- **100+ BDD scenarios** across 40+ Gherkin feature files — Playwright +
+  playwright-bdd drive the *real* app against a *real* local Supabase
+  container (integration suite), plus a lighter component suite with no
+  backend.
+- **Unit tests (Vitest)** beside every piece of pure logic in `src/lib/`
+  and `src/hooks/`, with test names that describe behaviour, never
+  implementation — refactors don't force renames.
+- **CI gates everything:** unit tests on every PR; lint, type-check, both
+  BDD suites and Lighthouse on every push to `main`. A red pipeline blocks
+  deploy. → [dr-013](docs/drs/dr-013-continuous-integration.md)
+- **Continuous delivery:** every green push to `main` auto-deploys
+  migrations, Edge Functions and the static frontend. → [docs/deployment.md](docs/deployment.md)
+- **The schema can't drift:** append-only SQL migrations, RLS on every
+  table, and TypeScript types generated straight from the database.
+- **TypeScript strict mode, no `any`** — the compiler is a reviewer too.
+- **Decisions are written down:** every architectural choice is an
+  append-only decision record with alternatives and trade-offs, indexed in
+  [docs/drs.md](docs/drs.md), so neither humans nor agents re-litigate
+  settled questions.
+
+## 🧰 Technology stack
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| Frontend | React 19 + Vite + TypeScript (strict) + Tailwind v4 | Mainstream, agent-friendly, statically buildable, mobile-first → [dr-004](docs/drs/dr-004-frontend.md) |
+| Server state | TanStack Query (no global store) | Server state lives in one cache; Realtime pushes patch it in place |
+| Backend | Supabase (Postgres, Auth, PostgREST, Realtime, Edge Functions) | Real SQL with database-enforced security; the identical stack runs locally in Docker → [dr-002](docs/drs/dr-002-backend.md) |
+| Architecture | Static SPA talking directly to Supabase | Realtime collaboration and RLS-enforced isolation with **no custom server to operate** → [dr-001](docs/drs/dr-001-high-level-architecture.md) |
+| Hosting & CI/CD | GitHub Pages + GitHub Actions | Free, and already where the code lives → [dr-012](docs/drs/dr-012-hosting-platform.md) |
+| Testing | Vitest + Playwright + playwright-bdd + Lighthouse | Behaviour-first pyramid → [dr-006](docs/drs/dr-006-unit-testing.md), [dr-007](docs/drs/dr-007-integration-testing.md) |
 
 ## 🚀 Running locally
 
@@ -66,35 +113,13 @@ npm run test:e2e          # both BDD suites
 | Learn how the stack works (TypeScript, React, Postgres/Supabase, …) — in depth, with pointers into this codebase | **[docs/walkthrough/](docs/walkthrough/README.md)** |
 | Know *why* anything is the way it is | **[docs/drs.md](docs/drs.md)** — the decision-records index |
 | Work on the repo as an AI agent | [.github/copilot-instructions.md](.github/copilot-instructions.md) |
-| Understand outcomes, the headline metric | [docs/outcomes.md](docs/outcomes.md) |
+| Understand outcomes | [docs/outcomes.md](docs/outcomes.md) |
 | Understand the five access levels | [docs/permissions.md](docs/permissions.md) |
 | Audit what anonymous (public link) visitors can reach | [docs/public.md](docs/public.md) |
 | Set up the ChatGPT plugin | [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md) |
+| Deploy your own instance | [docs/deployment.md](docs/deployment.md) |
 | Test the Edge Functions locally | [docs/edge-functions-testing.md](docs/edge-functions-testing.md) |
 | Add a loading state that matches the app's skeletons | [docs/skeleton-strategy.md](docs/skeleton-strategy.md) |
-
-## 🌍 Deployment
-
-Merging to `main` automatically pushes database migrations to the hosted
-Supabase project, deploys the Edge Functions, and publishes the frontend
-to GitHub Pages — after lint, unit, BDD and Lighthouse checks pass.
-First-time setup (Supabase project, GitHub secrets and variables, Auth
-URLs) is a one-off:
-
-1. Create a project at [supabase.com](https://supabase.com) and a personal
-   access token at
-   [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens).
-2. Repo → **Settings → Secrets and variables → Actions → Secrets**:
-   `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`.
-3. Same page → **Variables**: `SUPABASE_PROJECT_REF`,
-   `VITE_SUPABASE_URL` (`https://<ref>.supabase.co`),
-   `VITE_SUPABASE_ANON_KEY`.
-4. Supabase Dashboard → **Authentication → URL Configuration**: set Site
-   URL to `https://<username>.github.io/planny-planny/` and add
-   `https://<username>.github.io/planny-planny/**` to Redirect URLs.
-5. Push to `main` (or run the "Test & Deploy" workflow manually).
-
-Decision record: [docs/drs/dr-014-continuous-delivery.md](docs/drs/dr-014-continuous-delivery.md).
 
 ## 📄 License
 

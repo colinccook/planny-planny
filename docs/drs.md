@@ -24,7 +24,7 @@ the first place agents should look before making an architectural choice.
 | hosting-platform | [dr-012](drs/dr-012-hosting-platform.md) | GitHub for everything — repo, Pages for the static frontend, Actions for CI/CD — because it's free and already where the code lives. |
 | continuous-integration | [dr-013](drs/dr-013-continuous-integration.md) | GitHub Actions gates `main`: unit tests on every PR; lint, component + integration BDD and Lighthouse on every push — a red pipeline blocks deploy. |
 | continuous-delivery | [dr-014](drs/dr-014-continuous-delivery.md) | Every green push to `main` auto-deploys: Supabase migrations and Edge Functions first, then the static frontend to GitHub Pages. |
-| readme-and-agent-instructions | [dr-015](drs/dr-015-readme-and-agent-instructions.md) | Four doc layers with one audience each: README (what/why/run), walkthroughs (how the tech works), DRs (why it's like this), agent instructions (the rules). |
+| readme-and-agent-instructions | [dr-016](drs/dr-016-readme-as-showcase.md) | The README is a showcase for friends, colleagues and employers — leading with the vibe-coded story, realtime collaboration and the CI safety net — on top of dr-015's four doc layers; every user-facing change keeps it current. |
 
 ## Rules
 
