@@ -82,7 +82,7 @@ not luck:
 
 ## 🚀 Running locally
 
-**Prerequisites:** [Node.js](https://nodejs.org/) v24 LTS (see `.nvmrc`)
+**Prerequisites:** [Node.js](https://nodejs.org/) v24.21.0 LTS (see `.nvmrc`)
 and [Docker](https://www.docker.com/) (the Supabase CLI uses it for the
 local backend).
 
