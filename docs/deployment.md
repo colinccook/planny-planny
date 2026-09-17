@@ -21,4 +21,29 @@ and Auth URLs:
 4. Supabase Dashboard → **Authentication → URL Configuration**: set Site
    URL to `https://<username>.github.io/planny-planny/` and add
    `https://<username>.github.io/planny-planny/**` to Redirect URLs.
-5. Push to `main` (or run the "Test & Deploy" workflow manually).
+5. Supabase Dashboard → **Authentication → OAuth Server**: enable OAuth
+   2.1, set the authorization path to `/oauth/consent`, and enable dynamic
+   client registration for MCP clients.
+6. Supabase Dashboard → **Authentication → Signing Keys**: use an asymmetric
+   ES256 or RS256 key. The authenticated MCP middleware does not accept legacy
+   HS256 user tokens.
+7. Push to `main` (or run the "Test & Deploy" workflow manually).
+
+## ChatGPT plugin production domain
+
+Public OpenAI plugin submission requires proof of control over the MCP
+hostname, or an allowed parent hostname, using
+`/.well-known/openai-apps-challenge`. The default
+`<project-ref>.supabase.co` origin cannot prove control of the
+`supabase.co` parent domain.
+
+Before submission, configure either:
+
+- a Supabase custom API domain plus a controlled parent website that can serve
+  the verification token; or
+- a controlled reverse proxy/edge-worker hostname that forwards `/mcp` to the
+  deployed `chatgpt-plugin` function and serves the challenge itself.
+
+Set `PLUGIN_PUBLIC_URL` to the public API origin followed by `/functions/v1`
+so the MCP resource identifier is stable and matches the URL submitted to
+OpenAI. See [ChatGPT plugin](chatgpt-plugin.md) for the complete checklist.

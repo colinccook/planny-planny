@@ -17,6 +17,8 @@ import { expect } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
 import { test } from '../../support/fixtures'
 import { createClient } from '@supabase/supabase-js'
+import { createHash, randomBytes } from 'node:crypto'
+import { getAdminClient } from '../../support/supabaseAdmin'
 
 const { Given, When, Then } = createBdd(test)
 
@@ -54,7 +56,7 @@ interface PluginWorld {
   lastMealId: string | null
   lastIdeaId: string | null
   lastEventId: string | null
-  /** MCP-specific state (POST /sse endpoint). */
+  /** MCP-specific state. */
   lastMcpResponse: Response | null
   lastMcpBody: Record<string, unknown> | null
   lastMcpTodoId: string | null
@@ -491,6 +493,7 @@ function captureIds(path: string, body: Record<string, unknown> | null) {
 // ══════════════════════════════════════════════════════════════════════════
 
 const MCP_URL = `${FUNCTION_URL}/sse`
+const CURRENT_MCP_URL = `${FUNCTION_URL}/mcp`
 
 /** POST a JSON-RPC 2.0 message to the MCP /sse endpoint. */
 async function mcpFetch(
@@ -511,12 +514,124 @@ async function mcpFetch(
 }
 
 async function readMcpBody(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text()
   try {
-    return await res.json() as Record<string, unknown>
+    const dataLine = text.split('\n').find((line) => line.startsWith('data: '))
+    return JSON.parse(dataLine ? dataLine.slice(6) : text) as Record<string, unknown>
   } catch {
     return {}
   }
 }
+
+When('I initialize the current MCP endpoint without authentication', async () => {
+  world.lastMcpResponse = await fetch(CURRENT_MCP_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2026-07-28',
+        capabilities: {},
+        clientInfo: { name: 'integration-test', version: '1' },
+      },
+    }),
+  })
+  world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+})
+
+When('I request the current MCP protected resource metadata', async () => {
+  world.lastDiscoveryResponse = await fetch(`${CURRENT_MCP_URL}/oauth-protected-resource`)
+  world.lastDiscoveryBody = await readBody(world.lastDiscoveryResponse)
+})
+
+When('I authorize the current MCP endpoint through Supabase OAuth', async ({ page, session }) => {
+  const admin = getAdminClient()
+  const redirectUri = 'https://chatgpt.com/aip/oauth/callback'
+  const user = session.authedUser
+  if (!user) throw new Error('The OAuth scenario requires a signed-in test user')
+  const { data: client, error: clientError } = await admin.auth.admin.oauth.createClient({
+    client_name: 'ChatGPT integration test',
+    redirect_uris: [redirectUri],
+    scope: 'openid email profile',
+    token_endpoint_auth_method: 'none',
+  })
+  if (clientError || !client) {
+    throw new Error(`Could not create OAuth client: ${clientError?.message ?? 'unknown error'}`)
+  }
+
+  try {
+    await page.route('https://chatgpt.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/plain', body: 'OAuth callback complete' }),
+    )
+
+    // Supabase Auth redirects to the configured 127.0.0.1 site URL. Sign in
+    // on that exact origin so its local-storage session is available there.
+    await page.goto('http://127.0.0.1:5173/login')
+    await page.getByPlaceholder('Email').fill(user.email)
+    await page.getByPlaceholder('Password').fill(user.password)
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.waitForURL(/\/calendar(\/|$)/)
+
+    const verifier = randomBytes(32).toString('base64url')
+    const challenge = createHash('sha256').update(verifier).digest('base64url')
+    const authorizeUrl = new URL(`${SUPABASE_URL}/auth/v1/oauth/authorize`)
+    authorizeUrl.searchParams.set('client_id', client.client_id)
+    authorizeUrl.searchParams.set('redirect_uri', redirectUri)
+    authorizeUrl.searchParams.set('response_type', 'code')
+    authorizeUrl.searchParams.set('code_challenge', challenge)
+    authorizeUrl.searchParams.set('code_challenge_method', 'S256')
+    authorizeUrl.searchParams.set('scope', 'openid email profile')
+    authorizeUrl.searchParams.set('state', 'integration-test')
+
+    await page.goto(authorizeUrl.toString())
+    await page.waitForURL(/\/oauth\/consent\?authorization_id=/)
+    await page.getByRole('button', { name: 'Allow' }).click()
+    await page.waitForURL('https://chatgpt.com/**')
+
+    const code = new URL(page.url()).searchParams.get('code')
+    if (!code) throw new Error('OAuth callback did not contain an authorization code')
+
+    const tokenResponse = await fetch(`${SUPABASE_URL}/auth/v1/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        client_id: client.client_id,
+        redirect_uri: redirectUri,
+        code_verifier: verifier,
+      }),
+    })
+    const tokenBody = await readBody(tokenResponse)
+    const accessToken = tokenBody.access_token
+    if (!tokenResponse.ok || typeof accessToken !== 'string') {
+      throw new Error(`OAuth token exchange failed with status ${tokenResponse.status}`)
+    }
+
+    world.lastMcpResponse = await fetch(CURRENT_MCP_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/list',
+        params: {},
+      }),
+    })
+    world.lastMcpBody = await readMcpBody(world.lastMcpResponse)
+  } finally {
+    await admin.auth.admin.oauth.deleteClient(client.client_id)
+  }
+})
 
 // ── Request steps ─────────────────────────────────────────────────────────
 
@@ -628,6 +743,11 @@ Then(
   },
 )
 
+Then('the current MCP response advertises its protected resource metadata', async () => {
+  const header = world.lastMcpResponse?.headers.get('WWW-Authenticate')
+  expect(header).toContain(`${CURRENT_MCP_URL}/oauth-protected-resource`)
+})
+
 When('I request the MCP protected resource metadata', async () => {
   world.lastDiscoveryResponse = await fetch(
     `${FUNCTION_URL}/.well-known/oauth-protected-resource`,
@@ -671,6 +791,16 @@ Then('the MCP result has a tools capability', async () => {
 Then('the MCP result contains a tools array', async () => {
   const result = (world.lastMcpBody as { result?: { tools?: unknown[] } })?.result
   expect(Array.isArray(result?.tools)).toBe(true)
+})
+
+Then('the discovery response identifies the current MCP resource', async () => {
+  expect(world.lastDiscoveryBody?.resource).toBe(CURRENT_MCP_URL)
+})
+
+Then('the discovery response identifies Supabase Auth as its authorization server', async () => {
+  expect(world.lastDiscoveryBody?.authorization_servers).toEqual([
+    `${SUPABASE_URL}/auth/v1`,
+  ])
 })
 
 Then('the tools array includes a tool named {string}', async ({ page: _page }, toolName: string) => {
@@ -936,4 +1066,3 @@ function extractMcpText(body: Record<string, unknown> | null): string | null {
   const textItem = content.find((c) => c.type === 'text')
   return textItem?.text ?? null
 }
-

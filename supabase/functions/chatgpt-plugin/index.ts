@@ -6,8 +6,11 @@
 // policies apply — users can only see and mutate data in
 // households they belong to.
 //
-// MCP endpoint (chatgpt.com "New Plugin" form):
-//   POST /chatgpt-plugin/sse    MCP Streamable-HTTP transport (2025-03-26)
+// Current MCP endpoint (ChatGPT plugins and compatible MCP clients):
+//   POST /chatgpt-plugin/mcp    MCP Streamable HTTP
+//
+// Legacy MCP endpoint (temporary compatibility path):
+//   POST /chatgpt-plugin/sse    Hand-written JSON-RPC transport
 //
 // REST routes (full feature parity with the Planny Planny app):
 //
@@ -49,6 +52,11 @@
 // Success shape: documented in public/openapi.json
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createMcpHandler } from '@modelcontextprotocol/server'
+import { withOAuthProtectedResource, withSupabase } from '@supabase/server'
+import { canUsePlugin } from '../../../src/lib/permissions.ts'
+import type { Database } from '../../../src/types/database.ts'
+import { createChatGptMcpServer } from '../_shared/chatgptTools.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,6 +94,10 @@ function resourceServerBase(): string {
 
 function authorizationServerBase(): string {
   return `${publicFunctionsBase()}/chatgpt-plugin-auth`
+}
+
+function nativeAuthorizationServerBase(): string {
+  return `${publicFunctionsBase().replace(/\/functions\/v1\/?$/, '')}/auth/v1`
 }
 
 function protectedResourceMetadataUrl(): string {
@@ -521,12 +533,15 @@ async function executeMcpTool(
   if (toolName === 'delete_todo') {
     const id = args.id
     if (typeof id !== 'string') throw new Error('id is required')
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('todo_items')
       .delete()
       .eq('id', id)
       .eq('household_id', hid)
+      .select('id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Todo not found')
     return { deleted: true }
   }
 
@@ -605,20 +620,48 @@ async function executeMcpTool(
       .single()
     if (insertError) throw new Error(insertError.message)
     if (args.move === true) {
-      await supabase.from('meal_plans').delete().eq('id', id).eq('household_id', hid)
+      const { data: deleted, error: deleteError } = await supabase
+        .from('meal_plans')
+        .delete()
+        .eq('id', id)
+        .eq('household_id', hid)
+        .select('id')
+        .maybeSingle()
+      if (deleteError) throw new Error(deleteError.message)
+      if (!deleted) throw new Error('Meal not found')
     }
     return { meal: copy }
+  }
+
+  if (toolName === 'move_meal') {
+    const id = args.id
+    const targetDate = args.target_date
+    if (typeof id !== 'string') throw new Error('id is required')
+    if (typeof targetDate !== 'string') throw new Error('target_date is required')
+    const { data, error } = await supabase
+      .from('meal_plans')
+      .update({ date: targetDate })
+      .eq('id', id)
+      .eq('household_id', hid)
+      .select('id, title, description, date, household_id, created_at')
+      .single()
+    if (error) throw new Error(error.message)
+    if (!data) throw new Error('Meal not found')
+    return { meal: data }
   }
 
   if (toolName === 'delete_meal') {
     const id = args.id
     if (typeof id !== 'string') throw new Error('id is required')
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('meal_plans')
       .delete()
       .eq('id', id)
       .eq('household_id', hid)
+      .select('id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Meal not found')
     return { deleted: true }
   }
 
@@ -669,12 +712,15 @@ async function executeMcpTool(
   if (toolName === 'delete_outcome') {
     const mealId = args.meal_id
     if (typeof mealId !== 'string') throw new Error('meal_id is required')
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('meal_outcomes')
       .delete()
       .eq('meal_id', mealId)
       .eq('household_id', hid)
+      .select('meal_id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Meal outcome not found')
     return { deleted: true }
   }
 
@@ -711,12 +757,15 @@ async function executeMcpTool(
   if (toolName === 'delete_idea') {
     const id = args.id
     if (typeof id !== 'string') throw new Error('id is required')
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('meal_ideas')
       .delete()
       .eq('id', id)
       .eq('household_id', hid)
+      .select('id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Meal idea not found')
     return { deleted: true }
   }
 
@@ -785,12 +834,15 @@ async function executeMcpTool(
   if (toolName === 'delete_event') {
     const id = args.id
     if (typeof id !== 'string') throw new Error('id is required')
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('day_events')
       .delete()
       .eq('id', id)
       .eq('household_id', hid)
+      .select('id')
+      .maybeSingle()
     if (error) throw new Error(error.message)
+    if (!data) throw new Error('Event not found')
     return { deleted: true }
   }
 
@@ -837,6 +889,74 @@ async function executeMcpTool(
 
   throw new Error(`Unknown tool: ${toolName}`)
 }
+
+async function resolvePluginContext(
+  req: Request,
+  supabase: ReturnType<typeof createClient<Database>>,
+): Promise<{ userId: string; householdId: string }> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    throw new Error('The authenticated Planny Planny user could not be resolved.')
+  }
+
+  const requestUrl = new URL(req.url)
+  let householdId = requestUrl.searchParams.get('household_id')
+
+  if (!householdId) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('last_household_id')
+      .eq('id', user.id)
+      .single()
+    if (profileError) throw new Error(profileError.message)
+    householdId = profile.last_household_id
+  }
+
+  if (!householdId) {
+    throw new Error('Open Planny Planny and select a household before using the plugin.')
+  }
+
+  const { data: membership, error: membershipError } = await supabase
+    .from('household_members')
+    .select('role')
+    .eq('household_id', householdId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (membershipError || !membership) {
+    throw new Error('The selected household is unavailable.')
+  }
+
+  if (!canUsePlugin(membership.role)) {
+    throw new Error('Your household access level cannot use the ChatGPT plugin.')
+  }
+
+  return { userId: user.id, householdId }
+}
+
+const currentMcpHandler = withOAuthProtectedResource(
+  {
+    resourceServer: `${resourceServerBase()}/mcp`,
+    authorizationServer: nativeAuthorizationServerBase(),
+  },
+  withSupabase<Database>(
+    { auth: 'user' },
+    async (req, { supabase }) => {
+      const context = resolvePluginContext(req, supabase)
+      const handler = createMcpHandler(() => {
+        return createChatGptMcpServer(async (toolName, args) => {
+          const { userId, householdId } = await context
+          return await executeMcpTool(toolName, args, supabase, userId, householdId)
+        })
+      }, {
+        legacy: 'stateless',
+        onerror: (error) => console.error('MCP request failed:', error.message),
+      })
+
+      return handler.fetch(req)
+    },
+  ),
+)
 
 // ─── MCP Streamable-HTTP handler ─────────────────────────────────────────
 //
@@ -952,8 +1072,16 @@ Deno.serve(async (req: Request) => {
     .replace(/^\//, '')
   const pathParts = stripped.split('/').filter(Boolean)
 
-  // resource = "todos" | "meals" | "ideas" | "events" | "outcomes" | "shopping-list" | "sse" | ".well-known"
+  // resource = "todos" | "meals" | "ideas" | "events" | "outcomes" |
+  // "shopping-list" | "mcp" | "sse" | ".well-known"
   const resource = pathParts[0] ?? ''
+
+  // ── Current MCP Streamable HTTP endpoint ──────────────────────────────
+  // The supported server and Supabase Auth middleware handle protocol
+  // negotiation, OAuth protected-resource discovery and JWT verification.
+  if (resource === 'mcp' || resource === 'oauth-protected-resource') {
+    return await currentMcpHandler(req)
+  }
 
   // ── OAuth Protected Resource Metadata (RFC 9728) ─────────────────────
   // GET /.well-known/oauth-protected-resource — no auth. Tells MCP clients
@@ -1529,4 +1657,3 @@ Deno.serve(async (req: Request) => {
 
   return err('Not found', 404)
 })
-

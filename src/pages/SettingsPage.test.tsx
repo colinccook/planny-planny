@@ -55,6 +55,9 @@ vi.mock('../components/settings/DeleteAccount', () => ({
 vi.mock('../components/settings/PreferencesSettings', () => ({
   default: () => createElement('div', { 'data-testid': 'preferences-settings' }),
 }))
+vi.mock('../components/settings/ConnectedApps', () => ({
+  default: () => createElement('div', { 'data-testid': 'connected-apps' }),
+}))
 
 import SettingsPage from './SettingsPage'
 
@@ -104,6 +107,7 @@ describe('SettingsPage', () => {
     expect(screen.getByTestId('member-list')).toBeDefined()
     expect(screen.getByTestId('invite-manager')).toBeDefined()
     expect(screen.getByTestId('public-share-toggle')).toBeDefined()
+    expect(screen.getByTestId('connected-apps')).toBeDefined()
     expect(screen.getByText('test@example.com')).toBeDefined()
   })
 

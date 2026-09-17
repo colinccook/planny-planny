@@ -48,3 +48,14 @@ export function buildShareUrl(
 ): string {
   return buildAppUrl(`shared/${token}`, origin, base)
 }
+
+/** Return a same-app redirect path, rejecting external and protocol-relative URLs. */
+export function safeAppRedirect(
+  value: string | null | undefined,
+  fallback = '/calendar',
+): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return fallback
+  }
+  return value
+}

@@ -16,6 +16,8 @@ import StoreCupboardPage from './pages/StoreCupboardPage'
 import SettingsPage from './pages/SettingsPage'
 import JoinInvitePage from './pages/JoinInvitePage'
 import PublicHouseholdPage from './pages/PublicHouseholdPage'
+import OAuthConsentPage from './pages/OAuthConsentPage'
+import PluginInformationPage from './pages/PluginInformationPage'
 
 function App() {
   return (
@@ -26,6 +28,10 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/invite/:token" element={<JoinInvitePage />} />
         <Route path="/shared/:token" element={<PublicHouseholdPage />} />
+        <Route path="/oauth/consent" element={<OAuthConsentPage />} />
+        <Route path="/plugin/privacy" element={<PluginInformationPage kind="privacy" />} />
+        <Route path="/plugin/terms" element={<PluginInformationPage kind="terms" />} />
+        <Route path="/plugin/support" element={<PluginInformationPage kind="support" />} />
         <Route
           path="/*"
           element={

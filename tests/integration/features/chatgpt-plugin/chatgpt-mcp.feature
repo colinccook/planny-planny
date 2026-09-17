@@ -1,11 +1,29 @@
 Feature: ChatGPT MCP Endpoint
-  The MCP Streamable-HTTP endpoint (POST /sse) lets ChatGPT's
-  "New Plugin" form connect to Planny Planny via the Model Context
-  Protocol (2024-11-05 spec).  It supports initialize, tools/list,
-  and tools/call — with full RLS enforcement on tool calls.
+  The current MCP Streamable HTTP endpoint at /mcp lets ChatGPT
+  connect through Supabase Auth OAuth 2.1. The legacy /sse endpoint
+  remains temporarily available while existing connections migrate.
 
   Background:
     Given I am signed in as an owner of a household for the plugin
+
+  # ── Current MCP endpoint and OAuth discovery ──────────────────────────
+
+  Scenario: The current MCP endpoint challenges an unauthenticated client
+    When I initialize the current MCP endpoint without authentication
+    Then the MCP response status is 401
+    And the current MCP response advertises its protected resource metadata
+
+  Scenario: The current MCP protected resource metadata uses Supabase Auth
+    When I request the current MCP protected resource metadata
+    Then the discovery response status is 200
+    And the discovery response identifies the current MCP resource
+    And the discovery response identifies Supabase Auth as its authorization server
+
+  Scenario: An approved Supabase OAuth grant can list current MCP tools
+    When I authorize the current MCP endpoint through Supabase OAuth
+    Then the MCP response is a valid JSON-RPC 2.0 result
+    And the MCP result contains a tools array
+    And the tools array includes a tool named "list_meals"
 
   # ── MCP lifecycle — no auth required ─────────────────────────────────
 
@@ -133,4 +151,3 @@ Feature: ChatGPT MCP Endpoint
     When I call MCP tool "reopen_todo" with the last created todo id
     Then the MCP response is a valid JSON-RPC 2.0 result
     And the MCP tool result todo has no completed_on date
-
