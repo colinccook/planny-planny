@@ -29,3 +29,6 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder
