@@ -12,7 +12,7 @@ import { getAdminClient } from './supabaseAdmin'
  * via the UI, so this only bypasses RLS for the seeding/cleanup itself.
  */
 
-export type SeedRole = 'owner' | 'member' | 'guest'
+export type SeedRole = 'owner' | 'member' | 'honoured_guest' | 'voting_guest'
 
 export interface SeedHouseholdSpec {
   /** Display name for the household; assertions in tests match this. */

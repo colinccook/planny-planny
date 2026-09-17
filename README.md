@@ -38,8 +38,9 @@ database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permiss
   households, and every household's data is fully isolated.
 - **💡 Ideas, reactions & todos.** Lightweight meal ideas per day, 👍
   reactions, and a shared todo list ("buy milk") with reminders.
-- **🪄 AI meal suggestions.** A magic-wand prompt builder, plus a ChatGPT
-  plugin that manages the plan conversationally. → [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md)
+- **🪄 AI meal suggestions.** A magic-wand prompt builder, plus a
+  streamable-HTTP ChatGPT plugin with OAuth consent, RLS-protected household
+  tools and revocable access. → [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md)
 - **🌱 Outcomes.** Record whether the planned meal actually got cooked and
   eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
 
@@ -117,6 +118,7 @@ npm run test:e2e          # both BDD suites
 | Understand the five access levels | [docs/permissions.md](docs/permissions.md) |
 | Audit what anonymous (public link) visitors can reach | [docs/public.md](docs/public.md) |
 | Set up the ChatGPT plugin | [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md) |
+| Prepare the ChatGPT directory submission | [docs/chatgpt-plugin-submission.md](docs/chatgpt-plugin-submission.md) |
 | Deploy your own instance | [docs/deployment.md](docs/deployment.md) |
 | Test the Edge Functions locally | [docs/edge-functions-testing.md](docs/edge-functions-testing.md) |
 | Add a loading state that matches the app's skeletons | [docs/skeleton-strategy.md](docs/skeleton-strategy.md) |

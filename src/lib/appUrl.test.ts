@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildAppUrl, buildInviteUrl, buildShareUrl } from './appUrl'
+import { buildAppUrl, buildInviteUrl, buildShareUrl, safeAppRedirect } from './appUrl'
 
 describe('buildAppUrl', () => {
   it('combines origin, base, and path', () => {
@@ -115,5 +115,27 @@ describe('default-argument behaviour', () => {
     const url = buildShareUrl(token)
     expect(url.startsWith(window.location.origin)).toBe(true)
     expect(url.endsWith(`/shared/${token}`)).toBe(true)
+  })
+})
+
+describe('safeAppRedirect', () => {
+  it('keeps a same-app path and query string', () => {
+    expect(safeAppRedirect('/oauth/consent?authorization_id=abc')).toBe(
+      '/oauth/consent?authorization_id=abc',
+    )
+  })
+
+  it('rejects absolute and protocol-relative URLs', () => {
+    expect(safeAppRedirect('https://attacker.example')).toBe('/calendar')
+    expect(safeAppRedirect('//attacker.example')).toBe('/calendar')
+  })
+
+  it('rejects backslash paths that browsers can normalize to another origin', () => {
+    expect(safeAppRedirect('/\\attacker.example')).toBe('/calendar')
+    expect(safeAppRedirect('/oauth/consent?redirect=%5Cattacker.example')).toBe('/calendar')
+  })
+
+  it('uses the requested fallback when no redirect is present', () => {
+    expect(safeAppRedirect(null, '/settings')).toBe('/settings')
   })
 })
