@@ -130,6 +130,11 @@ describe('safeAppRedirect', () => {
     expect(safeAppRedirect('//attacker.example')).toBe('/calendar')
   })
 
+  it('rejects backslash paths that browsers can normalize to another origin', () => {
+    expect(safeAppRedirect('/\\attacker.example')).toBe('/calendar')
+    expect(safeAppRedirect('/oauth/consent?redirect=%5Cattacker.example')).toBe('/calendar')
+  })
+
   it('uses the requested fallback when no redirect is present', () => {
     expect(safeAppRedirect(null, '/settings')).toBe('/settings')
   })

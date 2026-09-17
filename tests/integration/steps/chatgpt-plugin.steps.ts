@@ -13,9 +13,9 @@
 // per worker but each scenario gets a fresh world via Given/When/Then
 // closures over the scenario-scoped variables below).
 
-import { expect } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
-import { test } from '../../support/fixtures'
+import { test, type SessionHandle } from '../../support/fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { createHash, randomBytes } from 'node:crypto'
 import { getAdminClient } from '../../support/supabaseAdmin'
@@ -60,6 +60,7 @@ interface PluginWorld {
   lastMcpResponse: Response | null
   lastMcpBody: Record<string, unknown> | null
   lastMcpTodoId: string | null
+  currentContractResults: Record<string, unknown> | null
   /** OAuth-specific state (chatgpt-plugin-auth + discovery endpoints). */
   oauthEmail: string | null
   oauthPassword: string | null
@@ -91,6 +92,7 @@ const world: PluginWorld = {
   lastMcpResponse: null,
   lastMcpBody: null,
   lastMcpTodoId: null,
+  currentContractResults: null,
   oauthEmail: null,
   oauthPassword: null,
   lastDiscoveryResponse: null,
@@ -153,9 +155,18 @@ Given('I am signed in as an owner of a household for the plugin', async ({ sessi
   world.lastMcpResponse = null
   world.lastMcpBody = null
   world.lastMcpTodoId = null
+  world.currentContractResults = null
 
   const user = await session.signInAs([{ name: 'Plugin Test Household', role: 'owner' }])
   world.householdId = user.households[0].id
+  const admin = getAdminClient()
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ last_household_id: world.householdId })
+    .eq('id', user.userId)
+  if (profileError) {
+    throw new Error(`Plugin background: could not select household: ${profileError.message}`)
+  }
 
   // Sign in via the Supabase Auth REST API to obtain a JWT that the
   // Edge Function can verify with supabase.auth.getUser().
@@ -171,6 +182,54 @@ Given('I am signed in as an owner of a household for the plugin', async ({ sessi
   }
   world.jwt = data.session.access_token
 })
+
+async function signInForPluginRole(
+  session: SessionHandle,
+  role: 'honoured_guest' | 'voting_guest',
+): Promise<void> {
+  const user = await session.signInAs([
+    { name: 'Personal Test Household', role: 'owner' },
+    { name: 'Plugin Role Test Household', role },
+  ])
+  const household = user.households.find((candidate) => candidate.role === role)
+  if (!household) throw new Error(`Plugin background: could not seed ${role} household`)
+
+  world.householdId = household.id
+  const admin = getAdminClient()
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ last_household_id: household.id })
+    .eq('id', user.userId)
+  if (profileError) {
+    throw new Error(`Plugin background: could not select household: ${profileError.message}`)
+  }
+
+  const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await client.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  })
+  if (error || !data.session) {
+    throw new Error(`Plugin background: could not sign in: ${error?.message}`)
+  }
+  world.jwt = data.session.access_token
+}
+
+Given(
+  'I am signed in as an honoured guest of a household for the plugin',
+  async ({ session }) => {
+    await signInForPluginRole(session, 'honoured_guest')
+  },
+)
+
+Given(
+  'I am signed in as a voting guest of a household for the plugin',
+  async ({ session }) => {
+    await signInForPluginRole(session, 'voting_guest')
+  },
+)
 
 Given('a seeded ChatGPT plugin test user', async ({ session }) => {
   // Reset OAuth-specific world state for each scenario.
@@ -549,7 +608,11 @@ When('I request the current MCP protected resource metadata', async () => {
   world.lastDiscoveryBody = await readBody(world.lastDiscoveryResponse)
 })
 
-When('I authorize the current MCP endpoint through Supabase OAuth', async ({ page, session }) => {
+async function authorizeCurrentMcp(
+  page: Page,
+  session: SessionHandle,
+  useAccessToken?: (accessToken: string) => Promise<void>,
+): Promise<void> {
   const admin = getAdminClient()
   const redirectUri = 'https://chatgpt.com/aip/oauth/callback'
   const user = session.authedUser
@@ -587,6 +650,7 @@ When('I authorize the current MCP endpoint through Supabase OAuth', async ({ pag
     authorizeUrl.searchParams.set('code_challenge_method', 'S256')
     authorizeUrl.searchParams.set('scope', 'openid email profile')
     authorizeUrl.searchParams.set('state', 'integration-test')
+    authorizeUrl.searchParams.set('resource', CURRENT_MCP_URL)
 
     await page.goto(authorizeUrl.toString())
     await page.waitForURL(/\/oauth\/consent\?authorization_id=/)
@@ -605,12 +669,20 @@ When('I authorize the current MCP endpoint through Supabase OAuth', async ({ pag
         client_id: client.client_id,
         redirect_uri: redirectUri,
         code_verifier: verifier,
+        resource: CURRENT_MCP_URL,
       }),
     })
+    world.lastTokenResponse = tokenResponse
     const tokenBody = await readBody(tokenResponse)
+    world.lastTokenBody = tokenBody
     const accessToken = tokenBody.access_token
     if (!tokenResponse.ok || typeof accessToken !== 'string') {
-      throw new Error(`OAuth token exchange failed with status ${tokenResponse.status}`)
+      return
+    }
+
+    if (useAccessToken) {
+      await useAccessToken(accessToken)
+      return
     }
 
     world.lastMcpResponse = await fetch(CURRENT_MCP_URL, {
@@ -631,6 +703,209 @@ When('I authorize the current MCP endpoint through Supabase OAuth', async ({ pag
   } finally {
     await admin.auth.admin.oauth.deleteClient(client.client_id)
   }
+}
+
+async function callCurrentMcpTool(
+  accessToken: string,
+  toolName: string,
+  args: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(CURRENT_MCP_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: toolName, arguments: args },
+    }),
+  })
+  world.lastMcpResponse = response
+  world.lastMcpBody = await readMcpBody(response)
+  return world.lastMcpBody
+}
+
+function currentStructuredContent(body: Record<string, unknown>): Record<string, unknown> {
+  return (
+    body as {
+      result?: { structuredContent?: Record<string, unknown> }
+    }
+  ).result?.structuredContent ?? {}
+}
+
+When('I authorize the current MCP endpoint through Supabase OAuth', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session)
+})
+
+When(
+  'I call current MCP tool {string} through Supabase OAuth with arguments:',
+  async ({ page, session }, toolName: string, argsJson: string) => {
+    const args = JSON.parse(argsJson) as Record<string, unknown>
+    await authorizeCurrentMcp(page, session, async (accessToken) => {
+      await callCurrentMcpTool(accessToken, toolName, args)
+    })
+  },
+)
+
+When('I exercise the schema-sensitive current MCP tools', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (accessToken) => {
+    const todayDate = new Date().toISOString().slice(0, 10)
+    const todo = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'create_todo', {
+        title: 'Default-date todo',
+      }),
+    ).todo
+    const idea = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'create_meal_idea', {
+        title: 'Default-date idea',
+      }),
+    ).idea
+    const meal = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'create_meal', {
+        title: 'Schema contract meal',
+        date: '2099-03-01',
+      }),
+    ).meal as { id: string }
+
+    const firstOutcome = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'record_meal_outcome', {
+        meal_id: meal.id,
+        status: 'did_not_happen',
+        reason: 'other',
+        note: 'Plans changed',
+      }),
+    ).outcome
+    const outcome = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'record_meal_outcome', {
+        meal_id: meal.id,
+        status: 'as_planned',
+      }),
+    ).outcome
+    const outcomes = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'list_meal_outcomes', {
+        from: '2099-03-01',
+        to: '2099-03-01',
+      }),
+    ).outcomes
+
+    const event = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'create_event', {
+        date: '2099-03-01',
+        end_date: '2099-03-03',
+        event_name: 'Visitors',
+        extra_adults: 2,
+      }),
+    ).event as { id: string }
+    const events = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'list_events', {
+        from: '2099-03-02',
+        to: '2099-03-02',
+      }),
+    ).events
+
+    const householdId = world.householdId
+    if (!householdId) throw new Error('Plugin contract scenario requires a household')
+    const admin = getAdminClient()
+    const { data: ingredient, error: ingredientError } = await admin
+      .from('ingredients')
+      .insert({
+        household_id: householdId,
+        name: 'Review allergen',
+        starred: false,
+        warning: true,
+      })
+      .select('id')
+      .single()
+    if (ingredientError || !ingredient) {
+      throw new Error(ingredientError?.message ?? 'Could not seed ingredient')
+    }
+    const { error: linkError } = await admin
+      .from('meal_plan_ingredients')
+      .insert({ meal_plan_id: meal.id, ingredient_id: ingredient.id })
+    if (linkError) throw new Error(linkError.message)
+
+    const currentUser = session.authedUser
+    if (!currentUser) throw new Error('Plugin contract scenario requires a signed-in user')
+    const { data: foreignHousehold, error: foreignHouseholdError } = await admin
+      .from('households')
+      .insert({ name: 'Foreign outcome household', created_by: currentUser.userId })
+      .select('id')
+      .single()
+    if (foreignHouseholdError || !foreignHousehold) {
+      throw new Error(foreignHouseholdError?.message ?? 'Could not seed foreign household')
+    }
+    const { data: foreignMeal, error: foreignMealError } = await admin
+      .from('meal_plans')
+      .insert({
+        household_id: foreignHousehold.id,
+        title: 'Foreign meal',
+        date: '2099-03-01',
+        created_by: currentUser.userId,
+      })
+      .select('id')
+      .single()
+    if (foreignMealError || !foreignMeal) {
+      throw new Error(foreignMealError?.message ?? 'Could not seed foreign meal')
+    }
+    const foreignOutcomeBody = await callCurrentMcpTool(accessToken, 'record_meal_outcome', {
+      meal_id: foreignMeal.id,
+      status: 'as_planned',
+    })
+
+    const copiedMeal = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'copy_meal', {
+        id: meal.id,
+        target_date: '2099-03-02',
+      }),
+    ).meal as { id: string }
+    const { count: copiedIngredientCount, error: copiedIngredientError } = await admin
+      .from('meal_plan_ingredients')
+      .select('*', { count: 'exact', head: true })
+      .eq('meal_plan_id', copiedMeal.id)
+    if (copiedIngredientError) throw new Error(copiedIngredientError.message)
+
+    const shoppingList = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'get_shopping_list', {
+        from: '2099-03-01',
+        to: '2099-03-02',
+      }),
+    ).shopping_list
+
+    await callCurrentMcpTool(accessToken, 'clear_meal_outcome', { meal_id: meal.id })
+    const clearedOutcomes = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'list_meal_outcomes', {
+        from: '2099-03-01',
+        to: '2099-03-01',
+      }),
+    ).outcomes
+    await callCurrentMcpTool(accessToken, 'delete_event', { id: event.id })
+    const deletedEvents = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'list_events', {
+        from: '2099-03-02',
+        to: '2099-03-02',
+      }),
+    ).events
+
+    world.currentContractResults = {
+      todayDate,
+      todo,
+      idea,
+      mealId: meal.id,
+      firstOutcome,
+      outcome,
+      outcomes,
+      events,
+      foreignOutcomeRejected: JSON.stringify(foreignOutcomeBody).includes('Meal not found'),
+      copiedIngredientCount,
+      shoppingList,
+      clearedOutcomes,
+      deletedEvents,
+    }
+  })
 })
 
 // ── Request steps ─────────────────────────────────────────────────────────
@@ -766,6 +1041,68 @@ Then('the MCP response is a valid JSON-RPC 2.0 error', async () => {
   const body = world.lastMcpBody
   expect(body?.jsonrpc).toBe('2.0')
   expect(body).toHaveProperty('error')
+})
+
+Then('the MCP tool response reports an access level denial', async () => {
+  expect(JSON.stringify(world.lastMcpBody)).toContain(
+    'Your household access level cannot use the ChatGPT plugin.',
+  )
+})
+
+Then(
+  'the current MCP structured result contains a {string} array',
+  async ({ page: _page }, key: string) => {
+    const structuredContent = (
+      world.lastMcpBody as {
+        result?: { structuredContent?: Record<string, unknown> }
+      }
+    ).result?.structuredContent
+    expect(Array.isArray(structuredContent?.[key])).toBe(true)
+  },
+)
+
+Then('the current MCP tools honour their persisted schema contracts', async () => {
+  const results = world.currentContractResults as {
+    todayDate: string
+    todo: { date: string }
+    idea: { date: string }
+    mealId: string
+    firstOutcome: { meal_id: string; status: string; reason: string; note: string }
+    outcome: { status: string; reason: string | null; note: string | null }
+    outcomes: { meal_id: string }[]
+    events: { event_name: string }[]
+    foreignOutcomeRejected: boolean
+    copiedIngredientCount: number | null
+    shoppingList: { warning: boolean; meal_count: number }[]
+    clearedOutcomes: unknown[]
+    deletedEvents: unknown[]
+  } | null
+  expect(results).not.toBeNull()
+  expect(results?.todo.date).toBe(results?.todayDate)
+  expect(results?.idea.date).toBe(results?.todayDate)
+  expect(results?.firstOutcome).toEqual({
+    meal_id: results?.mealId,
+    status: 'did_not_happen',
+    reason: 'other',
+    note: 'Plans changed',
+  })
+  expect(results?.outcome).toMatchObject({
+    status: 'as_planned',
+    reason: null,
+    note: null,
+  })
+  expect(results?.outcomes).toHaveLength(1)
+  expect(results?.outcomes[0]?.meal_id).toBe(results?.mealId)
+  expect(results?.events).toEqual(
+    expect.arrayContaining([expect.objectContaining({ event_name: 'Visitors' })]),
+  )
+  expect(results?.foreignOutcomeRejected).toBe(true)
+  expect(results?.copiedIngredientCount).toBe(1)
+  expect(results?.shoppingList).toEqual(
+    expect.arrayContaining([expect.objectContaining({ warning: true, meal_count: 2 })]),
+  )
+  expect(results?.clearedOutcomes).toHaveLength(0)
+  expect(results?.deletedEvents).toHaveLength(0)
 })
 
 Then('the MCP error code is {int}', async ({ page: _page }, code: number) => {

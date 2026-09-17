@@ -25,6 +25,27 @@ Feature: ChatGPT MCP Endpoint
     And the MCP result contains a tools array
     And the tools array includes a tool named "list_meals"
 
+  Scenario: An honoured guest can call a current MCP tool
+    Given I am signed in as an honoured guest of a household for the plugin
+    When I call current MCP tool "list_todos" through Supabase OAuth with arguments:
+      """
+      {}
+      """
+    Then the MCP response is a valid JSON-RPC 2.0 result
+    And the current MCP structured result contains a "todos" array
+
+  Scenario: A voting guest cannot call a current MCP tool
+    Given I am signed in as a voting guest of a household for the plugin
+    When I call current MCP tool "list_todos" through Supabase OAuth with arguments:
+      """
+      {}
+      """
+    Then the MCP tool response reports an access level denial
+
+  Scenario: Current MCP tools honour their persisted schema contracts
+    When I exercise the schema-sensitive current MCP tools
+    Then the current MCP tools honour their persisted schema contracts
+
   # ── MCP lifecycle — no auth required ─────────────────────────────────
 
   Scenario: initialize returns server capabilities without authentication
@@ -64,6 +85,15 @@ Feature: ChatGPT MCP Endpoint
     When I call MCP tool "list_todos" without authentication
     Then the MCP response is a valid JSON-RPC 2.0 error
     And the MCP error code is -32001
+
+  Scenario: A voting guest cannot call a legacy MCP tool
+    Given I am signed in as a voting guest of a household for the plugin
+    When I call MCP tool "list_todos" with arguments:
+      """
+      {}
+      """
+    Then the MCP response is a valid JSON-RPC 2.0 error
+    And the MCP error code is -32003
 
   Scenario: tools/call without authentication returns a 401 with a WWW-Authenticate challenge
     When I call MCP tool "list_todos" without authentication

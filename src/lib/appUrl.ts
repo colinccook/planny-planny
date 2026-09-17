@@ -54,7 +54,12 @@ export function safeAppRedirect(
   value: string | null | undefined,
   fallback = '/calendar',
 ): string {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+  if (
+    !value ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    /\\|%5c/i.test(value)
+  ) {
     return fallback
   }
   return value

@@ -97,7 +97,14 @@ function authorizationServerBase(): string {
 }
 
 function nativeAuthorizationServerBase(): string {
-  return `${publicFunctionsBase().replace(/\/functions\/v1\/?$/, '')}/auth/v1`
+  const runtimeSupabaseUrl = Deno.env.get('SUPABASE_URL')
+  const configured = Deno.env.get('PLUGIN_AUTH_URL')
+    ?? Deno.env.get('SUPABASE_PUBLIC_URL')
+    ?? (runtimeSupabaseUrl?.startsWith('http://kong:')
+      ? 'http://127.0.0.1:54321'
+      : runtimeSupabaseUrl)
+    ?? ''
+  return `${configured.replace(/\/+$/, '').replace(/\/auth\/v1$/, '')}/auth/v1`
 }
 
 function protectedResourceMetadataUrl(): string {
@@ -466,7 +473,7 @@ async function executeMcpTool(
         household_id: hid,
         user_id: userId,
         title,
-        date: typeof args.date === 'string' ? args.date : null,
+        date: typeof args.date === 'string' ? args.date : today(),
         note: typeof args.note === 'string' ? args.note : null,
       })
       .select('id, title, note, date, completed_on, completed_at, user_id, created_at')
@@ -481,7 +488,6 @@ async function executeMcpTool(
     const patch: Record<string, unknown> = {}
     if (typeof args.title === 'string') patch.title = args.title
     if (typeof args.date === 'string') patch.date = args.date
-    if (args.date === null) patch.date = null
     if (typeof args.note === 'string') patch.note = args.note
     if (args.note === null) patch.note = null
     if (Object.keys(patch).length === 0) throw new Error('No fields to update')
@@ -608,7 +614,7 @@ async function executeMcpTool(
     if (typeof targetDate !== 'string') throw new Error('target_date is required')
     const { data: original, error: fetchError } = await supabase
       .from('meal_plans')
-      .select('id, title, description')
+      .select('id, title, description, meal_plan_ingredients(ingredient_id)')
       .eq('id', id)
       .eq('household_id', hid)
       .single()
@@ -619,16 +625,29 @@ async function executeMcpTool(
       .select('id, title, description, date, household_id, created_at')
       .single()
     if (insertError) throw new Error(insertError.message)
-    if (args.move === true) {
-      const { data: deleted, error: deleteError } = await supabase
-        .from('meal_plans')
-        .delete()
-        .eq('id', id)
-        .eq('household_id', hid)
-        .select('id')
-        .maybeSingle()
-      if (deleteError) throw new Error(deleteError.message)
-      if (!deleted) throw new Error('Meal not found')
+
+    const ingredientIds = (original.meal_plan_ingredients ?? []).map(
+      (ingredient: { ingredient_id: string }) => ingredient.ingredient_id,
+    )
+    if (ingredientIds.length > 0) {
+      const { error: ingredientError } = await supabase
+        .from('meal_plan_ingredients')
+        .insert(ingredientIds.map((ingredientId: string) => ({
+          meal_plan_id: copy.id,
+          ingredient_id: ingredientId,
+        })))
+      if (ingredientError) {
+        const { error: cleanupError } = await supabase
+          .from('meal_plans')
+          .delete()
+          .eq('id', copy.id)
+        if (cleanupError) {
+          throw new Error(
+            `${ingredientError.message}; failed to remove incomplete copy: ${cleanupError.message}`,
+          )
+        }
+        throw new Error(ingredientError.message)
+      }
     }
     return { meal: copy }
   }
@@ -674,12 +693,17 @@ async function executeMcpTool(
     })()
     const { data, error } = await supabase
       .from('meal_outcomes')
-      .select('meal_id, status, reason, note, recorded_at, meal_plans(date, title)')
+      .select('meal_plan_id, status, reason, note, meal_plans!inner(date, title)')
       .eq('household_id', hid)
       .gte('meal_plans.date', from)
       .lte('meal_plans.date', to)
     if (error) throw new Error(error.message)
-    return { outcomes: data }
+    return {
+      outcomes: (data ?? []).map(({ meal_plan_id, ...outcome }) => ({
+        meal_id: meal_plan_id,
+        ...outcome,
+      })),
+    }
   }
 
   if (toolName === 'upsert_outcome') {
@@ -687,26 +711,41 @@ async function executeMcpTool(
     const status = args.status
     if (typeof mealId !== 'string') throw new Error('meal_id is required')
     if (typeof status !== 'string') throw new Error('status is required')
-    const VALID_STATUSES = new Set(['as_planned', 'did_not_happen'])
-    if (!VALID_STATUSES.has(status)) throw new Error('status must be "as_planned" or "did_not_happen"')
-    const VALID_REASONS = new Set(['no_shopping', 'ate_out', 'unexpected_event', 'didnt_fancy_it', 'other'])
-    if (status === 'did_not_happen' && args.reason && !VALID_REASONS.has(args.reason as string)) {
-      throw new Error(`reason must be one of: ${[...VALID_REASONS].join(', ')}`)
-    }
+    const { data: meal, error: mealError } = await supabase
+      .from('meal_plans')
+      .select('id')
+      .eq('id', mealId)
+      .eq('household_id', hid)
+      .maybeSingle()
+    if (mealError) throw new Error(mealError.message)
+    if (!meal) throw new Error('Meal not found')
+
+    const reason = status === 'as_planned' ? null : args.reason
+    const note = status === 'as_planned' ? null : args.note
     const { data, error } = await supabase
       .from('meal_outcomes')
-      .upsert({
-        meal_id: mealId,
-        household_id: hid,
-        status,
-        reason: typeof args.reason === 'string' ? args.reason : null,
-        note: typeof args.note === 'string' ? args.note : null,
-        recorded_at: new Date().toISOString(),
-      })
-      .select('meal_id, status, reason, note, recorded_at')
+      .upsert(
+        {
+          meal_plan_id: mealId,
+          household_id: hid,
+          status,
+          reason: typeof reason === 'string' ? reason : null,
+          note: typeof note === 'string' ? note : null,
+          recorded_by: userId,
+        },
+        { onConflict: 'meal_plan_id' },
+      )
+      .select('meal_plan_id, status, reason, note')
       .single()
     if (error) throw new Error(error.message)
-    return { outcome: data }
+    return {
+      outcome: {
+        meal_id: data.meal_plan_id,
+        status: data.status,
+        reason: data.reason,
+        note: data.note,
+      },
+    }
   }
 
   if (toolName === 'delete_outcome') {
@@ -715,9 +754,9 @@ async function executeMcpTool(
     const { data, error } = await supabase
       .from('meal_outcomes')
       .delete()
-      .eq('meal_id', mealId)
+      .eq('meal_plan_id', mealId)
       .eq('household_id', hid)
-      .select('meal_id')
+      .select('meal_plan_id')
       .maybeSingle()
     if (error) throw new Error(error.message)
     if (!data) throw new Error('Meal outcome not found')
@@ -746,7 +785,7 @@ async function executeMcpTool(
         household_id: hid,
         title,
         description: typeof args.description === 'string' ? args.description : null,
-        date: typeof args.date === 'string' ? args.date : null,
+        date: typeof args.date === 'string' ? args.date : today(),
       })
       .select('id, title, description, date, created_at')
       .single()
@@ -777,11 +816,11 @@ async function executeMcpTool(
       const d = new Date(); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10)
     })()
     const { data, error } = await supabase
-      .from('day_events')
+      .from('day_contexts')
       .select('id, date, end_date, event_name, extra_adults, extra_children, extra_babies, created_at')
       .eq('household_id', hid)
-      .gte('date', from)
       .lte('date', to)
+      .or(`end_date.gte.${from},and(end_date.is.null,date.gte.${from})`)
       .order('date', { ascending: true })
     if (error) throw new Error(error.message)
     return { events: data }
@@ -790,7 +829,7 @@ async function executeMcpTool(
   if (toolName === 'create_event') {
     if (!args.date) throw new Error('date is required')
     const { data, error } = await supabase
-      .from('day_events')
+      .from('day_contexts')
       .insert({
         household_id: hid,
         date: args.date,
@@ -820,7 +859,7 @@ async function executeMcpTool(
     if (typeof args.extra_babies === 'number') patch.extra_babies = args.extra_babies
     if (Object.keys(patch).length === 0) throw new Error('No fields to update')
     const { data, error } = await supabase
-      .from('day_events')
+      .from('day_contexts')
       .update(patch)
       .eq('id', id)
       .eq('household_id', hid)
@@ -835,7 +874,7 @@ async function executeMcpTool(
     const id = args.id
     if (typeof id !== 'string') throw new Error('id is required')
     const { data, error } = await supabase
-      .from('day_events')
+      .from('day_contexts')
       .delete()
       .eq('id', id)
       .eq('household_id', hid)
@@ -855,22 +894,37 @@ async function executeMcpTool(
     })()
     const { data: meals, error } = await supabase
       .from('meal_plans')
-      .select('id, title, date, ingredients:meal_plan_ingredients(ingredient_id, ingredients(id, name, starred))')
+      .select('id, title, date, ingredients:meal_plan_ingredients(ingredient_id, ingredients(id, name, starred, warning))')
       .eq('household_id', hid)
       .gte('date', from)
       .lte('date', to)
       .order('date', { ascending: true })
     if (error) throw new Error(error.message)
-    interface IngRow { ingredient_id: string; ingredients: { id: string; name: string; starred: boolean } | null }
+    interface IngRow {
+      ingredient_id: string
+      ingredients: { id: string; name: string; starred: boolean; warning: boolean } | null
+    }
     interface MealRow { id: string; title: string; date: string; ingredients: IngRow[] }
     const mealList = (meals ?? []) as unknown as MealRow[]
-    const map = new Map<string, { name: string; starred: boolean; meal_count: number; meals: { title: string; date: string }[] }>()
+    const map = new Map<string, {
+      name: string
+      starred: boolean
+      warning: boolean
+      meal_count: number
+      meals: { title: string; date: string }[]
+    }>()
     for (const meal of mealList) {
       for (const ing of (meal.ingredients ?? [])) {
         if (!ing.ingredients) continue
         const key = ing.ingredients.id
         if (!map.has(key)) {
-          map.set(key, { name: ing.ingredients.name, starred: ing.ingredients.starred, meal_count: 0, meals: [] })
+          map.set(key, {
+            name: ing.ingredients.name,
+            starred: ing.ingredients.starred,
+            warning: ing.ingredients.warning,
+            meal_count: 0,
+            meals: [],
+          })
         }
         const entry = map.get(key)
         if (entry) {
@@ -942,10 +996,9 @@ const currentMcpHandler = withOAuthProtectedResource(
   withSupabase<Database>(
     { auth: 'user' },
     async (req, { supabase }) => {
-      const context = resolvePluginContext(req, supabase)
       const handler = createMcpHandler(() => {
         return createChatGptMcpServer(async (toolName, args) => {
-          const { userId, householdId } = await context
+          const { userId, householdId } = await resolvePluginContext(req, supabase)
           return await executeMcpTool(toolName, args, supabase, userId, householdId)
         })
       }, {
@@ -1032,6 +1085,23 @@ async function handleMcp(
         id,
         -32002,
         'No household resolved. Pass ?household_id=<uuid> or set your last active household in the app first.',
+      )
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('household_members')
+      .select('role')
+      .eq('household_id', householdId)
+      .eq('user_id', user.id)
+      .single()
+    if (membershipError || !membership) {
+      return mcpError(id, -32003, 'The selected household is unavailable.')
+    }
+    if (!canUsePlugin(membership.role)) {
+      return mcpError(
+        id,
+        -32003,
+        'Your household access level cannot use the ChatGPT plugin.',
       )
     }
 
@@ -1379,7 +1449,20 @@ Deno.serve(async (req: Request) => {
       const { error: ingErr } = await supabase
         .from('meal_plan_ingredients')
         .insert(ingredientIds.map((id: string) => ({ meal_plan_id: copy.id, ingredient_id: id })))
-      if (ingErr) return err(ingErr.message, 500)
+      if (ingErr) {
+        const { error: cleanupErr } = await supabase
+          .from('meal_plans')
+          .delete()
+          .eq('id', copy.id)
+          .eq('household_id', hid)
+        if (cleanupErr) {
+          return err(
+            `${ingErr.message}; failed to remove incomplete copy: ${cleanupErr.message}`,
+            500,
+          )
+        }
+        return err(ingErr.message, 500)
+      }
     }
 
     // If moving, delete the original.
@@ -1499,7 +1582,7 @@ Deno.serve(async (req: Request) => {
     if (!title) return err('title is required')
 
     const description = typeof body.description === 'string' ? body.description : null
-    const date = typeof body.date === 'string' ? body.date : null
+    const date = typeof body.date === 'string' ? body.date : today()
 
     const { data, error } = await supabase
       .from('meal_ideas')

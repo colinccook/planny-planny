@@ -53,9 +53,31 @@ const event = z.object({
 const shoppingItem = z.object({
   name: z.string(),
   starred: z.boolean(),
+  warning: z.boolean(),
   meal_count: z.number().int().nonnegative(),
   meals: z.array(z.object({ title: z.string(), date })),
 })
+
+const outcomeInput = z.union([
+  z.object({
+    meal_id: id,
+    status: z.literal('as_planned'),
+    reason: z.null().optional(),
+    note: z.null().optional(),
+  }),
+  z.object({
+    meal_id: id,
+    status: z.literal('did_not_happen'),
+    reason: z.enum(['no_shopping', 'ate_out', 'unexpected_event', 'didnt_fancy_it']),
+    note: optionalText,
+  }),
+  z.object({
+    meal_id: id,
+    status: z.literal('did_not_happen'),
+    reason: z.literal('other'),
+    note: z.string().trim().min(1).max(2_000),
+  }),
+])
 
 const readOnly = {
   readOnlyHint: true,
@@ -109,7 +131,7 @@ export const CHATGPT_TOOL_DEFINITIONS = [
     inputSchema: z.object({
       id,
       title: z.string().trim().min(1).max(200).optional(),
-      date: date.nullable().optional(),
+      date: date.optional(),
       note: z.string().max(2_000).nullable().optional(),
     }),
     outputSchema: z.object({ todo }),
@@ -219,12 +241,7 @@ export const CHATGPT_TOOL_DEFINITIONS = [
     name: 'record_meal_outcome',
     title: 'Record meal outcome',
     description: 'Record whether a planned meal happened and optionally why it did not.',
-    inputSchema: z.object({
-      meal_id: id,
-      status: z.enum(['as_planned', 'did_not_happen']),
-      reason: z.enum(['no_shopping', 'ate_out', 'unexpected_event', 'didnt_fancy_it', 'other']).optional(),
-      note: optionalText,
-    }),
+    inputSchema: outcomeInput,
     outputSchema: z.object({ outcome }),
     annotations: changesData,
     _meta: oauthMeta,

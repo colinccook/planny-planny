@@ -50,6 +50,42 @@ describe('ChatGPT MCP tool definitions', () => {
     expect(names).toContain('move_meal')
   })
 
+  it('rejects database-invalid todo and outcome inputs before execution', () => {
+    const updateTodo = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'update_todo')
+    const recordOutcome = CHATGPT_TOOL_DEFINITIONS.find(
+      (tool) => tool.name === 'record_meal_outcome',
+    )
+
+    expect(updateTodo?.inputSchema.safeParse({
+      id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+      date: null,
+    }).success).toBe(false)
+    expect(recordOutcome?.inputSchema.safeParse({
+      meal_id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+      status: 'did_not_happen',
+    }).success).toBe(false)
+    expect(recordOutcome?.inputSchema.safeParse({
+      meal_id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+      status: 'did_not_happen',
+      reason: 'other',
+    }).success).toBe(false)
+    expect(recordOutcome?.inputSchema.safeParse({
+      meal_id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+      status: 'as_planned',
+      reason: 'ate_out',
+    }).success).toBe(false)
+  })
+
+  it('allows signed household-size adjustments for events', () => {
+    const createEvent = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'create_event')
+    expect(createEvent?.inputSchema.safeParse({
+      date: '2099-03-01',
+      extra_adults: -1,
+      extra_children: -2,
+      extra_babies: 0,
+    }).success).toBe(true)
+  })
+
   it('advertises the complete metadata through the MCP transport', async () => {
     const handler = createMcpHandler(
       () => createChatGptMcpServer(async () => ({ todos: [] })),

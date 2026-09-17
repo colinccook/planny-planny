@@ -141,7 +141,13 @@ applied by database migrations:
 5. In **Authentication → Signing Keys**, migrate the project to an asymmetric
    ES256 or RS256 key if it still uses the legacy JWT secret.
 6. Deploy the frontend and `chatgpt-plugin` Edge Function.
-7. Set `PLUGIN_PUBLIC_URL` to the public API origin plus `/functions/v1`.
+7. Set `PLUGIN_PUBLIC_URL` to the public URL prefix immediately before
+   `/chatgpt-plugin` (for direct Supabase hosting, this is
+   `https://<project-ref>.supabase.co/functions/v1`; for a root-level proxy,
+   it can be `https://mcp.example.com`).
+8. If Supabase Auth is exposed somewhere other than the project's standard
+   public `/auth/v1` endpoint, set `PLUGIN_AUTH_URL` to that complete issuer
+   URL. Do not derive it from a controlled MCP-only reverse proxy.
 
 Do not send email addresses or passwords to an authorization endpoint in query
 parameters. Current clients must use the browser-based Supabase Auth consent
@@ -166,8 +172,12 @@ domain. Before public submission, choose one:
    `api.example.com`, and host the challenge on the allowed parent
    `example.com`; or
 2. Put a controlled reverse proxy/edge worker at a stable hostname such as
-   `mcp.example.com`, proxy `/mcp` to the Edge Function and serve the
-   well-known challenge directly.
+   `mcp.example.com`, proxy the submitted `/chatgpt-plugin/mcp` and metadata
+   paths to the Edge Function, and serve the well-known challenge directly.
+
+The protected-resource metadata continues to advertise the reachable Supabase
+Auth issuer from `PLUGIN_AUTH_URL` (or `SUPABASE_URL` by default), so an
+MCP-only proxy does not need to forward `/auth/v1`.
 
 Changing the MCP origin after publication requires a new plugin submission,
 so choose the production hostname before review.
@@ -265,6 +275,24 @@ region.
 `public/openapi.json`, the REST routes in `chatgpt-plugin`, and the
 `chatgpt-plugin-auth` function remain for existing Custom GPT Action users.
 They are not used by the current public MCP plugin path.
+
+To inspect or repair an existing Custom GPT Action:
+
+1. Deploy both `chatgpt-plugin` and `chatgpt-plugin-auth`.
+2. Import the repository's [`public/openapi.json`](../public/openapi.json)
+   into the GPT action editor. The Edge Function does not serve the schema
+   itself.
+3. Keep the REST server base at
+   `https://<project-ref>.supabase.co/functions/v1/chatgpt-plugin`.
+4. Keep its existing legacy OAuth endpoints under
+   `/functions/v1/chatgpt-plugin-auth`; do not point it at the new `/mcp`
+   endpoint.
+5. Smoke-test an authenticated REST request such as `GET /todos` before
+   migrating the action.
+
+The legacy password grant exists only for compatibility and must never place
+credentials in an authorization URL. New connections should use `/mcp` and
+the browser-based Supabase Auth flow described above.
 
 Do not create new integrations with the password grant. Migrate existing MCP
 connections from `/sse` to `/mcp` and Supabase Auth OAuth 2.1. Remove the
