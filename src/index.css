@@ -37,14 +37,28 @@
 }
 
 /*
- * iOS Safari ignores `user-scalable=no` on the viewport meta tag — pinch
- * gestures still trigger a zoom, which on a chrome-free PWA-style layout
- * visibly distorts the sticky header. Setting `touch-action: manipulation`
- * here disables double-tap-to-zoom, and the global `gesturestart`
- * handler in `index.html` cancels the pinch-zoom gesture on iOS.
+ * Zoom policy — see docs/drs/dr-018-mobile-viewport-and-zoom.md.
+ * `touch-action: manipulation` removes double-tap-to-zoom (and the 300ms
+ * tap delay) while deliberately leaving pinch-zoom available for
+ * accessibility on every platform.
  */
 html, body {
   touch-action: manipulation;
+}
+
+/*
+ * iOS Safari auto-zooms the whole viewport when a form control with a
+ * computed font-size below 16px receives focus — and that zoom sticks
+ * after the keyboard closes. Guarantee every field is at least 1rem
+ * (16px) so the auto-zoom never triggers. Components use `text-base`
+ * explicitly; this base rule is the safety net for any control that
+ * forgets to set a size. Never add a smaller text-* utility to an
+ * input, textarea or select.
+ */
+@layer base {
+  input, textarea, select {
+    font-size: 1rem;
+  }
 }
 
 /* Match the iOS status-bar / safe-area background to the header colour */

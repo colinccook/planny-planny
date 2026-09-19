@@ -119,7 +119,7 @@ export default function InviteManager() {
             placeholder="friend@example.com"
             aria-label="Recipient email"
             data-testid="invite-email-input"
-            className="w-full min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="w-full min-h-[44px] rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           />
           <div className="flex items-center gap-2">
             <select
@@ -127,7 +127,7 @@ export default function InviteManager() {
               onChange={(e) => setInviteRole(e.target.value as InvitableRole)}
               aria-label="Invite role"
               data-testid="invite-role-select"
-              className="min-h-[44px] flex-1 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              className="min-h-[44px] flex-1 rounded-md border border-gray-300 px-2 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             >
               {INVITABLE_ROLES.map((role) => (
                 <option key={role} value={role}>

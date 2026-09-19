@@ -178,7 +178,7 @@ export default function MealPromptGenerator({
         <textarea
           value={displayPrompt}
           onChange={(e) => setPromptOverride(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-200 p-3 text-base text-gray-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           rows={10}
           data-testid="prompt-textarea"
         />

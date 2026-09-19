@@ -146,7 +146,7 @@ export default function IngredientsList({ householdId, sortBy }: IngredientsList
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search ingredients…"
-          className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-3 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
         />
       </div>
 

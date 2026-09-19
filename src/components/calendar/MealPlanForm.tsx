@@ -153,7 +153,7 @@ export default function MealPlanForm({
             placeholder="What's for dinner?"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-base placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             autoFocus
             required
           />
@@ -169,7 +169,7 @@ export default function MealPlanForm({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-base placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           />
         </div>
 
@@ -212,7 +212,7 @@ export default function MealPlanForm({
                 setTimeout(() => setShowDropdown(false), 200)
               }}
               onKeyDown={handleSearchKeyDown}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
 
             {showDropdown && ingredientSearch.trim() && (

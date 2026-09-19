@@ -122,7 +122,7 @@ export default function DayPlaceholders() {
                   </label>
                   <input
                     type="text"
-                    className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
+                    className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-base text-gray-900 placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
                     placeholder={`e.g. ${name} theme`}
                     value={labels[index] ?? ''}
                     onChange={(e) => setLabel(index, e.target.value)}

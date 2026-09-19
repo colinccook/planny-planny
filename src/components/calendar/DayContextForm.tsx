@@ -88,7 +88,7 @@ export default function DayContextForm({
             placeholder="e.g. Mum visiting"
             value={eventName}
             onChange={(e) => setEventName(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-base placeholder:text-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             autoFocus
           />
         </div>
@@ -103,7 +103,7 @@ export default function DayContextForm({
             min={date}
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           />
         </div>
 

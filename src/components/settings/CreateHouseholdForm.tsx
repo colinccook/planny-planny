@@ -101,7 +101,7 @@ export default function CreateHouseholdForm() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="My Household"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
@@ -115,7 +115,7 @@ export default function CreateHouseholdForm() {
               value={alias}
               onChange={(e) => setAlias(e.target.value)}
               placeholder="e.g., 123 Oak Street"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
             />
           </div>
 
