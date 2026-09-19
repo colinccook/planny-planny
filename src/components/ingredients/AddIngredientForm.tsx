@@ -85,7 +85,7 @@ export default function AddIngredientForm({
             onFocus={() => setShowSuggestions(true)}
             placeholder="e.g., Chicken breast"
             autoComplete="off"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
           />
           {duplicateExists && (
             <p className="mt-1 text-xs text-orange-600">

@@ -90,7 +90,7 @@ export default function HouseholdSettings() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isReadOnly}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 
@@ -105,7 +105,7 @@ export default function HouseholdSettings() {
               onChange={(e) => setAlias(e.target.value)}
               disabled={isReadOnly}
               placeholder="e.g., 123 Oak Street"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none disabled:bg-gray-50 disabled:text-gray-500"
             />
           </div>
 

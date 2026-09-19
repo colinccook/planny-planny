@@ -15,6 +15,27 @@ Then('the viewport should use viewport-fit cover', async ({ page }) => {
   expect(content).toContain('viewport-fit=cover');
 });
 
+// iOS Safari auto-zooms the viewport when a form control with a computed
+// font-size below 16px is focused, and the zoom sticks after the keyboard
+// closes — see docs/drs/dr-018-mobile-viewport-and-zoom.md.
+Then('every form field should render at 16 pixels or larger', async ({ page }) => {
+  const fields = page.locator('input, textarea, select');
+  const count = await fields.count();
+  expect(count).toBeGreaterThan(0);
+  for (let i = 0; i < count; i++) {
+    const fontSize = await fields
+      .nth(i)
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(fontSize).toBeGreaterThanOrEqual(16);
+  }
+});
+
+Then('no gesture-blocking listeners should be registered', async ({ page }) => {
+  const html = await page.content();
+  expect(html).not.toContain('gesturestart');
+  expect(html).not.toContain('gesturechange');
+});
+
 Then('the page should not contain an app header', async ({ page }) => {
   await expect(page.locator('header')).toHaveCount(0);
 });

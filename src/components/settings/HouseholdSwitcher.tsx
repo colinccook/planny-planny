@@ -32,7 +32,7 @@ export default function HouseholdSwitcher() {
           id="household-select"
           value={currentHousehold?.id ?? ''}
           onChange={(e) => switchHousehold(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
         >
           {households.map((h) => (
             <option key={h.id} value={h.id}>
