@@ -1,3 +1,4 @@
+@MealCalendar
 Feature: Day Placeholders
 
   Scenario: Day placeholder settings require authentication

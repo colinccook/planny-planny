@@ -1,3 +1,4 @@
+@Permissions
 Feature: Permission rules — role × capability matrix
   These scenarios are the canonical BDD specification of who can
   do what. Each capability used by the app is a function in

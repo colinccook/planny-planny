@@ -1,3 +1,4 @@
+@AIMealSuggestions
 Feature: Magic Wand AI Prompt Generator
   As a user I want to generate an AI prompt for meal suggestions
   so I can paste it into ChatGPT and get ideas tailored to my household

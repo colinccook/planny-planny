@@ -1,3 +1,4 @@
+@MobileLayout
 Feature: Tab Navigation
 
   Scenario: Protected tab routes redirect unauthenticated users to login

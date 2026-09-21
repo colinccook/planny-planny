@@ -1,3 +1,4 @@
+@Households
 Feature: Household Settings
 
   Scenario: Settings page redirects to login when not authenticated

@@ -58,6 +58,9 @@ vi.mock('../components/settings/PreferencesSettings', () => ({
 vi.mock('../components/settings/ConnectedApps', () => ({
   default: () => createElement('div', { 'data-testid': 'connected-apps' }),
 }))
+vi.mock('../components/settings/AddToClaude', () => ({
+  default: () => createElement('div', { 'data-testid': 'add-to-claude' }),
+}))
 
 import SettingsPage from './SettingsPage'
 

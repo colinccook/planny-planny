@@ -1,3 +1,4 @@
+@StoreCupboard
 Feature: Store Cupboard Dismiss and Show
 
   Scenario: Dismissing an ingredient hides it from the list

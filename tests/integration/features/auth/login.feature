@@ -1,3 +1,4 @@
+@Authentication
 Feature: User Login
 
   Scenario: User can see the login page

@@ -1,3 +1,4 @@
+@MobileLayout
 Feature: Mobile viewport settings
 
   Scenario: Pinch-to-zoom is allowed for accessibility

@@ -1,3 +1,4 @@
+@Ingredients
 Feature: Manage Ingredients
 
   Scenario: Ingredients page requires authentication

@@ -1,3 +1,4 @@
+@HouseholdSharing
 Feature: Household Invite Links
   Joining a household via an invite link must work end-to-end:
   the link must include the app's base path, must lead to the

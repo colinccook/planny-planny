@@ -1,3 +1,4 @@
+@MealCalendar
 Feature: Calendar Scroll Memory and Return To Today
   As a user planning meals weeks ahead
   I want the calendar to remember where I was when I dip into a day

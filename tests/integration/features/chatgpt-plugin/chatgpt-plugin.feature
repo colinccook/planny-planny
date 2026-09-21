@@ -1,3 +1,4 @@
+@ChatGPTPlugin
 Feature: ChatGPT Plugin API
   The ChatGPT plugin Edge Function exposes a full-parity REST API so
   ChatGPT can interact with a user's household conversationally.

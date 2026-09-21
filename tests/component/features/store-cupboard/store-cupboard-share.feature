@@ -1,3 +1,4 @@
+@StoreCupboard
 Feature: Store Cupboard Share
 
   Scenario: Share button copies visible ingredients to clipboard
