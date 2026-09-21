@@ -1,3 +1,4 @@
+@ChatGPTPlugin
 Feature: ChatGPT MCP Endpoint
   The current MCP Streamable HTTP endpoint at /mcp lets ChatGPT
   connect through Supabase Auth OAuth 2.1. The legacy /sse endpoint

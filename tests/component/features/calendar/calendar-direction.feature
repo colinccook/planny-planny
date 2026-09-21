@@ -1,3 +1,4 @@
+@MealCalendar
 Feature: Calendar Direction Toggle
 
   Scenario: Calendar tab shows forward indicator by default

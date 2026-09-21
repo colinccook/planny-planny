@@ -1,3 +1,4 @@
+@Authentication
 Feature: Sign Out in Settings
 
   Scenario: Settings page requires authentication to access sign out

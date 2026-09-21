@@ -1,3 +1,4 @@
+@Households
 Feature: Remember last household across sessions
   When a user belongs to multiple households, the app should pick up
   where they left off — log them back into the household they were last

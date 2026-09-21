@@ -1,3 +1,4 @@
+@StoreCupboard
 Feature: Store Cupboard Navigation
 
   Scenario: Store cupboard route is protected

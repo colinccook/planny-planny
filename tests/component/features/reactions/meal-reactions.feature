@@ -1,3 +1,4 @@
+@Reactions
 Feature: Meal plan reactions
   As a household member
   I want to react with thumbs up to meals

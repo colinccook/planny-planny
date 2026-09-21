@@ -1,3 +1,4 @@
+@MealCalendar
 Feature: Calendar View
 
   Scenario: Calendar page requires authentication

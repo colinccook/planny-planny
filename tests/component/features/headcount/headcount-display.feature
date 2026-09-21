@@ -1,3 +1,4 @@
+@Headcounts
 Feature: Headcount display on the planning view
 
   The planning view shows how many adults, children, and babies are

@@ -1,3 +1,4 @@
+@MealCalendar
 Feature: Day Detail View
   As a user I want to tap a day to see a full-screen detail view
   so I can manage meals for that day

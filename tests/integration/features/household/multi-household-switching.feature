@@ -1,3 +1,4 @@
+@Households
 Feature: Switching between multiple households
   A user that belongs to two households must be able to use the
   Settings panel to (a) see both, (b) switch the active household,

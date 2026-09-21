@@ -1,3 +1,4 @@
+@Authentication
 Feature: User Registration
 
   Scenario: New user can see the registration page

@@ -1,3 +1,4 @@
+@HouseholdSharing
 Feature: Public Household Sharing
 
   Scenario: Invalid share token shows error

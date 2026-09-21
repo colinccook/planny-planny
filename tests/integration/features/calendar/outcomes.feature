@@ -1,3 +1,4 @@
+@MealOutcomes
 Feature: Recording meal outcomes
   As a household editor I want to record whether a planned meal
   actually happened so that the household — and the global headline

@@ -1,3 +1,4 @@
+@Headcounts
 Feature: Day context form with stepper controls for headcount adjustments
 
   Events can adjust the headcount of a household using +/- stepper buttons.

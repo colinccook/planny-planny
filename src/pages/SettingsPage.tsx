@@ -13,6 +13,7 @@ import DeleteHousehold from '../components/settings/DeleteHousehold'
 import DeleteAccount from '../components/settings/DeleteAccount'
 import PreferencesSettings from '../components/settings/PreferencesSettings'
 import ConnectedApps from '../components/settings/ConnectedApps'
+import AddToClaude from '../components/settings/AddToClaude'
 import CollapsibleSection from '../components/ui/CollapsibleSection'
 import ErrorBoundary from '../components/ui/ErrorBoundary'
 import { SkeletonSettingsCard } from '../components/ui/Skeleton'
@@ -82,6 +83,7 @@ export default function SettingsPage() {
               )}
 
               <PreferencesSettings />
+              <AddToClaude />
               <ConnectedApps />
 
               <CollapsibleSection title="Account">

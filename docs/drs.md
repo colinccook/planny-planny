@@ -27,6 +27,7 @@ the first place agents should look before making an architectural choice.
 | readme-and-agent-instructions | [dr-016](drs/dr-016-readme-as-showcase.md) | The README is a showcase for friends, colleagues and employers — leading with the vibe-coded story, realtime collaboration and the CI safety net — on top of dr-015's four doc layers; every user-facing change keeps it current. |
 | chatgpt-plugin | [dr-017](drs/dr-017-chatgpt-plugin.md) | Publish a remote MCP-only plugin first: official streamable HTTP on a Supabase Edge Function, Supabase Auth OAuth 2.1, RLS plus role checks, and a controlled production domain; defer custom ChatGPT UI and bundled skills. |
 | mobile-viewport-and-zoom | [dr-018](drs/dr-018-mobile-viewport-and-zoom.md) | Never disable or trap zoom — form controls are always ≥16px so iOS Safari never auto-zooms, the viewport meta stays permissive, no `gesture*` blocking scripts, `touch-action: manipulation` for double-tap only; BDD guards enforce it. |
+| feature-tags | [dr-019](drs/dr-019-feature-tags.md) | Every Gherkin feature file carries one PascalCase `@FeatureName` tag (e.g. `@ChatGPTPlugin`, `@ClaudeIntegration`) — file names unchanged — so a GitHub search finds every test for a feature, and the README can link `@FeatureName` to a `docs/features/` page. |
 
 ## Rules
 

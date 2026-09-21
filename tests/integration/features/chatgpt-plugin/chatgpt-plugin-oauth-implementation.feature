@@ -1,3 +1,4 @@
+@ChatGPTPlugin
 Feature: ChatGPT Plugin OAuth Implementation
   The ChatGPT plugin supports the OAuth 2.0 authorization code flow (with
   PKCE) plus password and refresh_token grants, and exposes RFC 8414/7591
