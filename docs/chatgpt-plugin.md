@@ -128,6 +128,22 @@ npx -y @modelcontextprotocol/inspector
 Choose **Streamable HTTP**, enter the MCP URL, sign in, approve the consent
 screen, inspect every tool and exercise representative reads and writes.
 
+## Connect from the Claude app
+
+The same MCP server works as a Claude custom connector because it speaks
+Streamable HTTP and supports OAuth 2.1 dynamic client registration:
+
+1. In Claude, open **Settings → Connectors → Add custom connector**.
+2. Name it **Planny Planny** and enter the MCP URL
+   (`https://<api-origin>/functions/v1/chatgpt-plugin/mcp`).
+3. Turn on **Requires sign-in** and leave the client ID and client secret
+   blank — Claude registers itself via dynamic client registration.
+4. Sign in and approve the Planny Planny consent screen.
+
+The **Add to Claude** card on the in-app Settings page shows these steps with
+a copyable server URL. Access can be revoked afterwards from **Connected
+apps** in Settings, exactly like a ChatGPT connection.
+
 ## Hosted Supabase setup
 
 The following hosted settings are manual project configuration and are not
