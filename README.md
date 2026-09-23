@@ -29,24 +29,24 @@ database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permiss
 
 ## ✨ Everything else it does
 
-- **🗓️ Perpetual calendar.** A mobile-first, swipeable scrolling calendar
+- **🗓️ [Perpetual calendar](docs/features/meal-calendar.md).** A mobile-first, swipeable scrolling calendar
   of meals with day themes ("Oily Fish Monday") and per-day headcounts
   (adults, children, visitors).
-- **🥕 Ingredient tracking.** Tag meals with ingredients, star favourites
+- **🥕 [Ingredient tracking](docs/features/ingredients.md).** Tag meals with ingredients, star favourites
   to encourage variety, and get overuse warnings (hello, chicken!).
-- **👨‍👩‍👧 Households.** Invite family by email; users can belong to several
+- **👨‍👩‍👧 [Households](docs/features/households.md).** Invite family by email; users can belong to several
   households, and every household's data is fully isolated.
-- **💡 Ideas, reactions & todos.** Lightweight meal ideas per day, 👍
+- **💡 [Ideas, reactions & todos](docs/features/reactions.md).** Lightweight meal ideas per day, 👍
   reactions, and a shared todo list ("buy milk") with reminders.
-- **🪄 AI meal suggestions.** A magic-wand prompt builder, plus a
-  streamable-HTTP ChatGPT plugin with OAuth consent, RLS-protected household
-  tools and revocable access. → [docs/chatgpt-plugin.md](docs/chatgpt-plugin.md)
+- **🪄 [AI meal suggestions](docs/features/ai-meal-suggestions.md).** A magic-wand prompt builder, plus a
+  [streamable-HTTP ChatGPT plugin](docs/features/chatgpt-plugin.md) with OAuth
+  consent, RLS-protected household tools and revocable access.
 - **🤝 Add to Claude.** We do
   [@ClaudeIntegration](docs/features/claude-integration.md): the same MCP
   server works as a Claude custom connector — an "Add to Claude" card in
   Settings gives copy-paste instructions and the server URL, with sign-in
   handled by OAuth and automatic client registration.
-- **🌱 Outcomes.** Record whether the planned meal actually got cooked and
+- **🌱 [Outcomes](docs/features/meal-outcomes.md).** Record whether the planned meal actually got cooked and
   eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
 
 ## 🤖 100% vibe coded — here's why that's safe

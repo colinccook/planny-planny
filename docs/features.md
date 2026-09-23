@@ -6,9 +6,9 @@ tests, and documentation. Every test names exactly one primary feature.
 
 | Feature | What it covers |
 | --- | --- |
-| [@AIMealSuggestions](features/a-i-meal-suggestions.md) | Building AI-ready meal suggestion prompts. |
+| [@AIMealSuggestions](features/ai-meal-suggestions.md) | Building AI-ready meal suggestion prompts. |
 | [@Authentication](features/authentication.md) | Registration, sign-in, sign-out, and protected routes. |
-| [@ChatGPTPlugin](features/chat-g-p-t-plugin.md) | The MCP plugin, OAuth, tools, and plugin information. |
+| [@ChatGPTPlugin](features/chatgpt-plugin.md) | The MCP plugin, OAuth, tools, and plugin information. |
 | [@ClaudeIntegration](features/claude-integration.md) | Connecting the MCP server to Claude. |
 | [@Headcounts](features/headcounts.md) | Household defaults and per-day adult, child, and visitor counts. |
 | [@HouseholdSharing](features/household-sharing.md) | Invitations and public household links. |
