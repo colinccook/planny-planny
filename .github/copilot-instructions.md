@@ -48,7 +48,9 @@ strict, Tailwind v4) on Supabase (Postgres, Auth, RLS, Realtime).
   ([walkthrough](../docs/walkthrough/tanstack-query-and-realtime.md)).
 - **Test names describe observable behaviour, never implementation**, so
   refactors never force renames.
-- Every test file starts with its applicable taxonomy markers: exactly one
+- Every indexed `@Feature` and `!UiComponent` has a page under `docs/features/` or `docs/components/`; keep its user journey, API notes, screenshots, and code-search links current when behaviour changes or a new marker is added.
+- Playwright BDD scenarios may capture deterministic 390×844 screenshots for these pages; store them under `docs/screenshots/` and refresh them when the observable UI changes.
+- Every test file starts with its applicable documentation markers: exactly one
   indexed `@Feature`, one or more indexed `#DecisionRecord` themes, and each
   indexed `!UiComponent` it renders or drives. Omit inapplicable UI markers.
 
