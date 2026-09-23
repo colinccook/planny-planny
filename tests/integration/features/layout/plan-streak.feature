@@ -1,4 +1,5 @@
 @PlanStreak
+# #IntegrationTesting #Frontend !CalendarView
 Feature: Plan Streak Display
 
   Scenario: Plan streak counter is not shown on the login page

@@ -1,4 +1,5 @@
 @Permissions
+# #IntegrationTesting #Frontend #DatabaseSchemas !AccessLevelsLink !AccessLevelsList
 Feature: Access Levels — explainer tray
   Every place in the app where a role decision is made surfaces a
   "What do these levels mean?" link. Tapping it opens a tray that

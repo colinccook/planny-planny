@@ -1,3 +1,4 @@
+// @Reactions #UnitTesting #Frontend !ReactionButton
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { createElement } from 'react'

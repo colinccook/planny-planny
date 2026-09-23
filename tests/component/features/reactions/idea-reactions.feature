@@ -1,4 +1,5 @@
 @Reactions
+# #EndToEndTesting #Frontend !DayIdeasSection !ReactionButton
 Feature: Meal ideas and reactions
   As a household member
   I want to add ideas and react with thumbs up

@@ -1,3 +1,4 @@
+// @StoreCupboard #UnitTesting #Frontend
 import { describe, it, expect, beforeEach } from 'vitest'
 
 // Test the localStorage logic directly (not the hook, which needs React)

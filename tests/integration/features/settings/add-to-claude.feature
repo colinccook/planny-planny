@@ -1,4 +1,5 @@
 @ClaudeIntegration
+# #IntegrationTesting #Frontend !AddToClaude
 Feature: Add to Claude connector instructions
   The Settings page offers an "Add to Claude" card so a signed-in user
   can add Planny Planny to the Claude app as a custom MCP connector.

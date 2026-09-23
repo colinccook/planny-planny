@@ -1,4 +1,5 @@
 @MealCalendar
+# #EndToEndTesting #Frontend !CalendarView
 Feature: Calendar Direction Toggle
 
   Scenario: Calendar tab shows forward indicator by default

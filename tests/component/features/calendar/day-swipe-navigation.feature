@@ -1,4 +1,5 @@
 @MealCalendar
+# #EndToEndTesting #Frontend !SwipeableDay
 Feature: Day View Swipe Navigation
   As a user viewing a single day
   I want to swipe left or right to move between days

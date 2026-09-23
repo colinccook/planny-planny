@@ -1,4 +1,5 @@
 @Households
+# #IntegrationTesting #Frontend !HouseholdSwitcher
 Feature: Household Switcher
 
   Scenario: Settings page requires authentication to access switcher

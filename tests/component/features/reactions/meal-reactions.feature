@@ -1,4 +1,5 @@
 @Reactions
+# #EndToEndTesting #Frontend !MealCard !ReactionButton
 Feature: Meal plan reactions
   As a household member
   I want to react with thumbs up to meals

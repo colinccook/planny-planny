@@ -1,3 +1,4 @@
+// @PlanStreak #UnitTesting #Frontend
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('../lib/supabase', () => {

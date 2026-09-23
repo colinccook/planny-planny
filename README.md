@@ -72,8 +72,12 @@ not luck:
 - **TypeScript strict mode, no `any`** — the compiler is a reviewer too.
 - **Decisions are written down:** every architectural choice is an
   append-only decision record with alternatives and trade-offs, indexed in
-  [docs/drs.md](docs/drs.md), so neither humans nor agents re-litigate
+  [#DecisionRecords](docs/drs.md), so neither humans nor agents re-litigate
   settled questions.
+- **Everything is searchable:** indexed
+  [@Features](docs/features.md), [#DecisionRecords](docs/drs.md), and
+  [!UiComponents](docs/ui-components.md) connect documentation to the tests
+  that prove each behaviour.
 
 ## 🧰 Technology stack
 
@@ -116,8 +120,10 @@ npm run test:e2e          # both BDD suites
 
 | You want to… | Read |
 | --- | --- |
+| Look up product behaviour by `@Feature` | **[@Features](docs/features.md)** |
+| Look up a rendered surface by `!UiComponent` | **[!UiComponents](docs/ui-components.md)** |
 | Learn how the stack works (TypeScript, React, Postgres/Supabase, …) — in depth, with pointers into this codebase | **[docs/walkthrough/](docs/walkthrough/README.md)** |
-| Know *why* anything is the way it is | **[docs/drs.md](docs/drs.md)** — the decision-records index |
+| Know *why* anything is the way it is | **[#DecisionRecords](docs/drs.md)** |
 | Work on the repo as an AI agent | [.github/copilot-instructions.md](.github/copilot-instructions.md) |
 | Understand outcomes | [docs/outcomes.md](docs/outcomes.md) |
 | Understand the five access levels | [docs/permissions.md](docs/permissions.md) |

@@ -1,3 +1,4 @@
+// @Ingredients #UnitTesting #Frontend !IngredientSuggestions
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { createElement, type ReactNode } from 'react'

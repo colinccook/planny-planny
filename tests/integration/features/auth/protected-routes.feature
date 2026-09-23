@@ -1,4 +1,5 @@
 @Authentication
+# #IntegrationTesting #Frontend !ProtectedRoute
 Feature: Protected Routes
 
   Scenario: Unauthenticated user accessing calendar is redirected to login

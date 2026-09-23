@@ -1,4 +1,5 @@
 @MealCalendar
+# #EndToEndTesting #Frontend !MealCard
 Feature: Delete Meal
   As a user I want to delete a meal from a day
   so I can remove meals I no longer plan to cook

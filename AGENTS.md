@@ -1,5 +1,17 @@
 # Repository Agent Instructions
 
+## Repository Taxonomy
+
+- Start discovery from the canonical [`@Features`](docs/features.md),
+  [`#DecisionRecords`](docs/drs.md), and
+  [`!UiComponents`](docs/ui-components.md) indexes.
+- Reuse the indexed, case-sensitive PascalCase marker spellings in
+  documentation and tests.
+- Every test file names exactly one `@Feature`, its applicable
+  `#DecisionRecord` themes, and any `!UiComponent` it renders or drives.
+- Add new concepts to the relevant index in the same change that introduces
+  them.
+
 ## Dependency Updates
 
 - Upgrade runtimes, frameworks, tools, and dependencies only to their latest published Long-Term Support (LTS) release when the project provides an LTS channel.

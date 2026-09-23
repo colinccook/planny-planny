@@ -1,4 +1,5 @@
 @MealCalendar
+# #IntegrationTesting #Frontend !DayPlaceholders !CalendarView
 Feature: Day Placeholders
 
   Scenario: Day placeholder settings require authentication

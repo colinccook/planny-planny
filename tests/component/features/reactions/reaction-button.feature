@@ -1,4 +1,5 @@
 @Reactions
+# #EndToEndTesting #Frontend !ReactionButton
 Feature: Reusable reaction button
   As a household member
   I want a single reusable reaction control

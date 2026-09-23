@@ -1,4 +1,5 @@
 @HouseholdSharing
+# #IntegrationTesting #Frontend !PublicHouseholdPage !PublicShareToggle
 Feature: Public Household Sharing
 
   Scenario: Invalid share token shows error
