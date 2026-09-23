@@ -1,4 +1,5 @@
 @StoreCupboard
+# #IntegrationTesting #Frontend !CupboardHeader !CupboardList !TabBar
 Feature: Store Cupboard Navigation
 
   Scenario: Store cupboard route is protected

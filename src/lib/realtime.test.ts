@@ -1,3 +1,4 @@
+// @Households #UnitTesting #Backend
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { HouseholdRealtimeManager } from './realtime'
 import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js'

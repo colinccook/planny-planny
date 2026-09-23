@@ -1,3 +1,4 @@
+// @Households #UnitTesting
 import { describe, it, expect } from 'vitest'
 import { pickInitialHousehold, lastHouseholdStorageKey } from './householdSelection'
 

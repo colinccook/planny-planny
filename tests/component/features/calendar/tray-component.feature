@@ -1,4 +1,5 @@
 @MealCalendar
+# #EndToEndTesting #Frontend !Tray
 Feature: Tray Component
   As a user I want to interact with tray components
   that slide in from the top and can be dismissed

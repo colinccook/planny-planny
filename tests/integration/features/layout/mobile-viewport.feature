@@ -1,4 +1,5 @@
 @MobileLayout
+# #IntegrationTesting #Frontend #MobileViewportAndZoom !AppShell
 Feature: Mobile viewport settings
 
   Scenario: Pinch-to-zoom is allowed for accessibility

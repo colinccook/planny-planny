@@ -1,3 +1,4 @@
+// @StoreCupboard #UnitTesting #Frontend
 import { describe, it, expect } from 'vitest'
 
 // Test the deduplication and meal counting logic

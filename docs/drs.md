@@ -1,4 +1,4 @@
-# Decision records (DRs)
+# Decision records (`#DecisionRecords`)
 
 Every important decision about this project is a decision record. One
 record per theme, living in [`drs/`](drs/). **DRs are never edited** — when
@@ -7,27 +7,31 @@ update this table to point at the replacement. This table is the
 authoritative index of the *latest applicable* DR for every theme, and is
 the first place agents should look before making an architectural choice.
 
+Themes are stable, case-sensitive PascalCase hashtags. Search for a theme such
+as `#ContinuousIntegration` to find the decision and the tests it governs.
+
 ## Current decisions
 
 | Theme | Latest DR | What was chosen, and why |
 | --- | --- | --- |
-| high-level-architecture | [dr-001](drs/dr-001-high-level-architecture.md) | A statically hosted React SPA talking directly to Supabase — realtime collaboration and RLS-enforced isolation with no custom server to build or operate. |
-| backend | [dr-002](drs/dr-002-backend.md) | Supabase (managed Postgres, Auth, PostgREST, Realtime, Edge Functions) — real SQL with database-enforced security, and the identical stack runs locally in Docker. |
-| frontend | [dr-004](drs/dr-004-frontend.md) | React 19 + Vite + TypeScript (strict) + Tailwind v4 + TanStack Query + React Router v7 — a mainstream, agent-friendly, statically buildable mobile-first stack with no global state library. |
-| running-locally | [dr-005](drs/dr-005-running-locally.md) | Supabase CLI (Docker) for the backend and `npm run dev` for the frontend — one command boots the real stack, identical to CI and production. |
-| unit-testing | [dr-006](drs/dr-006-unit-testing.md) | Vitest beside the code for pure logic only, with behaviour-describing test names that survive refactors; runs on every PR. |
-| integration-testing | [dr-007](drs/dr-007-integration-testing.md) | Playwright + playwright-bdd driving the real app against a real local Supabase container — the default test style for any user-facing feature. |
-| end-to-end-testing | [dr-008](drs/dr-008-end-to-end-testing.md) | The integration suite doubles as e2e, plus a lighter component BDD suite (HTML harnesses, no backend) strictly for pre-data-layer UI contracts. |
-| database-schemas | [dr-009](drs/dr-009-database-schemas.md) | Append-only SQL migrations in `supabase/migrations/` with RLS on every table and generated TypeScript types — the schema is the API contract and can't drift. |
-| agentic-skills | [dr-010](drs/dr-010-agentic-skills.md) | Agent instructions stay short and index-shaped, linking to walkthroughs and this DR table instead of duplicating them. |
-| recommend-mcps | [dr-011](drs/dr-011-recommended-mcps.md) | Always use the context7 MCP server for the latest library documentation before writing code against an API. |
-| hosting-platform | [dr-012](drs/dr-012-hosting-platform.md) | GitHub for everything — repo, Pages for the static frontend, Actions for CI/CD — because it's free and already where the code lives. |
-| continuous-integration | [dr-013](drs/dr-013-continuous-integration.md) | GitHub Actions gates `main`: unit tests on every PR; lint, component + integration BDD and Lighthouse on every push — a red pipeline blocks deploy. |
-| continuous-delivery | [dr-014](drs/dr-014-continuous-delivery.md) | Every green push to `main` auto-deploys: Supabase migrations and Edge Functions first, then the static frontend to GitHub Pages. |
-| readme-and-agent-instructions | [dr-016](drs/dr-016-readme-as-showcase.md) | The README is a showcase for friends, colleagues and employers — leading with the vibe-coded story, realtime collaboration and the CI safety net — on top of dr-015's four doc layers; every user-facing change keeps it current. |
-| chatgpt-plugin | [dr-017](drs/dr-017-chatgpt-plugin.md) | Publish a remote MCP-only plugin first: official streamable HTTP on a Supabase Edge Function, Supabase Auth OAuth 2.1, RLS plus role checks, and a controlled production domain; defer custom ChatGPT UI and bundled skills. |
-| mobile-viewport-and-zoom | [dr-018](drs/dr-018-mobile-viewport-and-zoom.md) | Never disable or trap zoom — form controls are always ≥16px so iOS Safari never auto-zooms, the viewport meta stays permissive, no `gesture*` blocking scripts, `touch-action: manipulation` for double-tap only; BDD guards enforce it. |
-| feature-tags | [dr-019](drs/dr-019-feature-tags.md) | Every Gherkin feature file carries one PascalCase `@FeatureName` tag (e.g. `@ChatGPTPlugin`, `@ClaudeIntegration`) — file names unchanged — so a GitHub search finds every test for a feature, and the README can link `@FeatureName` to a `docs/features/` page. |
+| #HighLevelArchitecture | [dr-001](drs/dr-001-high-level-architecture.md) | A statically hosted React SPA talking directly to Supabase — realtime collaboration and RLS-enforced isolation with no custom server to build or operate. |
+| #Backend | [dr-002](drs/dr-002-backend.md) | Supabase (managed Postgres, Auth, PostgREST, Realtime, Edge Functions) — real SQL with database-enforced security, and the identical stack runs locally in Docker. |
+| #Frontend | [dr-004](drs/dr-004-frontend.md) | React 19 + Vite + TypeScript (strict) + Tailwind v4 + TanStack Query + React Router v7 — a mainstream, agent-friendly, statically buildable mobile-first stack with no global state library. |
+| #RunningLocally | [dr-005](drs/dr-005-running-locally.md) | Supabase CLI (Docker) for the backend and `npm run dev` for the frontend — one command boots the real stack, identical to CI and production. |
+| #UnitTesting | [dr-006](drs/dr-006-unit-testing.md) | Vitest beside the code for pure logic only, with behaviour-describing test names that survive refactors; runs on every PR. |
+| #IntegrationTesting | [dr-007](drs/dr-007-integration-testing.md) | Playwright + playwright-bdd driving the real app against a real local Supabase container — the default test style for any user-facing feature. |
+| #EndToEndTesting | [dr-008](drs/dr-008-end-to-end-testing.md) | The integration suite doubles as e2e, plus a lighter component BDD suite (HTML harnesses, no backend) strictly for pre-data-layer UI contracts. |
+| #DatabaseSchemas | [dr-009](drs/dr-009-database-schemas.md) | Append-only SQL migrations in `supabase/migrations/` with RLS on every table and generated TypeScript types — the schema is the API contract and can't drift. |
+| #AgenticSkills | [dr-010](drs/dr-010-agentic-skills.md) | Agent instructions stay short and index-shaped, linking to walkthroughs and this DR table instead of duplicating them. |
+| #RecommendedMcps | [dr-011](drs/dr-011-recommended-mcps.md) | Always use the context7 MCP server for the latest library documentation before writing code against an API. |
+| #HostingPlatform | [dr-012](drs/dr-012-hosting-platform.md) | GitHub for everything — repo, Pages for the static frontend, Actions for CI/CD — because it's free and already where the code lives. |
+| #ContinuousIntegration | [dr-013](drs/dr-013-continuous-integration.md) | GitHub Actions gates `main`: unit tests on every PR; lint, component + integration BDD and Lighthouse on every push — a red pipeline blocks deploy. |
+| #ContinuousDelivery | [dr-014](drs/dr-014-continuous-delivery.md) | Every green push to `main` auto-deploys: Supabase migrations and Edge Functions first, then the static frontend to GitHub Pages. |
+| #ReadmeAndAgentInstructions | [dr-016](drs/dr-016-readme-as-showcase.md) | The README is a showcase for friends, colleagues and employers — leading with the vibe-coded story, realtime collaboration and the CI safety net — on top of dr-015's four doc layers; every user-facing change keeps it current. |
+| #ChatGptPlugin | [dr-017](drs/dr-017-chatgpt-plugin.md) | Publish a remote MCP-only plugin first: official streamable HTTP on a Supabase Edge Function, Supabase Auth OAuth 2.1, RLS plus role checks, and a controlled production domain; defer custom ChatGPT UI and bundled skills. |
+| #MobileViewportAndZoom | [dr-018](drs/dr-018-mobile-viewport-and-zoom.md) | Never disable or trap zoom — form controls are always ≥16px so iOS Safari never auto-zooms, the viewport meta stays permissive, no `gesture*` blocking scripts, `touch-action: manipulation` for double-tap only; BDD guards enforce it. |
+| #FeatureTags | [dr-019](drs/dr-019-feature-tags.md) | Every Gherkin feature file carries one PascalCase `@FeatureName` tag (e.g. `@ChatGPTPlugin`, `@ClaudeIntegration`) — file names unchanged — so a GitHub search finds every test for a feature, and the README can link `@FeatureName` to a `docs/features/` page. |
+| #DocumentationTaxonomy | [dr-020](drs/dr-020-documentation-taxonomy.md) | Product features, decision themes, and UI components use indexed `@Feature`, `#DecisionRecord`, and `!UiComponent` markers in documentation and tests, making related evidence discoverable by repository search. |
 
 ## Rules
 
@@ -38,3 +42,5 @@ the first place agents should look before making an architectural choice.
    considered with pros and cons**, and the **consequences**.
 3. If a theme isn't listed here, no decision has been recorded for it —
    write the DR before building on an assumption.
+4. Theme names use the canonical `#PascalCase` spelling in this index and in
+   test metadata.

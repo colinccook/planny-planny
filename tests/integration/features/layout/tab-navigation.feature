@@ -1,4 +1,5 @@
 @MobileLayout
+# #IntegrationTesting #Frontend !TabBar
 Feature: Tab Navigation
 
   Scenario: Protected tab routes redirect unauthenticated users to login

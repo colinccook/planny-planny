@@ -1,4 +1,5 @@
 @MealCalendar
+# #EndToEndTesting #Frontend !CopyMealTray
 Feature: Copy and Move Meal
   As a user I want to copy or move a meal to another day
   so I can easily reschedule or duplicate planned meals

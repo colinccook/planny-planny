@@ -7,6 +7,23 @@ on top of Playwright to drive its BDD test suite. Specs are written as
 Gherkin `.feature` files; the steps that drive them are TypeScript files
 sitting beside them.
 
+Every feature file starts with one canonical `@FeatureName` from the
+[`@Features` index](../features.md). A comment directly below it names the
+applicable [`#DecisionRecord`](../drs.md) themes and
+[`!UiComponent`](../ui-components.md) surfaces:
+
+```gherkin
+@MealCalendar
+# #IntegrationTesting #Frontend !CalendarView !DayRow
+Feature: Calendar View
+```
+
+The `@FeatureName` is executable Gherkin metadata. The `#` and `!` markers are
+search metadata kept in a Gherkin comment. Vitest files put the same applicable
+markers together in a leading `//` comment. A test always has exactly one
+primary feature; it can have several decision or UI markers, and omits UI
+markers when it does not render or drive a component.
+
 The suite is split into **two BDD projects with different guarantees**:
 
 | Project | Lives in | Drives | Needs Supabase? |
@@ -269,9 +286,10 @@ The full process when adding a new feature:
    component that doesn't exist yet (and plan to add an integration test
    as soon as the component is wired up), or if it's pure logic with no
    backend like the role-capability matrix.
-2. **Write the Gherkin.** It should describe user-visible behaviour, not
-   implementation. Reuse existing Given steps where you can — they're the
-   seam between scenarios.
+2. **Write the Gherkin.** Add its indexed `@Feature`, `#DecisionRecord`, and
+   applicable `!UiComponent` markers. It should describe user-visible
+   behaviour, not implementation. Reuse existing Given steps where you can —
+   they're the seam between scenarios.
 3. **Wire up steps** in the matching `tests/<suite>/steps/<thing>.steps.ts`:
    - For integration: `await page.goto('/...')`, log in via the existing
      auth steps if needed, drive the real UI with `page.getByRole`,

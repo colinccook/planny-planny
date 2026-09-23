@@ -1,3 +1,4 @@
+// @MealOutcomes #UnitTesting
 import { describe, it, expect } from 'vitest'
 import { canRecordOutcomeOn, shouldShowYesterdayGhost } from './outcomes'
 import type { MealOutcome } from '../hooks/useMealOutcomes'

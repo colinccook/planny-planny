@@ -12,6 +12,9 @@ strict, Tailwind v4) on Supabase (Postgres, Auth, RLS, Realtime).
 - [`docs/walkthrough/`](../docs/walkthrough/README.md) — how each
   technology works, in depth, with pointers into this codebase. Load the
   chapter you need.
+- Use the canonical lookup indexes before naming or searching concepts:
+  [`@Features`](../docs/features.md), [`#DecisionRecords`](../docs/drs.md),
+  and [`!UiComponents`](../docs/ui-components.md).
 - **Always use the context7 MCP server** for the latest library
   documentation before writing code against an API
   ([dr-011](../docs/drs/dr-011-recommended-mcps.md)).
@@ -45,6 +48,9 @@ strict, Tailwind v4) on Supabase (Postgres, Auth, RLS, Realtime).
   ([walkthrough](../docs/walkthrough/tanstack-query-and-realtime.md)).
 - **Test names describe observable behaviour, never implementation**, so
   refactors never force renames.
+- Every test file starts with its applicable taxonomy markers: exactly one
+  indexed `@Feature`, one or more indexed `#DecisionRecord` themes, and each
+  indexed `!UiComponent` it renders or drives. Omit inapplicable UI markers.
 
 ## Testing requirements
 

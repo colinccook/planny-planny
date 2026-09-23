@@ -1,3 +1,4 @@
+// @Authentication #UnitTesting
 import { describe, it, expect } from 'vitest'
 import { buildAppUrl, buildInviteUrl, buildShareUrl, safeAppRedirect } from './appUrl'
 

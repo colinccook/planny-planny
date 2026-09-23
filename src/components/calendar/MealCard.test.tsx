@@ -1,3 +1,4 @@
+// @MealCalendar #UnitTesting #Frontend !MealCard
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement } from 'react'

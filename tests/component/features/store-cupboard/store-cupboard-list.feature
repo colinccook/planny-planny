@@ -1,4 +1,5 @@
 @StoreCupboard
+# #EndToEndTesting #Frontend !CupboardList
 Feature: Store Cupboard List
 
   Scenario: Empty cupboard shows no-ingredients message

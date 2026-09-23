@@ -1,4 +1,5 @@
 @ChatGPTPlugin
+# #IntegrationTesting #Backend #ChatGptPlugin !OAuthConsentPage
 Feature: ChatGPT OAuth consent
   Planny Planny hosts the user-facing consent screen used by the
   Supabase Auth OAuth 2.1 authorization server.

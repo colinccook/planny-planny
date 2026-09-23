@@ -1,3 +1,4 @@
+// @AIMealSuggestions #UnitTesting #Frontend !MealPromptGenerator
 import { describe, it, expect } from 'vitest'
 import { buildPrompt } from '../../lib/buildPrompt'
 

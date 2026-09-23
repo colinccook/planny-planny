@@ -1,4 +1,5 @@
 @Headcounts
+# #EndToEndTesting #Frontend !HouseholdSettings !NumberStepper
 Feature: Household settings with stepper controls for headcounts
 
   Households can configure default counts for adults, children, and babies

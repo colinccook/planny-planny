@@ -1,4 +1,5 @@
 @Ingredients
+# #IntegrationTesting #Frontend !IngredientsList !AddIngredientForm !IngredientTag
 Feature: Manage Ingredients
 
   Scenario: Ingredients page requires authentication

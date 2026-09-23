@@ -1,4 +1,5 @@
 @MealCalendar
+# #IntegrationTesting #Frontend !CalendarView !DayRow
 Feature: Calendar View
 
   Scenario: Calendar page requires authentication

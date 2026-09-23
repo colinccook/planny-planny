@@ -1,4 +1,5 @@
 @Ingredients
+# #IntegrationTesting #Frontend !IngredientsList !IngredientTag
 Feature: Star Ingredients
 
   Scenario: Starring ingredients requires authentication

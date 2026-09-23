@@ -1,4 +1,5 @@
 @Todos
+# #IntegrationTesting #Frontend !TodoDetailView !TodoList
 Feature: Todo Detail Flow
   As a user I want to manage a todo (rename, reschedule, add a
   note, delete it) on a dedicated full-screen view that I open

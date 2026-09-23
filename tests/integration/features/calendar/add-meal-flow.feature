@@ -1,4 +1,5 @@
 @MealCalendar
+# #IntegrationTesting #Frontend !AddMealView !MealPlanForm
 Feature: Add Meal Flow
   As a user I want to add a meal through a full-screen form
   with tray components for each field
