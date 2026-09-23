@@ -1,6 +1,6 @@
 # Repository Agent Instructions
 
-## Repository Taxonomy
+## Repository documentation markers
 
 - Start discovery from the canonical [`@Features`](docs/features.md),
   [`#DecisionRecords`](docs/drs.md), and

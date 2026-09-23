@@ -26,9 +26,39 @@ Your household permissions still apply to every tool call (RLS plus the
 plugin's role checks), and access is revocable from **Connected apps**
 in Settings.
 
+## User journey
+
+1. Open **Settings → Add to Claude** in Planny Planny.
+2. Copy the displayed MCP server URL.
+3. Add it as a custom connector in Claude and enable sign-in.
+4. Complete OAuth consent, then ask Claude to work with the household plan.
+5. Revoke access later from **Connected apps** when the connector is no longer
+   needed.
+
+## Screenshots and visual walkthrough
+
+Capture the entry card, copied-URL state, OAuth consent, successful connector,
+and revoked-access state at 390×844 under
+`docs/screenshots/claude-integration/`. Playwright can create a deterministic
+snapshot with:
+
+```ts
+await page.screenshot({
+  path: 'docs/screenshots/claude-integration/01-add-to-claude.png',
+  fullPage: true,
+});
+```
+
+Refresh these images whenever the setup journey changes.
+
 ## Tests
 
 All scenarios for this feature are tagged `@ClaudeIntegration`
 ([DR-019](../drs/dr-019-feature-tags.md)):
 
 - [Search the repository for `@ClaudeIntegration`](https://github.com/search?q=repo%3Acolinccook%2Fplanny-planny+%22%40ClaudeIntegration%22&type=code)
+
+## Maintenance
+
+Keep this page, its screenshots, and the linked scenarios current when the
+connector setup, OAuth flow, or permission behaviour changes.
