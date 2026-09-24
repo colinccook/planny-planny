@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { copyToClipboard } from '../../lib/clipboard'
-import { buildMcpServerUrl } from '../../lib/mcpUrl'
+import { buildClaudeMcpServerUrl } from '../../lib/mcpUrl'
 import { useToast } from '../../hooks/useToast'
 import CollapsibleSection from '../ui/CollapsibleSection'
 
@@ -8,11 +8,9 @@ export default function AddToClaude() {
   const [copied, setCopied] = useState(false)
   const { showToast } = useToast()
 
-  // The same remote MCP server that powers the ChatGPT plugin also works as a
-  // Claude custom connector: it speaks Streamable HTTP and supports OAuth 2.1
-  // dynamic client registration, so Claude only needs the URL and sign-in
-  // turned on — no client ID or secret.
-  const mcpUrl = buildMcpServerUrl()
+  // Claude uses a dedicated MCP resource so its temporary OAuth compatibility
+  // bridge cannot change the published ChatGPT plugin's issuer or grants.
+  const mcpUrl = buildClaudeMcpServerUrl()
 
   const copyUrl = async () => {
     await copyToClipboard(mcpUrl)
@@ -43,7 +41,10 @@ export default function AddToClaude() {
             client ID and client secret blank — the server registers Claude
             automatically.
           </li>
-          <li>Sign in with your Planny Planny account and approve access.</li>
+          <li>
+            Sign in, approve access and confirm your Planny Planny password to
+            create a separate connector session.
+          </li>
         </ol>
 
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -62,9 +63,10 @@ export default function AddToClaude() {
         </button>
 
         <p className="text-xs text-gray-500">
-          Claude connects to the same household tools as the ChatGPT plugin, and
-          your household permissions still apply. You can revoke access at any
-          time from Connected apps below.
+          Claude connects to the same household tools as the ChatGPT plugin
+          through a separate connector URL, so the ChatGPT connection is not
+          changed. Your household permissions still apply, and you can revoke
+          Claude from Connected apps below.
         </p>
       </div>
     </CollapsibleSection>

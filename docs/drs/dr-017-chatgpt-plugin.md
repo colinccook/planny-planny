@@ -1,6 +1,6 @@
 # DR-017: Public ChatGPT plugin
 
-- **Status:** Active
+- **Status:** Superseded by DR-021
 - **Decided:** 2026-09
 - **Theme:** chatgpt-plugin
 - **Builds on:** [dr-001-high-level-architecture](dr-001-high-level-architecture.md),

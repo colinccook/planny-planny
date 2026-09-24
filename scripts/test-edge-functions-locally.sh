@@ -2,7 +2,7 @@
 # Test Edge Functions locally before deploying to production
 # Usage: ./scripts/test-edge-functions-locally.sh
 
-echo "🔍 Testing ChatGPT Plugin OAuth Edge Functions locally..."
+echo "🔍 Testing MCP OAuth Edge Functions locally..."
 echo ""
 
 # Colors for output
@@ -14,13 +14,15 @@ NC='\033[0m' # No Color
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Base URL for local Supabase
-BASE_URL="http://127.0.0.1:54321/functions/v1/chatgpt-plugin-auth"
+# Base URLs for local Supabase
+FUNCTIONS_URL="http://127.0.0.1:54321/functions/v1"
+AUTH_URL="$FUNCTIONS_URL/chatgpt-plugin-auth"
+MCP_URL="$FUNCTIONS_URL/chatgpt-plugin"
 
 # Helper function to test an endpoint
 test_endpoint() {
   local method=$1
-  local path=$2
+  local url=$2
   local data=$3
   local expected_status=$4
   local test_name=$5
@@ -28,12 +30,12 @@ test_endpoint() {
   echo -n "Testing $test_name... "
 
   if [ "$method" = "GET" ]; then
-    status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL$path")
+    status=$(curl -s -o /dev/null -w '%{http_code}' "$url")
   else
     status=$(curl -s -o /dev/null -w '%{http_code}' -X "$method" \
       -H "Content-Type: application/json" \
       -d "$data" \
-      "$BASE_URL$path")
+      "$url")
   fi
 
   if [ "$status" = "$expected_status" ]; then
@@ -46,13 +48,23 @@ test_endpoint() {
 }
 
 echo "────────────────────────────────────────────────"
-echo "GET /authorize (OAuth authorization endpoint)"
+echo "OAuth and protected-resource discovery"
 echo "────────────────────────────────────────────────"
 echo ""
 
-test_endpoint "GET" "/authorize" "" "400" "Missing redirect_uri"
-test_endpoint "GET" "/authorize?redirect_uri=https://chat.openai.com/callback" "" "302" "Redirect to login when missing credentials"
-test_endpoint "GET" "/authorize?redirect_uri=https://chat.openai.com/callback&email=test@example.com&password=invalid" "" "401" "Invalid credentials"
+test_endpoint "GET" "$AUTH_URL/.well-known/oauth-authorization-server" "" "200" "Compatibility authorization metadata"
+test_endpoint "GET" "$MCP_URL/mcp/oauth-protected-resource" "" "200" "ChatGPT protected-resource metadata"
+test_endpoint "GET" "$MCP_URL/claude/mcp/oauth-protected-resource" "" "200" "Claude protected-resource metadata"
+
+echo ""
+echo "────────────────────────────────────────────────"
+echo "Authorization and registration validation"
+echo "────────────────────────────────────────────────"
+echo ""
+
+test_endpoint "GET" "$AUTH_URL/authorize" "" "400" "Incomplete authorization request"
+test_endpoint "POST" "$AUTH_URL/register" '{"redirect_uris":[]}' "400" "Missing registration redirect URI"
+test_endpoint "GET" "$AUTH_URL/grants" "" "401" "Unauthenticated grant listing"
 
 echo ""
 echo "────────────────────────────────────────────────"
@@ -60,11 +72,11 @@ echo "POST /token (OAuth token endpoint)"
 echo "────────────────────────────────────────────────"
 echo ""
 
-test_endpoint "POST" "/token" '{"grant_type":"password"}' "400" "Missing email in password grant"
-test_endpoint "POST" "/token" '{"grant_type":"password","email":"test@example.com"}' "400" "Missing password"
-test_endpoint "POST" "/token" '{"grant_type":"authorization_code"}' "400" "Missing code"
-test_endpoint "POST" "/token" '{"grant_type":"refresh_token"}' "400" "Missing refresh_token"
-test_endpoint "POST" "/token" '{"grant_type":"unsupported"}' "400" "Unsupported grant_type"
+test_endpoint "POST" "$AUTH_URL/token" '{"grant_type":"password"}' "400" "Missing email in password grant"
+test_endpoint "POST" "$AUTH_URL/token" '{"grant_type":"password","email":"test@example.com"}' "400" "Missing password"
+test_endpoint "POST" "$AUTH_URL/token" '{"grant_type":"authorization_code"}' "400" "Missing code"
+test_endpoint "POST" "$AUTH_URL/token" '{"grant_type":"refresh_token"}' "400" "Missing refresh_token"
+test_endpoint "POST" "$AUTH_URL/token" '{"grant_type":"unsupported"}' "400" "Unsupported grant_type"
 
 echo ""
 echo "────────────────────────────────────────────────"

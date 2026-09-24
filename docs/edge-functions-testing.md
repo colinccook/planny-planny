@@ -24,21 +24,32 @@ npm install
 ```
 
 This script validates:
-- ✅ **Authorization endpoint (`GET /authorize`)** — parameter validation, OAuth redirects
-- ✅ **Token endpoint (`POST /token`)** — grant type validation, error handling
-- ✅ **Error responses** — correct HTTP status codes (400, 401, 500)
+- ✅ **ChatGPT discovery** — the published `/mcp` metadata remains available.
+- ✅ **Claude discovery** — the isolated `/claude/mcp` metadata is available.
+- ✅ **Compatibility authorization** — incomplete requests and unauthenticated
+  grant access are rejected.
+- ✅ **Token endpoint (`POST /token`)** — grant type validation and error
+  handling.
 
 **Example output:**
 ```
-🔍 Testing ChatGPT Plugin OAuth Edge Functions locally...
+🔍 Testing MCP OAuth Edge Functions locally...
 
 ────────────────────────────────────────────────
-GET /authorize (OAuth authorization endpoint)
+OAuth and protected-resource discovery
 ────────────────────────────────────────────────
 
-Testing Missing redirect_uri... ✓ (HTTP 400)
-Testing Redirect to login when missing credentials... ✓ (HTTP 302)
-Testing Invalid credentials... ✓ (HTTP 401)
+Testing Compatibility authorization metadata... ✓ (HTTP 200)
+Testing ChatGPT protected-resource metadata... ✓ (HTTP 200)
+Testing Claude protected-resource metadata... ✓ (HTTP 200)
+
+────────────────────────────────────────────────
+Authorization and registration validation
+────────────────────────────────────────────────
+
+Testing Incomplete authorization request... ✓ (HTTP 400)
+Testing Missing registration redirect URI... ✓ (HTTP 400)
+Testing Unauthenticated grant listing... ✓ (HTTP 401)
 
 ────────────────────────────────────────────────
 POST /token (OAuth token endpoint)
@@ -54,7 +65,7 @@ Testing Unsupported grant_type... ✓ (HTTP 400)
 Test Results
 ────────────────────────────────────────────────
 
-Passed: 8
+Passed: 11
 Failed: 0
 
 ✓ All local tests passed! Edge Functions are ready.
@@ -98,7 +109,8 @@ git push origin main
 ## How It Works
 
 1. **Local Supabase instance** runs Edge Functions at `http://127.0.0.1:54321/functions/v1/`
-2. **Test script** makes HTTP requests to validate behavior
+2. **Test script** makes HTTP requests to validate discovery and rejection
+   behavior without test credentials
 3. **Database migrations** are automatically applied (`supabase start` does this)
 4. **OAuth endpoints** are configured in `supabase/config.toml` with `verify_jwt = false`
 
@@ -115,11 +127,11 @@ supabase start
 
 ### "Failed to generate authorization code" (500 error)
 
-**Cause:** OAuth tables don't exist  
+**Cause:** OAuth tables don't exist
 **Fix:**
 ```bash
 supabase db reset
-# This applies all migrations including 20260806000001 and 20260806000002
+# This applies every OAuth migration, including the DR-021 bridge hardening.
 ```
 
 ### Tests fail but CI passes

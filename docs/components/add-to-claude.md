@@ -4,11 +4,14 @@ Reusable UI documentation for **!AddToClaude**.
 
 ## Purpose and value
 
-This component packages a repeatable piece of the Planny Planny interface so users get a consistent, accessible interaction wherever the same state appears. Its value is the behaviour it makes easy to discover and operate, not merely its visual appearance.
+This settings card gives Claude users the dedicated
+`/chatgpt-plugin/claude/mcp` connector URL and the exact dynamic-registration
+steps. The separate URL keeps Claude's temporary OAuth compatibility bridge
+isolated from the published ChatGPT plugin.
 
 ## Source and lookup
 
-- [Authoritative source: `AddToClaude.tsx`](../src/components/settings/AddToClaude.tsx)
+- [Authoritative source: `AddToClaude.tsx`](../../src/components/settings/AddToClaude.tsx)
 - [Search all `!AddToClaude` references](https://github.com/colinccook/planny-planny/search?q=!AddToClaude&type=code)
 - [Find tests that render or drive it](https://github.com/colinccook/planny-planny/search?q=!AddToClaude+repo%3Acolinccook%2Fplanny-planny&type=code)
 - [Canonical !UiComponents index](../ui-components.md)
@@ -17,7 +20,7 @@ This component packages a repeatable piece of the Planny Planny interface so use
 
 - `import { useState } from 'react'`
 - `import { copyToClipboard } from '../../lib/clipboard'`
-- `import { buildMcpServerUrl } from '../../lib/mcpUrl'`
+- `import { buildClaudeMcpServerUrl } from '../../lib/mcpUrl'`
 - `import { useToast } from '../../hooks/useToast'`
 - `import CollapsibleSection from '../ui/CollapsibleSection'`
 
@@ -40,6 +43,10 @@ Document screenshots for each state that users can encounter. Capture at 390×84
 | Completed | `05-complete.png` | Result after the interaction |
 
 Playwright tests can create these documentation snapshots with `await page.screenshot({ path: 'docs/screenshots/components/add-to-claude/03-active.png', fullPage: true })`. Keep the test setup deterministic, avoid credentials in screenshots, and update images when the observable states change.
+
+Current mobile view:
+
+![Add to Claude settings at 390×844](../screenshots/claude-integration/01-add-to-claude-mobile.png)
 
 ## Consumption notes
 

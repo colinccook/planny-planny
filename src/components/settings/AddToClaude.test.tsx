@@ -14,7 +14,7 @@ vi.mock('../../lib/clipboard', () => ({
 }))
 
 import AddToClaude from './AddToClaude'
-import { buildMcpServerUrl } from '../../lib/mcpUrl'
+import { buildClaudeMcpServerUrl } from '../../lib/mcpUrl'
 
 describe('AddToClaude', () => {
   beforeEach(() => {
@@ -26,8 +26,9 @@ describe('AddToClaude', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add to Claude' }))
 
-    expect(screen.getByTestId('mcp-server-url').textContent).toBe(buildMcpServerUrl())
-    expect(buildMcpServerUrl()).toMatch(/\/functions\/v1\/chatgpt-plugin\/mcp$/)
+    expect(screen.getByTestId('mcp-server-url').textContent).toBe(buildClaudeMcpServerUrl())
+    expect(buildClaudeMcpServerUrl())
+      .toMatch(/\/functions\/v1\/chatgpt-plugin\/claude\/mcp$/)
   })
 
   it('explains that sign-in is required and client details stay blank', () => {
@@ -37,6 +38,7 @@ describe('AddToClaude', () => {
 
     expect(screen.getByText('Requires sign-in')).toBeDefined()
     expect(screen.getByText(/leave the client ID and client secret blank/i)).toBeDefined()
+    expect(screen.getByText(/confirm your Planny Planny password/i)).toBeDefined()
   })
 
   it('copies the server URL to the clipboard', async () => {
@@ -46,7 +48,7 @@ describe('AddToClaude', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy server URL for Claude' }))
 
     await waitFor(() => {
-      expect(mockCopyToClipboard).toHaveBeenCalledWith(buildMcpServerUrl())
+      expect(mockCopyToClipboard).toHaveBeenCalledWith(buildClaudeMcpServerUrl())
     })
     expect(mockShowToast).toHaveBeenCalledWith('Copied MCP server URL to clipboard')
     expect(screen.getByRole('button', { name: 'Copied!' })).toBeDefined()

@@ -4,11 +4,14 @@ Reusable UI documentation for **!OAuthConsentPage**.
 
 ## Purpose and value
 
-This component packages a repeatable piece of the Planny Planny interface so users get a consistent, accessible interaction wherever the same state appears. Its value is the behaviour it makes easy to discover and operate, not merely its visual appearance.
+This is the native Supabase OAuth consent surface used by the published
+ChatGPT `/mcp` resource. Claude's isolated compatibility flow uses
+`!OAuthBridgePage` instead, so changes to that workaround do not alter
+ChatGPT consent.
 
 ## Source and lookup
 
-- [Authoritative source: `OAuthConsentPage.tsx`](../src/pages/OAuthConsentPage.tsx)
+- [Authoritative source: `OAuthConsentPage.tsx`](../../src/pages/OAuthConsentPage.tsx)
 - [Search all `!OAuthConsentPage` references](https://github.com/colinccook/planny-planny/search?q=!OAuthConsentPage&type=code)
 - [Find tests that render or drive it](https://github.com/colinccook/planny-planny/search?q=!OAuthConsentPage+repo%3Acolinccook%2Fplanny-planny&type=code)
 - [Canonical !UiComponents index](../ui-components.md)

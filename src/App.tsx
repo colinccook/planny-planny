@@ -17,6 +17,7 @@ import SettingsPage from './pages/SettingsPage'
 import JoinInvitePage from './pages/JoinInvitePage'
 import PublicHouseholdPage from './pages/PublicHouseholdPage'
 import OAuthConsentPage from './pages/OAuthConsentPage'
+import OAuthBridgePage from './pages/OAuthBridgePage'
 import PluginInformationPage from './pages/PluginInformationPage'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/invite/:token" element={<JoinInvitePage />} />
         <Route path="/shared/:token" element={<PublicHouseholdPage />} />
         <Route path="/oauth/consent" element={<OAuthConsentPage />} />
+        <Route path="/oauth/authorize" element={<OAuthBridgePage />} />
         <Route path="/plugin/privacy" element={<PluginInformationPage kind="privacy" />} />
         <Route path="/plugin/terms" element={<PluginInformationPage kind="terms" />} />
         <Route path="/plugin/support" element={<PluginInformationPage kind="support" />} />

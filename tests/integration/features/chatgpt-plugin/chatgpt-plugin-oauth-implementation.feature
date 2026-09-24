@@ -42,21 +42,21 @@ Feature: ChatGPT Plugin OAuth Implementation
 
   Scenario: The full PKCE authorization code flow issues working tokens
     Given a PKCE code verifier and matching code_challenge
-    When I request an authorization code with email and password and the code_challenge
+    When I approve an authorization code using the seeded user's Supabase session
     Then I am redirected with an authorization code and the original state
     When I exchange the authorization code for tokens using the code_verifier
     Then the OAuth token response contains an access_token and refresh_token
 
   Scenario: Token exchange rejects a missing code_verifier when a code_challenge was used
     Given a PKCE code verifier and matching code_challenge
-    When I request an authorization code with email and password and the code_challenge
+    When I approve an authorization code using the seeded user's Supabase session
     Then I am redirected with an authorization code and the original state
     When I exchange the authorization code for tokens without a code_verifier
     Then the OAuth token exchange fails with status 400
 
   Scenario: Token exchange rejects a code_verifier that does not match the code_challenge
     Given a PKCE code verifier and matching code_challenge
-    When I request an authorization code with email and password and the code_challenge
+    When I approve an authorization code using the seeded user's Supabase session
     Then I am redirected with an authorization code and the original state
     When I exchange the authorization code for tokens using a wrong code_verifier
     Then the OAuth token exchange fails with status 400

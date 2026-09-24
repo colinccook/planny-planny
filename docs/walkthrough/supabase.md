@@ -188,9 +188,12 @@ mechanics are in [TanStack Query & Realtime](tanstack-query-and-realtime.md).
 
 Two Deno functions in
 [`supabase/functions/`](../../supabase/functions/) (`chatgpt-plugin`,
-`chatgpt-plugin-auth`) implement the OAuth flow that lets ChatGPT act on a
-household's behalf. Setup guide: [`docs/chatgpt-plugin.md`](../chatgpt-plugin.md);
-testing them locally: [`docs/edge-functions-testing.md`](../edge-functions-testing.md).
+`chatgpt-plugin-auth`) expose the household MCP tools. ChatGPT's published
+`/mcp` resource uses native Supabase OAuth; Claude's separate `/claude/mcp`
+resource temporarily uses the compatibility function from DR-021 while still
+issuing native Supabase session tokens. Setup guide:
+[`docs/chatgpt-plugin.md`](../chatgpt-plugin.md); testing them locally:
+[`docs/edge-functions-testing.md`](../edge-functions-testing.md).
 
 ## 9. Running it locally
 

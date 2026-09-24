@@ -43,9 +43,10 @@ database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permiss
   consent, RLS-protected household tools and revocable access.
 - **🤝 Add to Claude.** We do
   [@ClaudeIntegration](docs/features/claude-integration.md): the same MCP
-  server works as a Claude custom connector — an "Add to Claude" card in
-  Settings gives copy-paste instructions and the server URL, with sign-in
-  handled by OAuth and automatic client registration.
+  tools are exposed through a separate Claude connector URL, so its temporary
+  OAuth compatibility bridge cannot change the published ChatGPT plugin.
+  Settings gives copy-paste instructions, automatic client registration,
+  password-confirmed approval and independent revocation.
 - **🌱 [Outcomes](docs/features/meal-outcomes.md).** Record whether the planned meal actually got cooked and
   eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
 

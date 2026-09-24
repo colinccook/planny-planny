@@ -3,8 +3,9 @@
 Planny Planny exposes a remote Model Context Protocol (MCP) server so
 ChatGPT can manage a household meal plan through conversation.
 
-The current public-plugin architecture is recorded in
-[DR-017](drs/dr-017-chatgpt-plugin.md). OpenAI's plugin platform changes
+The current public-plugin architecture and isolated Claude workaround are
+recorded in [DR-021](drs/dr-021-mcp-oauth-compatibility-bridge.md). OpenAI's
+plugin platform changes
 frequently, so use the linked official documentation during submission rather
 than relying only on screenshots or field names in this guide.
 
@@ -14,7 +15,11 @@ than relying only on screenshots or field names in this guide.
   `https://<api-origin>/functions/v1/chatgpt-plugin/mcp`
 - Supabase Auth OAuth 2.1 discovery, dynamic client registration, PKCE,
   refresh-token rotation and consent grants.
+- A separate Claude resource at
+  `https://<api-origin>/functions/v1/chatgpt-plugin/claude/mcp`; its temporary
+  compatibility OAuth bridge cannot change the published ChatGPT resource.
 - A mobile-first consent page at `/oauth/consent`.
+- A separate mobile-first Claude approval page at `/oauth/authorize`.
 - User-scoped Supabase access, so existing Postgres RLS policies apply to
   every tool call.
 - An additional server-side access check allowing owners, members and
@@ -47,8 +52,10 @@ Planny Planny /oauth/consent
 ```
 
 Supabase Auth owns OAuth clients, codes, grants, access tokens and refresh
-tokens. The old `chatgpt-plugin-auth` function is not used by the current
-`/mcp` endpoint.
+tokens for the published ChatGPT `/mcp` endpoint. The
+`chatgpt-plugin-auth` function is not used by that endpoint; DR-021 uses it
+only for the separate Claude `/claude/mcp` resource and existing legacy
+Custom GPT Action compatibility.
 
 ## Local setup
 
@@ -130,19 +137,27 @@ screen, inspect every tool and exercise representative reads and writes.
 
 ## Connect from the Claude app
 
-The same MCP server works as a Claude custom connector because it speaks
-Streamable HTTP and supports OAuth 2.1 dynamic client registration:
+The same tools are exposed through a separate Claude MCP resource. This keeps
+Claude's temporary OAuth workaround from changing ChatGPT's published
+resource URL, native Supabase issuer or existing grants:
 
 1. In Claude, open **Settings → Connectors → Add custom connector**.
 2. Name it **Planny Planny** and enter the MCP URL
-   (`https://<api-origin>/functions/v1/chatgpt-plugin/mcp`).
+   (`https://<api-origin>/functions/v1/chatgpt-plugin/claude/mcp`).
 3. Turn on **Requires sign-in** and leave the client ID and client secret
    blank — Claude registers itself via dynamic client registration.
-4. Sign in and approve the Planny Planny consent screen.
+4. Sign in, approve the connection and confirm your password. The password
+   goes directly to Supabase through a non-persisted browser client, creating
+   a separate native session for Claude.
 
 The **Add to Claude** card on the in-app Settings page shows these steps with
-a copyable server URL. Access can be revoked afterwards from **Connected
-apps** in Settings, exactly like a ChatGPT connection.
+a copyable server URL. Claude can be revoked independently from **Connected
+apps** without changing ChatGPT or signing the browser out.
+
+The bridge exists because Claude's public PKCE request includes `resource` and
+`offline_access`, which currently trigger the hosted Supabase OAuth beta
+defect tracked by
+[supabase/auth#2820](https://github.com/supabase/auth/issues/2820).
 
 ## Hosted Supabase setup
 
@@ -156,7 +171,8 @@ applied by database migrations:
    deployed Planny Planny frontend and allow its `/oauth/consent` route.
 5. In **Authentication → Signing Keys**, migrate the project to an asymmetric
    ES256 or RS256 key if it still uses the legacy JWT secret.
-6. Deploy the frontend and `chatgpt-plugin` Edge Function.
+6. Deploy the frontend plus the `chatgpt-plugin` and `chatgpt-plugin-auth`
+   Edge Functions.
 7. Set `PLUGIN_PUBLIC_URL` to the public URL prefix immediately before
    `/chatgpt-plugin` (for direct Supabase hosting, this is
    `https://<project-ref>.supabase.co/functions/v1`; for a root-level proxy,
@@ -164,6 +180,8 @@ applied by database migrations:
 8. If Supabase Auth is exposed somewhere other than the project's standard
    public `/auth/v1` endpoint, set `PLUGIN_AUTH_URL` to that complete issuer
    URL. Do not derive it from a controlled MCP-only reverse proxy.
+9. Set `APP_URL` to the exact public frontend base URL and deploy
+   `chatgpt-plugin-auth` for the separate Claude compatibility flow.
 
 Do not send email addresses or passwords to an authorization endpoint in query
 parameters. Current clients must use the browser-based Supabase Auth consent
@@ -194,6 +212,11 @@ domain. Before public submission, choose one:
 The protected-resource metadata continues to advertise the reachable Supabase
 Auth issuer from `PLUGIN_AUTH_URL` (or `SUPABASE_URL` by default), so an
 MCP-only proxy does not need to forward `/auth/v1`.
+
+If Claude also connects through that proxy, additionally forward
+`/chatgpt-plugin/claude/mcp`, its `/oauth-protected-resource` metadata path,
+and `/chatgpt-plugin-auth/*`. These Claude-only routes are not part of the
+ChatGPT plugin submission.
 
 Changing the MCP origin after publication requires a new plugin submission,
 so choose the production hostname before review.
@@ -288,9 +311,10 @@ region.
 
 ## Legacy Custom GPT Action
 
-`public/openapi.json`, the REST routes in `chatgpt-plugin`, and the
-`chatgpt-plugin-auth` function remain for existing Custom GPT Action users.
-They are not used by the current public MCP plugin path.
+`public/openapi.json` and the REST routes in `chatgpt-plugin` remain for
+existing Custom GPT Action users. The `chatgpt-plugin-auth` function supports
+those legacy users and DR-021's separate Claude resource, but is not used by
+the published ChatGPT `/mcp` path.
 
 To inspect or repair an existing Custom GPT Action:
 

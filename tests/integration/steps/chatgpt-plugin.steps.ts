@@ -70,6 +70,7 @@ interface PluginWorld {
   pkceChallenge: string | null
   lastRegisterResponse: Response | null
   lastRegisterBody: Record<string, unknown> | null
+  oauthClientId: string | null
   lastAuthRedirectUrl: URL | null
   lastAuthCode: string | null
   lastAuthState: string | null
@@ -101,6 +102,7 @@ const world: PluginWorld = {
   pkceChallenge: null,
   lastRegisterResponse: null,
   lastRegisterBody: null,
+  oauthClientId: null,
   lastAuthRedirectUrl: null,
   lastAuthCode: null,
   lastAuthState: null,
@@ -241,6 +243,7 @@ Given('a seeded ChatGPT plugin test user', async ({ session }) => {
   world.pkceChallenge = null
   world.lastRegisterResponse = null
   world.lastRegisterBody = null
+  world.oauthClientId = null
   world.lastAuthRedirectUrl = null
   world.lastAuthCode = null
   world.lastAuthState = null
@@ -1247,6 +1250,9 @@ When(
       body: JSON.stringify({ redirect_uris: redirectUris }),
     })
     world.lastRegisterBody = await readBody(world.lastRegisterResponse)
+    world.oauthClientId = typeof world.lastRegisterBody.client_id === 'string'
+      ? world.lastRegisterBody.client_id
+      : null
   },
 )
 
@@ -1279,7 +1285,7 @@ Given('a PKCE code verifier and matching code_challenge', async () => {
 })
 
 When(
-  'I request an authorization code with email and password and the code_challenge',
+  "I approve an authorization code using the seeded user's Supabase session",
   async () => {
     const email = world.oauthEmail
     const password = world.oauthPassword
@@ -1288,20 +1294,65 @@ When(
       throw new Error('Missing seeded user credentials or PKCE code_challenge')
     }
 
-    const authorizeUrl = new URL(`${AUTH_FUNCTION_URL}/authorize`)
-    authorizeUrl.searchParams.set('client_id', 'planny-test-client')
-    authorizeUrl.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI)
-    authorizeUrl.searchParams.set('state', 'test-state-123')
-    authorizeUrl.searchParams.set('email', email)
-    authorizeUrl.searchParams.set('password', password)
-    authorizeUrl.searchParams.set('code_challenge', codeChallenge)
-    authorizeUrl.searchParams.set('code_challenge_method', 'S256')
+    const registerResponse = await fetch(`${AUTH_FUNCTION_URL}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_name: 'OAuth integration test',
+        redirect_uris: [OAUTH_REDIRECT_URI],
+      }),
+    })
+    const registerBody = await readBody(registerResponse)
+    const clientId = registerBody.client_id
+    if (!registerResponse.ok || typeof clientId !== 'string') {
+      throw new Error('Could not register the OAuth integration-test client')
+    }
+    world.oauthClientId = clientId
 
-    const res = await fetch(authorizeUrl.toString(), { redirect: 'manual' })
-    expect(res.status).toBe(302)
-    const location = res.headers.get('Location')
-    if (!location) throw new Error('Expected a Location header on the /authorize redirect')
-    world.lastAuthRedirectUrl = new URL(location)
+    const browserClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data: browserData, error: browserError } =
+      await browserClient.auth.signInWithPassword({ email, password })
+    if (browserError || !browserData.session) {
+      throw new Error(`Could not create the browser test session: ${browserError?.message}`)
+    }
+
+    const connectorClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data: connectorData, error: connectorError } =
+      await connectorClient.auth.signInWithPassword({ email, password })
+    if (connectorError || !connectorData.session) {
+      throw new Error(`Could not create the connector test session: ${connectorError?.message}`)
+    }
+
+    const response = await fetch(`${AUTH_FUNCTION_URL}/authorize`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + browserData.session.access_token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'approve',
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: OAUTH_REDIRECT_URI,
+        state: 'test-state-123',
+        scope: 'openid email profile offline_access',
+        resource: `${FUNCTION_URL}/mcp`,
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+        connector_access_token: connectorData.session.access_token,
+        connector_refresh_token: connectorData.session.refresh_token,
+      }),
+    })
+    const responseBody = await readBody(response)
+    expect(response.status).toBe(200)
+    if (typeof responseBody.redirect_url !== 'string') {
+      throw new Error('Expected a redirect_url from the authorization approval')
+    }
+    world.lastAuthRedirectUrl = new URL(responseBody.redirect_url)
   },
 )
 
@@ -1316,18 +1367,20 @@ Then('I am redirected with an authorization code and the original state', async 
 
 async function exchangeAuthCode(codeVerifier?: string): Promise<void> {
   const code = world.lastAuthCode
-  if (!code) throw new Error('No authorization code captured yet')
-  const body: Record<string, string> = {
+  const clientId = world.oauthClientId
+  if (!code || !clientId) throw new Error('No authorization code or OAuth client captured yet')
+  const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
+    client_id: clientId,
     redirect_uri: OAUTH_REDIRECT_URI,
-  }
-  if (codeVerifier !== undefined) body.code_verifier = codeVerifier
+  })
+  if (codeVerifier !== undefined) body.set('code_verifier', codeVerifier)
 
   world.lastTokenResponse = await fetch(`${AUTH_FUNCTION_URL}/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
   })
   world.lastTokenBody = await readBody(world.lastTokenResponse)
   const refreshToken = (world.lastTokenBody as { refresh_token?: string })?.refresh_token

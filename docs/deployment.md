@@ -17,9 +17,10 @@ and Auth URLs:
    `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`.
 3. Same page → **Variables**: `SUPABASE_PROJECT_REF`,
    `VITE_SUPABASE_URL` (`https://<ref>.supabase.co`),
-   `VITE_SUPABASE_ANON_KEY`. Set `PLUGIN_PUBLIC_URL` when the MCP endpoint uses
-   a controlled proxy, and set `PLUGIN_AUTH_URL` only when Supabase Auth is
-   exposed at a non-default public URL.
+   `VITE_SUPABASE_ANON_KEY`, and `APP_URL` (the exact public frontend base,
+   including `/planny-planny/` on GitHub Pages). Set `PLUGIN_PUBLIC_URL` when
+   MCP endpoints use a controlled proxy, and set `PLUGIN_AUTH_URL` only when
+   Supabase Auth is exposed at a non-default public URL.
 4. Supabase Dashboard → **Authentication → URL Configuration**: set Site
    URL to `https://<username>.github.io/planny-planny/` and add
    `https://<username>.github.io/planny-planny/**` to Redirect URLs.
@@ -47,11 +48,17 @@ Before submission, configure either:
   `/chatgpt-plugin/mcp` and `/chatgpt-plugin/mcp/oauth-protected-resource`
   paths to the deployed function and serves the root challenge itself.
 
+The published ChatGPT resource remains on those paths and native Supabase
+OAuth. If the same proxy is also used for Claude, it must additionally forward
+`/chatgpt-plugin/claude/mcp`, its protected-resource metadata path, and
+`/chatgpt-plugin-auth/*`.
+
 Set `PLUGIN_PUBLIC_URL` to the public URL prefix immediately before
 `/chatgpt-plugin`: use `https://<ref>.supabase.co/functions/v1` for direct
 Supabase hosting or, for example, `https://mcp.example.com` for a root-level
 proxy. This keeps the MCP resource identifier stable and aligned with the URL
 submitted to OpenAI. OAuth discovery is intentionally advertised from
 `PLUGIN_AUTH_URL`, which defaults to `https://<ref>.supabase.co/auth/v1`; the
-proxy does not need to forward `/auth/v1`. See
+proxy does not need to forward `/auth/v1`. `APP_URL` tells the Claude
+compatibility authorization server where to host browser approval. See
 [ChatGPT plugin](chatgpt-plugin.md) for the complete checklist.

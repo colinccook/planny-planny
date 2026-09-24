@@ -107,6 +107,10 @@ function nativeAuthorizationServerBase(): string {
   return `${configured.replace(/\/+$/, '').replace(/\/auth\/v1$/, '')}/auth/v1`
 }
 
+function claudeResourceServerBase(): string {
+  return `${resourceServerBase()}/claude`
+}
+
 function protectedResourceMetadataUrl(): string {
   return `${resourceServerBase()}/.well-known/oauth-protected-resource`
 }
@@ -988,27 +992,39 @@ async function resolvePluginContext(
   return { userId: user.id, householdId }
 }
 
-const currentMcpHandler = withOAuthProtectedResource(
-  {
-    resourceServer: `${resourceServerBase()}/mcp`,
-    authorizationServer: nativeAuthorizationServerBase(),
-  },
-  withSupabase<Database>(
-    { auth: 'user' },
-    async (req, { supabase }) => {
-      const handler = createMcpHandler(() => {
-        return createChatGptMcpServer(async (toolName, args) => {
-          const { userId, householdId } = await resolvePluginContext(req, supabase)
-          return await executeMcpTool(toolName, args, supabase, userId, householdId)
-        })
-      }, {
-        legacy: 'stateless',
-        onerror: (error) => console.error('MCP request failed:', error.message),
-      })
-
-      return handler.fetch(req)
+function createProtectedMcpHandler(resourceServer: string, authorizationServer: string) {
+  return withOAuthProtectedResource(
+    {
+      resourceServer,
+      authorizationServer,
     },
-  ),
+    withSupabase<Database>(
+      { auth: 'user' },
+      async (req, { supabase }) => {
+        const handler = createMcpHandler(() => {
+          return createChatGptMcpServer(async (toolName, args) => {
+            const { userId, householdId } = await resolvePluginContext(req, supabase)
+            return await executeMcpTool(toolName, args, supabase, userId, householdId)
+          })
+        }, {
+          legacy: 'stateless',
+          onerror: (error) => console.error('MCP request failed:', error.message),
+        })
+
+        return handler.fetch(req)
+      },
+    ),
+  )
+}
+
+const currentMcpHandler = createProtectedMcpHandler(
+  `${resourceServerBase()}/mcp`,
+  nativeAuthorizationServerBase(),
+)
+
+const claudeMcpHandler = createProtectedMcpHandler(
+  `${claudeResourceServerBase()}/mcp`,
+  authorizationServerBase(),
 )
 
 // ─── MCP Streamable-HTTP handler ─────────────────────────────────────────
@@ -1143,8 +1159,16 @@ Deno.serve(async (req: Request) => {
   const pathParts = stripped.split('/').filter(Boolean)
 
   // resource = "todos" | "meals" | "ideas" | "events" | "outcomes" |
-  // "shopping-list" | "mcp" | "sse" | ".well-known"
+  // "shopping-list" | "mcp" | "claude" | "sse" | ".well-known"
   const resource = pathParts[0] ?? ''
+
+  // ── Claude-specific MCP endpoint ────────────────────────────────────
+  // Claude currently needs the DR-021 compatibility OAuth bridge. Keeping
+  // it on a separate resource preserves the published ChatGPT /mcp issuer
+  // and existing grants.
+  if (resource === 'claude' && pathParts[1] === 'mcp') {
+    return await claudeMcpHandler(req)
+  }
 
   // ── Current MCP Streamable HTTP endpoint ──────────────────────────────
   // The supported server and Supabase Auth middleware handle protocol

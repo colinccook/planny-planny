@@ -15,6 +15,8 @@ Feature: Add to Claude connector instructions
     When I expand the "Add to Claude" section
     Then I see the MCP server URL to paste into Claude
     And I see that the connector requires sign-in with no client credentials
+    And I see that approval creates a separate connector session
+    And I capture the Add to Claude instructions
 
   Scenario: The server URL can be copied for the Claude app
     When I expand the "Add to Claude" section

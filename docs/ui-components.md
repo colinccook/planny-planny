@@ -97,6 +97,7 @@ coverage.
 | [!CalendarPage](components/calendar-page.md) | [`CalendarPage.tsx`](../src/pages/CalendarPage.tsx) |
 | [!IngredientsPage](components/ingredients-page.md) | [`IngredientsPage.tsx`](../src/pages/IngredientsPage.tsx) |
 | [!JoinInvitePage](components/join-invite-page.md) | [`JoinInvitePage.tsx`](../src/pages/JoinInvitePage.tsx) |
+| [!OAuthBridgePage](components/oauth-bridge-page.md) | [`OAuthBridgePage.tsx`](../src/pages/OAuthBridgePage.tsx) |
 | [!OAuthConsentPage](components/o-auth-consent-page.md) | [`OAuthConsentPage.tsx`](../src/pages/OAuthConsentPage.tsx) |
 | [!PluginInformationPage](components/plugin-information-page.md) | [`PluginInformationPage.tsx`](../src/pages/PluginInformationPage.tsx) |
 | [!PublicHouseholdPage](components/public-household-page.md) | [`PublicHouseholdPage.tsx`](../src/pages/PublicHouseholdPage.tsx) |
