@@ -23,12 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -47,12 +47,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -66,7 +66,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
@@ -83,7 +83,7 @@ jobs:
         run: npm run test:component
 
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: playwright-report-component
@@ -94,12 +94,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -109,9 +109,9 @@ jobs:
         run: npm run build
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v3
+        uses: supabase/setup-cli@v3.0.1
         with:
-          version: 2.117.0
+          version: 2.119.0
 
       - name: Start Supabase
         # `supabase start` boots a fresh stack and applies every migration in
@@ -142,7 +142,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
@@ -171,7 +171,7 @@ jobs:
           npm run test:integration
 
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: failure()
         with:
           name: playwright-report
@@ -186,12 +186,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -207,7 +207,7 @@ jobs:
         run: npm run test:lighthouse
 
       - name: Upload Lighthouse results
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
           name: lighthouse-results
@@ -220,12 +220,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v3
+        uses: supabase/setup-cli@v3.0.1
         with:
-          version: 2.117.0
+          version: 2.119.0
 
       - name: Link Supabase project
         run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
@@ -276,12 +276,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -298,7 +298,7 @@ jobs:
         run: cp dist/index.html dist/404.html
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@v5.0.0
         with:
           path: dist
 
@@ -311,4 +311,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v5.0.1

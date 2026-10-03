@@ -55,7 +55,7 @@ tokens. The old `chatgpt-plugin-auth` function is not used by the current
 ### Requirements
 
 - Node.js 24.21.0
-- Supabase CLI 2.117.0 or later
+- Supabase CLI 2.119.0 or later
 - Docker
 
 Install dependencies and start the stack:
