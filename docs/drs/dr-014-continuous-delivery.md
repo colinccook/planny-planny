@@ -21,7 +21,9 @@ no local tooling.
 2. **`build`** — the frontend is built with the production Supabase URL
    and anon key baked in (`VITE_*` variables), and `dist/index.html` is
    copied to `dist/404.html` for SPA routing.
-3. **`deploy`** — the static bundle is published to **GitHub Pages**.
+3. **`deploy`** — the static bundle is published to **GitHub Pages**,
+   served at `https://www.plannyplanny.uk`
+   ([dr-021](dr-021-custom-domain.md)).
 
 Database before frontend, so the UI never ships against a schema that
 isn't live yet.

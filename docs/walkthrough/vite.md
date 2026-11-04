@@ -16,8 +16,9 @@
 
 - `@vitejs/plugin-react` — compiles JSX/TSX.
 - `@tailwindcss/vite` — compiles Tailwind CSS.
-- A `base` path override for GitHub Pages (`/planny-planny/` in production
-  via the `GITHUB_PAGES` environment variable).
+- A `base` path override: `/` by default and in production (the custom
+  domain `www.plannyplanny.uk`, set via `BASE_PATH=/` in CI), or
+  `/planny-planny/` for a GitHub Pages project-site URL (`GITHUB_PAGES=true`).
 - A `test` block wiring Vitest to jsdom.
 
 ## Environment variables

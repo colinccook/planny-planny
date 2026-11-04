@@ -11,10 +11,10 @@ Re-run every test and replace bracketed values immediately before submission.
 | Display name | `Planny Planny` |
 | Short description | `Plan family meals together` |
 | Category | Productivity |
-| Website | `https://colinccook.github.io/planny-planny/` |
-| Privacy | `https://colinccook.github.io/planny-planny/plugin/privacy` |
-| Terms | `https://colinccook.github.io/planny-planny/plugin/terms` |
-| Support | `https://colinccook.github.io/planny-planny/plugin/support` |
+| Website | `https://www.plannyplanny.uk/` |
+| Privacy | `https://www.plannyplanny.uk/plugin/privacy` |
+| Terms | `https://www.plannyplanny.uk/plugin/terms` |
+| Support | `https://www.plannyplanny.uk/plugin/support` |
 | MCP URL | `[CONTROLLED_PRODUCTION_MCP_URL]` |
 | Demo recording | `[PUBLIC_DEMO_RECORDING_URL]` |
 

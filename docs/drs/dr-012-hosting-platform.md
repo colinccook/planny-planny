@@ -1,6 +1,6 @@
 # DR-012: Hosting platform
 
-- **Status:** Active
+- **Status:** Active — base path amended by [dr-021](dr-021-custom-domain.md)
 - **Decided:** 2026-04 (project inception)
 - **Theme:** hosting-platform
 

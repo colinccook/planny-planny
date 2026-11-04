@@ -1,7 +1,7 @@
 name: Test & Deploy
 
 # Runs on pushes to main only: lint, component BDD, integration BDD,
-# Lighthouse, then migrations → Edge Functions → GitHub Pages.
+# Lighthouse, then migrations → Edge Functions → GitHub Pages (www.plannyplanny.uk).
 # Pull requests are covered by .github/workflows/pr-tests.yml (unit tests).
 
 on:
@@ -290,7 +290,9 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          GITHUB_PAGES: true
+          # Served from the custom apex/www domain (public/CNAME), so the
+          # bundle is built for the root path rather than /planny-planny/.
+          BASE_PATH: /
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'placeholder' }}
 
