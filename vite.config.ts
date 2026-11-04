@@ -7,7 +7,7 @@ export default defineConfig({
   // Base path the app is served from. Override with `BASE_PATH` for any
   // deploy target other than the default GitHub Pages project site, e.g.:
   //   - GitHub Pages project site (default): `/planny-planny/`
-  //   - Custom apex domain (e.g. plannyplanny.app): set `BASE_PATH=/`
+  //   - Custom domain (production, www.plannyplanny.uk): set `BASE_PATH=/`
   //   - Custom subpath:                            set `BASE_PATH=/your/path/`
   base: process.env.BASE_PATH ?? (process.env.GITHUB_PAGES ? '/planny-planny/' : '/'),
   plugins: [

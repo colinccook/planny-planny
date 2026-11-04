@@ -32,6 +32,7 @@ as `#ContinuousIntegration` to find the decision and the tests it governs.
 | #MobileViewportAndZoom | [dr-018](drs/dr-018-mobile-viewport-and-zoom.md) | Never disable or trap zoom — form controls are always ≥16px so iOS Safari never auto-zooms, the viewport meta stays permissive, no `gesture*` blocking scripts, `touch-action: manipulation` for double-tap only; BDD guards enforce it. |
 | #FeatureTags | [dr-019](drs/dr-019-feature-tags.md) | Every Gherkin feature file carries one PascalCase `@FeatureName` tag (e.g. `@ChatGPTPlugin`, `@ClaudeIntegration`) — file names unchanged — so a GitHub search finds every test for a feature, and the README can link `@FeatureName` to a `docs/features/` page. |
 | #DocumentationTaxonomy | [dr-020](drs/dr-020-documentation-taxonomy.md) | Product features, decision themes, and UI components use indexed `@Feature`, `#DecisionRecord`, and `!UiComponent` markers in documentation and tests, making related evidence discoverable by repository search. |
+| #CustomDomain | [dr-021](drs/dr-021-custom-domain.md) | Production is served from `https://www.plannyplanny.uk` via GitHub Pages' custom-domain support (`public/CNAME`, `BASE_PATH=/`); Supabase Auth Site/Redirect URLs point at it; the MCP endpoint stays on Supabase unless a `mcp.plannyplanny.uk` proxy is needed for plugin submission. |
 
 ## Rules
 
