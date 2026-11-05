@@ -1,3 +1,4 @@
+// @ChatGPTPlugin #IntegrationTesting #Backend #ChatGptPlugin !LoginForm !OAuthConsentPage !SettingsPage !HouseholdSwitcher
 // Integration steps for the ChatGPT plugin Edge Function.
 //
 // These tests call the Supabase Edge Function directly via fetch,
@@ -19,6 +20,7 @@ import { test, type SessionHandle } from '../../support/fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { createHash, randomBytes } from 'node:crypto'
 import { getAdminClient } from '../../support/supabaseAdmin'
+import type { Role } from '../../../src/lib/permissions'
 
 const { Given, When, Then } = createBdd(test)
 
@@ -750,6 +752,135 @@ When(
     })
   },
 )
+
+Given('I have a second connector household as a {string}', async ({ session }, role: Role) => {
+  await session.signInAs([
+    { name: 'Connector Home', role: 'owner' },
+    { name: 'Connector Beach', role },
+  ])
+})
+
+async function setConnectorSelection(session: SessionHandle, householdId: string | null) {
+  const user = connectorUser(session)
+  const { error } = await getAdminClient().from('profiles')
+    .update({ last_household_id: householdId })
+    .eq('id', user.userId)
+  if (error) throw error
+}
+
+function connectorUser(session: SessionHandle) {
+  if (!session.authedUser) throw new Error('The connector scenario requires a signed-in user')
+  return session.authedUser
+}
+
+When('I plan a meal through the connector without a saved household selection', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (token) => {
+    await page.goto('about:blank')
+    await setConnectorSelection(session, null)
+    const listed = currentStructuredContent(await callCurrentMcpTool(token, 'list_households', {}))
+    const created = currentStructuredContent(await callCurrentMcpTool(token, 'create_meal', {
+      title: 'Connector supper', date: '2099-02-01',
+    }))
+    world.currentContractResults = { listed, created }
+  })
+})
+
+Then('the connector discovers my sole household and saves the meal there', async ({ session }) => {
+  const results = world.currentContractResults as {
+    listed: { households: { id: string }[]; active_household_id: string }
+    created: { meal: { id: string } }
+  }
+  const householdId = connectorUser(session).households[0].id
+  expect(results.listed.households).toHaveLength(1)
+  expect(results.listed.active_household_id).toBe(householdId)
+  const { data, error } = await getAdminClient().from('meal_plans')
+    .select('household_id').eq('id', results.created.meal.id).single()
+  expect(error).toBeNull()
+  expect(data?.household_id).toBe(householdId)
+})
+
+When('I change households in the app and then through the connector', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (token) => {
+    const user = connectorUser(session)
+    const [home, beach] = user.households
+    await page.goto('/settings')
+    const selector = page.locator('#household-select')
+    await expect(selector).toHaveValue(home.id)
+    await selector.selectOption(beach.id)
+    await expect.poll(async () => {
+      const { data } = await getAdminClient().from('profiles')
+        .select('last_household_id').eq('id', user.userId).single()
+      return data?.last_household_id
+    }).toBe(beach.id)
+
+    const listed = currentStructuredContent(await callCurrentMcpTool(token, 'list_households', {}))
+    expect(listed.active_household_id).toBe(beach.id)
+    const switched = currentStructuredContent(await callCurrentMcpTool(token, 'switch_household', {
+      household_id: home.id,
+    }))
+    expect(switched).toMatchObject({ household: { id: home.id } })
+    await expect(selector).toHaveValue(home.id)
+    // Exercise the target role too, rather than only switching back to the owner.
+    await callCurrentMcpTool(token, 'switch_household', { household_id: beach.id })
+    await expect(selector).toHaveValue(beach.id)
+    const created = currentStructuredContent(await callCurrentMcpTool(token, 'create_meal', {
+      title: 'Beach supper', date: '2099-02-01',
+    }))
+    world.currentContractResults = { created }
+  })
+})
+
+Then('both selections are shared and the next meal belongs to the chosen household', async ({ session }) => {
+  const results = world.currentContractResults as { created: { meal: { id: string } } }
+  const { data, error } = await getAdminClient().from('meal_plans')
+    .select('household_id').eq('id', results.created.meal.id).single()
+  expect(error).toBeNull()
+  expect(data?.household_id).toBe(connectorUser(session).households[1].id)
+})
+
+When('I ask the connector for households without a saved selection', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (token) => {
+    await page.goto('about:blank')
+    await setConnectorSelection(session, null)
+    const listed = currentStructuredContent(await callCurrentMcpTool(token, 'list_households', {}))
+    const denied = await callCurrentMcpTool(token, 'create_meal', { title: 'Ambiguous supper' })
+    world.currentContractResults = { listed, denied }
+  })
+})
+
+Then('it lists my memberships and asks me to choose before planning a meal', async () => {
+  const results = world.currentContractResults as {
+    listed: { households: unknown[]; active_household_id: string | null }
+    denied: unknown
+  }
+  expect(results.listed.households).toHaveLength(2)
+  expect(results.listed.active_household_id).toBeNull()
+  expect(JSON.stringify(results.denied)).toContain('switch_household')
+})
+
+When('I try to select a restricted or unavailable household through the connector', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (token) => {
+    const [home, beach] = connectorUser(session).households
+    await setConnectorSelection(session, home.id)
+    const listed = currentStructuredContent(await callCurrentMcpTool(token, 'list_households', {}))
+    expect(listed.households).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: beach.id, role: 'voting_guest', can_use_plugin: false }),
+    ]))
+    const restricted = await callCurrentMcpTool(token, 'switch_household', { household_id: beach.id })
+    expect(JSON.stringify(restricted)).toContain('access level')
+    const unavailable = await callCurrentMcpTool(token, 'switch_household', {
+      household_id: '00000000-0000-4000-8000-000000000000',
+    })
+    expect(JSON.stringify(unavailable)).toContain('unavailable')
+    world.currentContractResults = currentStructuredContent(
+      await callCurrentMcpTool(token, 'list_households', {}),
+    )
+  })
+})
+
+Then('the connector refuses both switches and keeps my original selection', async ({ session }) => {
+  expect(world.currentContractResults?.active_household_id).toBe(connectorUser(session).households[0].id)
+})
 
 When('I exercise the schema-sensitive current MCP tools', async ({ page, session }) => {
   await authorizeCurrentMcp(page, session, async (accessToken) => {

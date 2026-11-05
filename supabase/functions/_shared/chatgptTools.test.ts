@@ -51,6 +51,19 @@ describe('ChatGPT MCP tool definitions', () => {
     expect(names).toContain('move_meal')
   })
 
+  it('offers household discovery without a selection and validates switches', () => {
+    const list = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'list_households')
+    const change = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'switch_household')
+    expect(list?.inputSchema.safeParse({}).success).toBe(true)
+    expect(list?.annotations.readOnlyHint).toBe(true)
+    expect(change?.inputSchema.safeParse({}).success).toBe(false)
+    expect(change?.inputSchema.safeParse({ household_id: 'not-a-uuid' }).success).toBe(false)
+    expect(change?.inputSchema.safeParse({
+      household_id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+    }).success).toBe(true)
+    expect(change?.annotations.readOnlyHint).toBe(false)
+  })
+
   it('rejects database-invalid todo and outcome inputs before execution', () => {
     const updateTodo = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'update_todo')
     const recordOutcome = CHATGPT_TOOL_DEFINITIONS.find(

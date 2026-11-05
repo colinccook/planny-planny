@@ -1,3 +1,4 @@
+// @Households #IntegrationTesting #Frontend !LoginForm !SettingsPage !HouseholdSwitcher
 import { expect } from '@playwright/test'
 import { createBdd } from 'playwright-bdd'
 import {
@@ -5,6 +6,7 @@ import {
   type AuthedUserHandle,
   type SessionHandle,
 } from '../../support/fixtures'
+import { getAdminClient } from '../../support/supabaseAdmin'
 
 const { Given, When, Then } = createBdd(test)
 
@@ -89,6 +91,39 @@ When(
     await expect(selector).toHaveValue(target.id)
   },
 )
+
+Then('my shared household preference is {string}', async ({ session }, name: string) => {
+  const user = requireAuthedUser(session)
+  const household = user.households.find((candidate) => candidate.name === name)
+  if (!household) throw new Error(`Unknown household name: ${name}`)
+  await expect.poll(async () => {
+    const { data, error } = await getAdminClient().from('profiles')
+      .select('last_household_id').eq('id', user.userId).single()
+    if (error) throw error
+    return data?.last_household_id
+  }).toBe(household.id)
+})
+
+When('I select {string} from another device', async ({ session }, name: string) => {
+  const user = requireAuthedUser(session)
+  const household = user.households.find((candidate) => candidate.name === name)
+  if (!household) throw new Error(`Unknown household name: ${name}`)
+  const { error } = await getAdminClient().from('profiles')
+    .update({ last_household_id: household.id }).eq('id', user.userId)
+  if (error) throw error
+})
+
+Then('I capture the shared household selection', async ({ session }) => {
+  const user = requireAuthedUser(session)
+  await session.page.screenshot({
+    path: 'docs/screenshots/households/05-shared-selection.png',
+    animations: 'disabled',
+    mask: [
+      session.page.getByText(user.email, { exact: true }),
+      session.page.getByText(user.displayName, { exact: true }),
+    ],
+  })
+})
 
 Then(
   'the {string} indicator in My Memberships moves to {string}',

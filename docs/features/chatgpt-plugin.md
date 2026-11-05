@@ -8,10 +8,17 @@ This capability helps a household plan, decide, or collaborate with less frictio
 
 ## User journey
 
-1. Start from the relevant app screen or entry point.
-2. Provide the small amount of information the household needs for this task.
-3. Confirm the action and review the resulting state.
-4. Return later to see the state preserved and, where applicable, synchronised for other household members.
+1. Connect the MCP plugin and approve OAuth consent.
+2. Use the same active household as the app, or call `list_households` to
+   discover your memberships and current selection.
+3. If necessary, confirm a household choice with `switch_household`. The
+   selection is shared with the app and other devices; a sole membership
+   works automatically without a saved choice.
+4. Plan meals, manage todos, ideas and events, and record outcomes within
+   that household. Existing role checks and RLS still apply.
+
+See [Claude household tools and permissions](claude-integration.md#household-tools-and-permissions)
+for the shared tool contracts, role restrictions and explicit-URL override.
 
 ## Screenshots and visual walkthrough
 

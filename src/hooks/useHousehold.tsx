@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from 'react'
 import { useAuth } from './useAuth'
 import { useMemberships, type MembershipView } from './useMemberships'
 import { useHouseholdRealtime } from './useHouseholdRealtime'
@@ -36,7 +36,7 @@ const HouseholdContext = createContext<HouseholdContextType | undefined>(undefin
  *                               is what makes "remember my household"
  *                               work across devices, not just on the
  *                               device where it was last set.
- *   - This provider           — selection state (`currentHouseholdId`) +
+ *   - This provider           — household selection +
  *                               persistence to the database (with
  *                               localStorage as a fast first-paint hint).
  *
@@ -47,28 +47,24 @@ const HouseholdContext = createContext<HouseholdContextType | undefined>(undefin
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const { households, memberships, isLoading } = useMemberships()
-  const { preferences, setPreferences } = useUserPreferences()
-  const [currentHouseholdId, setCurrentHouseholdId] = useState<string | null>(null)
+  const { preferences, setPreferences, isSuccess: preferencesLoaded } = useUserPreferences()
+  const initialSelectionSave = useRef<string | null>(null)
 
   // Pick the active household. Preference order is, top to bottom:
-  //   1. an explicit in-memory choice from `switchHousehold` (sticky
-  //      for the rest of this session — the user's most recent action
-  //      always wins),
-  //   2. the server-stored `last_household_id` for this user — this is
-  //      what makes "remember my household across devices" work,
-  //   3. the last household this user used on this device (localStorage)
+  //   1. the server-stored `last_household_id`, including optimistic
+  //      choices from `switchHousehold` and realtime changes from MCP,
+  //   2. the last household this user used on this device (localStorage)
   //      — covers the brief window before the preferences query lands,
   //      so a returning user on the same device sees the right household
   //      on first paint without waiting for a network round-trip,
-  //   4. the first available membership.
+  //   3. the first available membership.
   // Selection itself is a pure function so it can be unit-tested
   // independently of React.
   const localStorageId =
     user && typeof window !== 'undefined'
       ? window.localStorage.getItem(lastHouseholdStorageKey(user.id))
       : null
-  const storedId =
-    currentHouseholdId ?? preferences.lastHouseholdId ?? localStorageId
+  const storedId = preferences.lastHouseholdId ?? localStorageId
   const currentHousehold = pickInitialHousehold(storedId, households)
 
   const currentMembership = memberships.find(
@@ -76,32 +72,23 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   )
   const currentRole = currentMembership?.role ?? null
 
-  // NB: we deliberately do NOT mirror `currentHousehold.id` back into
-  // `currentHouseholdId` during render. An earlier version did, but it
-  // caused two problems:
-  //   (a) it was a render-time `setState` — fragile under StrictMode
-  //       and a known foot-gun for "Maximum update depth exceeded"
-  //       crashes when a child component (e.g. PreferencesSettings on
-  //       the Settings page) re-rendered for unrelated reasons;
-  //   (b) once mirrored, `currentHouseholdId` won the `??` chain
-  //       above forever, so the server-stored `last_household_id`
-  //       (which arrives a few ms after localStorage) was silently
-  //       ignored — breaking the cross-device persistence the
-  //       persistence migration was added for.
-  // `currentHouseholdId` therefore stays `null` until the user makes
-  // an explicit choice via `switchHousehold`. The derived
-  // `currentHousehold` already handles the "stored id is no longer a
-  // valid membership" case via `pickInitialHousehold`'s fallback.
+  // Share an initial selection with MCP after preferences load. Never
+  // replace an unfamiliar saved id: memberships may be stale. The
+  // conditional write also preserves a concurrent remote selection.
+  // Attempt once per selection to avoid retry loops.
+  useEffect(() => {
+    if (isLoading || !preferencesLoaded || !user || !currentHousehold) return
+    if (preferences.lastHouseholdId !== null) return
+    const selection = `${user.id}:${currentHousehold.id}`
+    if (initialSelectionSave.current === selection) return
+    initialSelectionSave.current = selection
+    setPreferences({ lastHouseholdId: currentHousehold.id }, { onlyIfNoHousehold: true })
+  }, [isLoading, preferencesLoaded, user, currentHousehold, preferences.lastHouseholdId, setPreferences])
 
   // Persist the active selection so the next session opens the same
   // household. We write to localStorage on every change so the next
   // visit on this device doesn't briefly flash the wrong household
-  // before the server preferences query resolves. The server-side
-  // write happens *only* in `switchHousehold` (an explicit user
-  // action) — otherwise on a fresh sign-in we'd race the preferences
-  // query and overwrite a `last_household_id` set from another device
-  // with whatever first-membership we happened to resolve while
-  // loading.
+  // before the server preferences query resolves.
   useEffect(() => {
     if (!currentHousehold || !user || typeof window === 'undefined') return
     window.localStorage.setItem(
@@ -167,7 +154,6 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   useHouseholdRealtime(currentHousehold?.id ?? null, onRealtimeEvent)
 
   const switchHousehold = (householdId: string) => {
-    setCurrentHouseholdId(householdId)
     if (user && typeof window !== 'undefined') {
       window.localStorage.setItem(lastHouseholdStorageKey(user.id), householdId)
     }
