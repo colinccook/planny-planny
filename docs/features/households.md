@@ -6,6 +6,8 @@ through `profiles.last_household_id`. Automatic app selections are saved after
 preferences load; later connector switches update the open app even after a
 manual in-app switch.
 
+![The app follows the shared household selection](../screenshots/households/05-shared-selection.png)
+
 Creating, selecting, configuring, and synchronising households.
 
 ## Why it matters

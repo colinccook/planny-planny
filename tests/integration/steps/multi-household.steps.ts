@@ -113,6 +113,18 @@ When('I select {string} from another device', async ({ session }, name: string) 
   if (error) throw error
 })
 
+Then('I capture the shared household selection', async ({ session }) => {
+  const user = requireAuthedUser(session)
+  await session.page.screenshot({
+    path: 'docs/screenshots/households/05-shared-selection.png',
+    animations: 'disabled',
+    mask: [
+      session.page.getByText(user.email, { exact: true }),
+      session.page.getByText(user.displayName, { exact: true }),
+    ],
+  })
+})
+
 Then(
   'the {string} indicator in My Memberships moves to {string}',
   async ({ session }, indicator: string, name: string) => {

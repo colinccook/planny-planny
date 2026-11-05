@@ -64,6 +64,9 @@ selection.
 
 ## Screenshots and visual walkthrough
 
+The app's [shared household selection](../screenshots/households/05-shared-selection.png)
+is captured at 390×844 by the household-switching BDD regression.
+
 Capture the entry card, copied-URL state, OAuth consent, successful connector,
 and revoked-access state at 390×844 under
 `docs/screenshots/claude-integration/`. Playwright can create a deterministic

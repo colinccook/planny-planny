@@ -1,5 +1,5 @@
 @Households
-# #IntegrationTesting #Frontend !HouseholdSwitcher
+# #IntegrationTesting #Frontend !LoginForm !SettingsPage !HouseholdSwitcher
 Feature: Switching between multiple households
   A user that belongs to two households must be able to use the
   Settings panel to (a) see both, (b) switch the active household,
@@ -36,6 +36,7 @@ Feature: Switching between multiple households
     Then my shared household preference is "Beach House"
     When I select "Cook Family" from another device
     Then the Current Household selector shows "Cook Family"
+    And I capture the shared household selection
 
   Scenario: The chosen household is remembered as the default after sign-out and back in
     When I open the settings page
