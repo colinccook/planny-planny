@@ -21,6 +21,11 @@ export interface UserPreferences {
   soundEffectsEnabled: boolean
 }
 
+interface PreferenceUpdate {
+  patch: Partial<UserPreferences>
+  onlyIfNoHousehold?: boolean
+}
+
 const DEFAULT_PREFERENCES: UserPreferences = {
   lastHouseholdId: null,
   soundEffectsEnabled: true,
@@ -101,7 +106,7 @@ export function useUserPreferences() {
   }, [userId, queryClient])
 
   const mutate = useMutation({
-    mutationFn: async (patch: Partial<UserPreferences>) => {
+    mutationFn: async ({ patch, onlyIfNoHousehold }: PreferenceUpdate) => {
       if (!user) throw new Error('Not signed in')
       const dbPatch: Database['public']['Tables']['profiles']['Update'] = {}
       if (patch.lastHouseholdId !== undefined) {
@@ -111,14 +116,16 @@ export function useUserPreferences() {
         dbPatch.sound_effects_enabled = patch.soundEffectsEnabled
       }
       if (Object.keys(dbPatch).length === 0) return
-      const { error } = await supabase
+      let request = supabase
         .from('profiles')
         .update(dbPatch)
         .eq('id', user.id)
+      if (onlyIfNoHousehold) request = request.is('last_household_id', null)
+      const { error } = await request
       if (error) throw error
     },
     // Optimistic write — these toggles should feel instant.
-    onMutate: async (patch) => {
+    onMutate: async ({ patch }) => {
       if (!user) return { previous: undefined }
       await queryClient.cancelQueries({ queryKey: userPreferencesKey(user.id) })
       const previous = queryClient.getQueryData<UserPreferences>(
@@ -149,7 +156,9 @@ export function useUserPreferences() {
   return {
     preferences: query.data ?? DEFAULT_PREFERENCES,
     isLoading: query.isLoading,
+    isSuccess: query.isSuccess,
     /** Patch one or more preferences. Optimistic. */
-    setPreferences: (patch: Partial<UserPreferences>) => mutate.mutate(patch),
+    setPreferences: (patch: Partial<UserPreferences>, options?: { onlyIfNoHousehold: boolean }) =>
+      mutate.mutate({ patch, ...options }),
   }
 }

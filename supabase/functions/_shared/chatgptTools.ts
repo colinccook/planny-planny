@@ -3,6 +3,12 @@ import { z } from 'zod'
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
 const id = z.string().uuid()
+const household = z.object({
+  id,
+  name: z.string(),
+  role: z.enum(['owner', 'member', 'honoured_guest', 'voting_guest']),
+  can_use_plugin: z.boolean(),
+})
 const optionalText = z.string().trim().min(1).max(2_000).optional()
 const nullableText = z.string().nullable()
 
@@ -102,6 +108,24 @@ const oauthMeta = {
 } as const
 
 export const CHATGPT_TOOL_DEFINITIONS = [
+  {
+    name: 'list_households',
+    title: 'List my households',
+    description: 'List your household memberships, roles, plugin access, and active household. Works before a household is selected. The active household follows your selection in the app.',
+    inputSchema: z.object({}),
+    outputSchema: z.object({ households: z.array(household), active_household_id: id.nullable() }),
+    annotations: readOnly,
+    _meta: oauthMeta,
+  },
+  {
+    name: 'switch_household',
+    title: 'Switch active household',
+    description: 'Choose a household from list_households for subsequent tool calls. Saves the same active household preference used by the app and other devices. Requires plugin access in the target household.',
+    inputSchema: z.object({ household_id: id }),
+    outputSchema: z.object({ household }),
+    annotations: changesData,
+    _meta: oauthMeta,
+  },
   {
     name: 'list_todos',
     title: 'List household todos',
@@ -374,7 +398,7 @@ export function createChatGptMcpServer(
     { name: 'Planny Planny', version: '2.0.0' },
     {
       instructions:
-        'Use the active Planny Planny household. Confirm before destructive changes. Read current records before updating or deleting them.',
+        'Use the active Planny Planny household, shared with the app. Use list_households to discover memberships and the active household; if none is active, ask the user to choose and use switch_household. A sole household is selected automatically. Confirm before switching households or making destructive changes. Read current records before updating or deleting them.',
     },
   )
 

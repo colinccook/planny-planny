@@ -25,6 +25,18 @@ Feature: Switching between multiple households
     Then the Current Household selector shows "Beach House"
     And the "(viewing)" indicator in My Memberships moves to "Beach House"
 
+  Scenario: An automatically selected household is shared with connected apps
+    When I open the settings page
+    Then the Current Household selector shows "Cook Family"
+    And my shared household preference is "Cook Family"
+
+  Scenario: A remote household change is reflected after an in-app switch
+    When I open the settings page
+    And I switch the Current Household to "Beach House"
+    Then my shared household preference is "Beach House"
+    When I select "Cook Family" from another device
+    Then the Current Household selector shows "Cook Family"
+
   Scenario: The chosen household is remembered as the default after sign-out and back in
     When I open the settings page
     And I switch the Current Household to "Beach House"

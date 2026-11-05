@@ -77,6 +77,14 @@ The module is the **single source of truth**. It exports:
 | `canSeeMeals`       | every audience except `null`                          |
 | `canSeeIdeas`       | every audience except `null`                          |
 | `canSeeVoteCounts`  | every audience except `null`                          |
+| `canUsePlugin`      | owner / member / honoured_guest                       |
+
+MCP household discovery lists only the signed-in user's memberships, including
+voting-guest memberships so their restriction is visible. Selecting a household
+through `switch_household`, and all household planning tools, require
+`canUsePlugin` for the target household. Public share links do not grant MCP
+access. These operations reuse the existing membership/profile RLS policies;
+they do not grant any new household data permissions.
 
 ### Rules of the road
 

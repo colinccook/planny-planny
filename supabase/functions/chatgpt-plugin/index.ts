@@ -54,9 +54,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createMcpHandler } from '@modelcontextprotocol/server'
 import { withOAuthProtectedResource, withSupabase } from '@supabase/server'
-import { canUsePlugin } from '../../../src/lib/permissions.ts'
 import type { Database } from '../../../src/types/database.ts'
 import { createChatGptMcpServer } from '../_shared/chatgptTools.ts'
+import { listPluginHouseholds, PluginHouseholdError, resolvePluginHousehold, switchPluginHousehold } from '../_shared/pluginHouseholds.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -135,6 +135,20 @@ async function parseBody(req: Request): Promise<Record<string, unknown> | Respon
 // transport, 2025-03-26 spec). Each tool maps 1-to-1 with a REST route.
 
 const MCP_TOOLS = [
+  {
+    name: 'list_households',
+    description: 'List your households, roles, plugin access, and the active household shared with the app. No active household required.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'switch_household',
+    description: 'Switch the active household for subsequent calls and in the app. Use an ID from list_households. Requires plugin access.',
+    inputSchema: {
+      type: 'object',
+      properties: { household_id: { type: 'string', format: 'uuid' } },
+      required: ['household_id'],
+    },
+  },
   // Todos
   {
     name: 'list_todos',
@@ -944,48 +958,24 @@ async function executeMcpTool(
   throw new Error(`Unknown tool: ${toolName}`)
 }
 
-async function resolvePluginContext(
+async function executePluginTool(
+  toolName: string,
+  args: Record<string, unknown>,
   req: Request,
   supabase: ReturnType<typeof createClient<Database>>,
-): Promise<{ userId: string; householdId: string }> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('The authenticated Planny Planny user could not be resolved.')
+  userId: string,
+) {
+  if (toolName === 'list_households') return await listPluginHouseholds(supabase, userId)
+  if (toolName === 'switch_household') {
+    if (typeof args.household_id !== 'string' || !args.household_id) {
+      throw new Error('household_id is required. Use an ID from list_households.')
+    }
+    return await switchPluginHousehold(supabase, userId, args.household_id)
   }
-
-  const requestUrl = new URL(req.url)
-  let householdId = requestUrl.searchParams.get('household_id')
-
-  if (!householdId) {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('last_household_id')
-      .eq('id', user.id)
-      .single()
-    if (profileError) throw new Error(profileError.message)
-    householdId = profile.last_household_id
-  }
-
-  if (!householdId) {
-    throw new Error('Open Planny Planny and select a household before using the plugin.')
-  }
-
-  const { data: membership, error: membershipError } = await supabase
-    .from('household_members')
-    .select('role')
-    .eq('household_id', householdId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (membershipError || !membership) {
-    throw new Error('The selected household is unavailable.')
-  }
-
-  if (!canUsePlugin(membership.role)) {
-    throw new Error('Your household access level cannot use the ChatGPT plugin.')
-  }
-
-  return { userId: user.id, householdId }
+  const household = await resolvePluginHousehold(
+    supabase, userId, new URL(req.url).searchParams.get('household_id'),
+  )
+  return await executeMcpTool(toolName, args, supabase, userId, household.id)
 }
 
 const currentMcpHandler = withOAuthProtectedResource(
@@ -998,8 +988,11 @@ const currentMcpHandler = withOAuthProtectedResource(
     async (req, { supabase }) => {
       const handler = createMcpHandler(() => {
         return createChatGptMcpServer(async (toolName, args) => {
-          const { userId, householdId } = await resolvePluginContext(req, supabase)
-          return await executeMcpTool(toolName, args, supabase, userId, householdId)
+          const { data: { user }, error } = await supabase.auth.getUser()
+          if (error || !user) {
+            throw new Error('The authenticated Planny Planny user could not be resolved.')
+          }
+          return await executePluginTool(toolName, args, req, supabase, user.id)
         })
       }, {
         legacy: 'stateless',
@@ -1068,45 +1061,9 @@ async function handleMcp(
 
     const toolName = typeof params.name === 'string' ? params.name : ''
     const toolArgs = (params.arguments ?? {}) as Record<string, unknown>
-    const reqUrl = new URL(req.url)
-
-    // Resolve household.
-    let householdId = reqUrl.searchParams.get('household_id') ?? null
-    if (!householdId) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('last_household_id')
-        .eq('id', user.id)
-        .single()
-      householdId = profile?.last_household_id ?? null
-    }
-    if (!householdId) {
-      return mcpError(
-        id,
-        -32002,
-        'No household resolved. Pass ?household_id=<uuid> or set your last active household in the app first.',
-      )
-    }
-
-    const { data: membership, error: membershipError } = await supabase
-      .from('household_members')
-      .select('role')
-      .eq('household_id', householdId)
-      .eq('user_id', user.id)
-      .single()
-    if (membershipError || !membership) {
-      return mcpError(id, -32003, 'The selected household is unavailable.')
-    }
-    if (!canUsePlugin(membership.role)) {
-      return mcpError(
-        id,
-        -32003,
-        'Your household access level cannot use the ChatGPT plugin.',
-      )
-    }
 
     try {
-      const result = await executeMcpTool(toolName, toolArgs, supabase, user.id, householdId)
+      const result = await executePluginTool(toolName, toolArgs, req, supabase, user.id)
       return mcpResult(id, {
         content: [{ type: 'text', text: JSON.stringify(result) }],
       })
@@ -1115,7 +1072,7 @@ async function handleMcp(
       // is returned to the client.
       console.error('MCP tools/call error:', e)
       const msg = e instanceof Error ? e.message : 'Internal error'
-      return mcpError(id, -32603, msg)
+      return mcpError(id, e instanceof PluginHouseholdError ? e.code : -32603, msg)
     }
   }
 

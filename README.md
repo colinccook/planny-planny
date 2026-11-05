@@ -45,7 +45,9 @@ database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permiss
   [@ClaudeIntegration](docs/features/claude-integration.md): the same MCP
   server works as a Claude custom connector — an "Add to Claude" card in
   Settings gives copy-paste instructions and the server URL, with sign-in
-  handled by OAuth and automatic client registration.
+  handled by OAuth and automatic client registration. Claude follows your
+  active household, can list your memberships and switch households in chat;
+  a sole household works without any manual selection.
 - **🌱 [Outcomes](docs/features/meal-outcomes.md).** Record whether the planned meal actually got cooked and
   eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
 

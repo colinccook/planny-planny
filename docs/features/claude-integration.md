@@ -11,6 +11,10 @@ manage your household meal plan by chatting with Claude.
   Claude's *Add custom connector* screen expects.
 - An **Add to Claude** card on the in-app Settings page walks through
   the setup and offers a one-tap copy of the server URL.
+- Claude follows the active household shared with the app. A sole household
+  works automatically, even if you have never manually selected it.
+- Ask Claude to **list my households** or **switch to another household**;
+  you no longer need to open the app just to choose one.
 
 ## How to connect
 
@@ -32,8 +36,31 @@ in Settings.
 2. Copy the displayed MCP server URL.
 3. Add it as a custom connector in Claude and enable sign-in.
 4. Complete OAuth consent, then ask Claude to work with the household plan.
-5. Revoke access later from **Connected apps** when the connector is no longer
+5. Ask Claude to list households and, if needed, choose one by name. Switching
+   updates the app and other signed-in devices too.
+6. Revoke access later from **Connected apps** when the connector is no longer
    needed.
+
+## Household tools and permissions
+
+- `list_households` needs sign-in but no active household. It returns your
+  memberships with `id`, `name`, `role`, `can_use_plugin`, and an
+  `active_household_id` (or `null`). It never lists another user's memberships.
+- `switch_household` takes a `household_id` from that list and saves
+  `profiles.last_household_id`, the same preference used by the app. Confirm
+  the switch before proceeding: later meal, todo, idea and event calls use it.
+- Owners, members and honoured guests may select and use a household through
+  the connector. Voting guests may discover their memberships but cannot
+  select a restricted household or use its planning tools. Public links do
+  not grant connector access.
+- When several households exist without a valid saved choice, Claude asks
+  which to use rather than guessing. When there is only one, it is used
+  automatically. A stale preference never grants access to a former household.
+
+The app publishes automatic selections after loading preferences, and both
+surfaces follow later changes. Existing `?household_id=` MCP URLs still pin
+planning calls to that household; omit the parameter to follow the shared
+selection.
 
 ## Screenshots and visual walkthrough
 

@@ -1,5 +1,11 @@
 # @Households
 
+The active household is shared across the app, other devices, and the
+[Claude/ChatGPT MCP connector](claude-integration.md#household-tools-and-permissions)
+through `profiles.last_household_id`. Automatic app selections are saved after
+preferences load; later connector switches update the open app even after a
+manual in-app switch.
+
 Creating, selecting, configuring, and synchronising households.
 
 ## Why it matters
