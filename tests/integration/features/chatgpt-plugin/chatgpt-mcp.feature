@@ -1,5 +1,5 @@
 @ChatGPTPlugin
-# #IntegrationTesting #Backend #ChatGptPlugin
+# #IntegrationTesting #Backend #ChatGptPlugin #McpDataVolume
 Feature: ChatGPT MCP Endpoint
   The current MCP Streamable HTTP endpoint at /mcp lets ChatGPT
   connect through Supabase Auth OAuth 2.1. The legacy /sse endpoint
@@ -48,6 +48,48 @@ Feature: ChatGPT MCP Endpoint
     When I exercise the schema-sensitive current MCP tools
     Then the current MCP tools honour their persisted schema contracts
 
+  # ── Meal inspiration from history ─────────────────────────────────────
+
+  Scenario: An assistant can see which dishes the household has not eaten for a while
+    Given the household has a year of past meals with ingredients and outcomes
+    When I ask the current MCP endpoint about the household meal history
+    Then the meal history lists one entry per dish with the longest-unplanned dish first
+    And the meal history reports how often each dish was planned and whether it happened
+    And the meal history includes the ingredients used by each dish
+
+  Scenario: An assistant can see which ingredients the household uses most
+    Given the household has a year of past meals with ingredients and outcomes
+    When I ask the current MCP endpoint about the household meal history
+    Then the ingredient statistics rank the most-used ingredient first with example meals
+    And the ingredient statistics include never-used household ingredients with a zero count
+
+  Scenario: Tool results carry the meal details in their text content, not just a count
+    Given the household has a year of past meals with ingredients and outcomes
+    When I ask the current MCP endpoint about the household meal history
+    Then the current MCP text content names the past dishes
+
+  Scenario: Listing a long range of meals pages on date boundaries
+    Given the household has a year of past meals with ingredients and outcomes
+    When I ask the current MCP endpoint about the household meal history
+    Then listing the past meals two at a time pages through every meal exactly once
+
+  Scenario: An honoured guest can summarise meal history
+    Given I am signed in as an honoured guest of a household for the plugin
+    When I call current MCP tool "get_meal_history" through Supabase OAuth with arguments:
+      """
+      {}
+      """
+    Then the MCP response is a valid JSON-RPC 2.0 result
+    And the current MCP structured result contains a "dishes" array
+
+  Scenario: A voting guest cannot summarise meal history
+    Given I am signed in as a voting guest of a household for the plugin
+    When I call current MCP tool "get_meal_history" through Supabase OAuth with arguments:
+      """
+      {}
+      """
+    Then the MCP tool response reports an access level denial
+
   # ── MCP lifecycle — no auth required ─────────────────────────────────
 
   Scenario: initialize returns server capabilities without authentication
@@ -66,6 +108,8 @@ Feature: ChatGPT MCP Endpoint
     And the tools array includes a tool named "list_meals"
     And the tools array includes a tool named "create_meal"
     And the tools array includes a tool named "get_shopping_list"
+    And the tools array includes a tool named "get_meal_history"
+    And the tools array includes a tool named "get_ingredient_stats"
 
   Scenario: notifications/initialized returns 204 without authentication
     When I send an MCP notifications/initialized message

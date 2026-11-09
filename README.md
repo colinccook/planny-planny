@@ -47,7 +47,10 @@ database* by RLS policies, not in the UI. → [docs/permissions.md](docs/permiss
   Settings gives copy-paste instructions and the server URL, with sign-in
   handled by OAuth and automatic client registration. Claude follows your
   active household, can list your memberships and switch households in chat;
-  a sole household works without any manual selection.
+  a sole household works without any manual selection. Ask it *"what haven't
+  we eaten for a while?"* or *"what are our most-used ingredients?"* — compact
+  per-dish and per-ingredient history tools let it reason over a whole year
+  of meals without drowning in rows.
 - **🌱 [Outcomes](docs/features/meal-outcomes.md).** Record whether the planned meal actually got cooked and
   eaten, so the household learns over time. → [docs/outcomes.md](docs/outcomes.md)
 

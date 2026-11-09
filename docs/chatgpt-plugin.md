@@ -20,7 +20,11 @@ than relying only on screenshots or field names in this guide.
 - An additional server-side access check allowing owners, members and
   honoured guests to use tools. Voting guests and public viewers cannot.
 - Complete tool titles, input/output schemas, structured results and safety
-  annotations.
+  annotations. Every result's text content also carries the serialised JSON
+  so clients that only read text still see the data.
+- Compact history tools for AI reasoning — `get_meal_history` (one entry
+  per dish) and `get_ingredient_stats` (one entry per ingredient) — plus a
+  paged, capped `list_meals` ([dr-022](drs/dr-022-mcp-data-volume.md)).
 - Connected-app grant revocation in Settings.
 - Public plugin privacy, terms and support routes.
 - The legacy `/sse` MCP endpoint and REST/OpenAPI Custom GPT Action routes
@@ -259,6 +263,9 @@ reviewed by OpenAI:
 - add new optional fields rather than changing existing meanings;
 - do not remove or rename a live tool without a migration plan;
 - keep output schemas aligned with `structuredContent`;
+- put the full serialised result in the text content, never just a count;
+- decide whether a new read tool aggregates, paginates, or returns a small
+  bounded list, and say which ([dr-022](drs/dr-022-mcp-data-volume.md));
 - mark all list/get tools read-only;
 - mark deletes, moves, clears and overwrites destructive;
 - keep `openWorldHint` false while tools are limited to a user's private

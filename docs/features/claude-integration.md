@@ -15,6 +15,12 @@ manage your household meal plan by chatting with Claude.
   works automatically, even if you have never manually selected it.
 - Ask Claude to **list my households** or **switch to another household**;
   you no longer need to open the app just to choose one.
+- Ask Claude **"what haven't we eaten for a while?"**, **"what are our
+  most-used ingredients?"** or **"suggest some meals based on our
+  history"**. The `get_meal_history` and `get_ingredient_stats` tools
+  summarise a year of planning as one entry per dish or ingredient, so
+  Claude can reason about rotation and variety without reading every day
+  (see [@ChatGPTPlugin → History and inspiration tools](chatgpt-plugin.md#history-and-inspiration-tools)).
 
 ## How to connect
 
@@ -38,7 +44,9 @@ in Settings.
 4. Complete OAuth consent, then ask Claude to work with the household plan.
 5. Ask Claude to list households and, if needed, choose one by name. Switching
    updates the app and other signed-in devices too.
-6. Revoke access later from **Connected apps** when the connector is no longer
+6. Ask for meal inspiration from the household's own history — which dishes
+   are overdue, which ingredients dominate, and what to eat more of.
+7. Revoke access later from **Connected apps** when the connector is no longer
    needed.
 
 ## Household tools and permissions

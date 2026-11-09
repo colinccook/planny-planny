@@ -48,6 +48,40 @@ const AUTH_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/chatgpt-plugin-auth`
 // level object so all step functions in this file share state within
 // one scenario without threading it through parameters.
 
+interface DishHistoryResult {
+  title: string
+  times_planned: number
+  first_planned: string
+  last_planned: string
+  days_since_last_planned: number
+  times_as_planned: number
+  times_did_not_happen: number
+  ingredients: string[]
+}
+
+interface IngredientStatResult {
+  name: string
+  starred: boolean
+  warning: boolean
+  meal_count: number
+  last_used: string | null
+  example_meals: string[]
+}
+
+interface ListedMealResult {
+  id: string
+  title: string
+  date: string
+  ingredients: string[]
+}
+
+interface HistoryResults {
+  history: { from: string; to: string; total_meals: number; dishes: DishHistoryResult[] }
+  historyText: string | null
+  stats: { ingredients: IngredientStatResult[] }
+  pages: { meals: ListedMealResult[]; has_more: boolean; next_from: string | null }[]
+}
+
 interface PluginWorld {
   jwt: string | null
   householdId: string | null
@@ -63,6 +97,7 @@ interface PluginWorld {
   lastMcpBody: Record<string, unknown> | null
   lastMcpTodoId: string | null
   currentContractResults: Record<string, unknown> | null
+  historyResults: HistoryResults | null
   /** OAuth-specific state (chatgpt-plugin-auth + discovery endpoints). */
   oauthEmail: string | null
   oauthPassword: string | null
@@ -95,6 +130,7 @@ const world: PluginWorld = {
   lastMcpBody: null,
   lastMcpTodoId: null,
   currentContractResults: null,
+  historyResults: null,
   oauthEmail: null,
   oauthPassword: null,
   lastDiscoveryResponse: null,
@@ -1234,6 +1270,171 @@ Then('the current MCP tools honour their persisted schema contracts', async () =
   )
   expect(results?.clearedOutcomes).toHaveLength(0)
   expect(results?.deletedEvents).toHaveLength(0)
+})
+
+// ── Meal inspiration from history ──────────────────────────────────────────
+
+function daysAgo(days: number): string {
+  const d = new Date()
+  d.setUTCDate(d.getUTCDate() - days)
+  return d.toISOString().slice(0, 10)
+}
+
+const HISTORY_SEED = {
+  fishPie: daysAgo(300),
+  firstCurry: daysAgo(200),
+  secondCurry: daysAgo(100),
+  firstPizza: daysAgo(10),
+  recent: daysAgo(5),
+}
+
+Given('the household has a year of past meals with ingredients and outcomes', async ({ session }) => {
+  const householdId = world.householdId
+  const currentUser = session.authedUser
+  if (!householdId || !currentUser) throw new Error('History seeding requires a signed-in household')
+  const admin = getAdminClient()
+
+  const ingredientNames = ['Fish', 'Potato', 'Chicken', 'Rice', 'Cheese', 'Tomato', 'Lentils']
+  const { data: ingredients, error: ingredientError } = await admin
+    .from('ingredients')
+    .insert(ingredientNames.map((name) => ({
+      household_id: householdId,
+      name,
+      starred: name === 'Lentils',
+      warning: false,
+    })))
+    .select('id, name')
+  if (ingredientError || !ingredients) throw new Error(ingredientError?.message ?? 'Could not seed ingredients')
+  const ingredientId = (name: string): string => {
+    const match = ingredients.find((ingredient) => ingredient.name === name)
+    if (!match) throw new Error(`Missing seeded ingredient ${name}`)
+    return match.id
+  }
+
+  const meals: { title: string; date: string; ingredients: string[]; outcome?: 'as_planned' | 'did_not_happen' }[] = [
+    { title: 'Fish pie', date: HISTORY_SEED.fishPie, ingredients: ['Fish', 'Potato'], outcome: 'as_planned' },
+    { title: 'Curry', date: HISTORY_SEED.firstCurry, ingredients: ['Chicken', 'Rice'], outcome: 'did_not_happen' },
+    { title: 'curry', date: HISTORY_SEED.secondCurry, ingredients: ['Chicken', 'Rice'], outcome: 'as_planned' },
+    { title: 'Pizza', date: HISTORY_SEED.firstPizza, ingredients: ['Cheese'] },
+    { title: 'Pizza', date: HISTORY_SEED.recent, ingredients: ['Cheese', 'Tomato'] },
+    { title: 'Salad', date: HISTORY_SEED.recent, ingredients: ['Chicken'] },
+  ]
+
+  for (const meal of meals) {
+    const { data: inserted, error: mealError } = await admin
+      .from('meal_plans')
+      .insert({ household_id: householdId, title: meal.title, date: meal.date, created_by: currentUser.userId })
+      .select('id')
+      .single()
+    if (mealError || !inserted) throw new Error(mealError?.message ?? `Could not seed ${meal.title}`)
+    if (meal.ingredients.length > 0) {
+      const { error: linkError } = await admin
+        .from('meal_plan_ingredients')
+        .insert(meal.ingredients.map((name) => ({ meal_plan_id: inserted.id, ingredient_id: ingredientId(name) })))
+      if (linkError) throw new Error(linkError.message)
+    }
+    if (meal.outcome) {
+      const { error: outcomeError } = await admin
+        .from('meal_outcomes')
+        .insert({
+          household_id: householdId,
+          meal_plan_id: inserted.id,
+          status: meal.outcome,
+          reason: meal.outcome === 'did_not_happen' ? 'ate_out' : null,
+          recorded_by: currentUser.userId,
+        })
+      if (outcomeError) throw new Error(outcomeError.message)
+    }
+  }
+})
+
+When('I ask the current MCP endpoint about the household meal history', async ({ page, session }) => {
+  await authorizeCurrentMcp(page, session, async (accessToken) => {
+    const historyBody = await callCurrentMcpTool(accessToken, 'get_meal_history', {})
+    const history = currentStructuredContent(historyBody) as HistoryResults['history']
+    const historyText = extractMcpText(historyBody)
+    const stats = currentStructuredContent(
+      await callCurrentMcpTool(accessToken, 'get_ingredient_stats', {}),
+    ) as HistoryResults['stats']
+
+    const pages: HistoryResults['pages'] = []
+    let from: string | null = HISTORY_SEED.fishPie
+    while (from && pages.length < 10) {
+      const pageResult = currentStructuredContent(
+        await callCurrentMcpTool(accessToken, 'list_meals', { from, to: daysAgo(0), limit: 2 }),
+      ) as HistoryResults['pages'][number]
+      pages.push(pageResult)
+      from = pageResult.has_more ? pageResult.next_from : null
+    }
+
+    world.historyResults = { history, historyText, stats, pages }
+  })
+})
+
+function historyResults(): HistoryResults {
+  if (!world.historyResults) throw new Error('Meal history has not been requested yet')
+  return world.historyResults
+}
+
+Then('the meal history lists one entry per dish with the longest-unplanned dish first', async () => {
+  const { history } = historyResults()
+  expect(history.total_meals).toBe(6)
+  expect(history.dishes.map((dish) => dish.title)).toEqual(['Fish pie', 'curry', 'Pizza', 'Salad'])
+  expect(history.dishes[0].days_since_last_planned).toBe(300)
+  expect(history.dishes[0].last_planned).toBe(HISTORY_SEED.fishPie)
+})
+
+Then('the meal history reports how often each dish was planned and whether it happened', async () => {
+  const curry = historyResults().history.dishes.find((dish) => dish.title.toLowerCase() === 'curry')
+  expect(curry).toMatchObject({
+    times_planned: 2,
+    first_planned: HISTORY_SEED.firstCurry,
+    last_planned: HISTORY_SEED.secondCurry,
+    times_as_planned: 1,
+    times_did_not_happen: 1,
+  })
+})
+
+Then('the meal history includes the ingredients used by each dish', async () => {
+  const pizza = historyResults().history.dishes.find((dish) => dish.title === 'Pizza')
+  expect(pizza?.ingredients).toEqual(['Cheese', 'Tomato'])
+})
+
+Then('the ingredient statistics rank the most-used ingredient first with example meals', async () => {
+  const [top] = historyResults().stats.ingredients
+  expect(top).toMatchObject({ name: 'Chicken', meal_count: 3, last_used: HISTORY_SEED.recent })
+  expect(top.example_meals).toEqual(expect.arrayContaining(['Salad', 'curry']))
+})
+
+Then('the ingredient statistics include never-used household ingredients with a zero count', async () => {
+  const lentils = historyResults().stats.ingredients.find((stat) => stat.name === 'Lentils')
+  expect(lentils).toEqual({
+    name: 'Lentils',
+    starred: true,
+    warning: false,
+    meal_count: 0,
+    last_used: null,
+    example_meals: [],
+  })
+})
+
+Then('the current MCP text content names the past dishes', async () => {
+  const text = historyResults().historyText ?? ''
+  expect(text).toContain('Fish pie')
+  expect(text).toContain('Pizza')
+  expect(text).toContain(HISTORY_SEED.fishPie)
+})
+
+Then('listing the past meals two at a time pages through every meal exactly once', async () => {
+  const { pages } = historyResults()
+  expect(pages.length).toBeGreaterThan(1)
+  expect(pages.slice(0, -1).every((pageResult) => pageResult.has_more)).toBe(true)
+  expect(pages[pages.length - 1].has_more).toBe(false)
+  const ids = pages.flatMap((pageResult) => pageResult.meals.map((meal) => meal.id))
+  expect(new Set(ids).size).toBe(6)
+  expect(ids).toHaveLength(6)
+  const salad = pages.flatMap((pageResult) => pageResult.meals).find((meal) => meal.title === 'Salad')
+  expect(salad?.ingredients).toEqual(['Chicken'])
 })
 
 Then('the MCP error code is {int}', async ({ page: _page }, code: number) => {

@@ -55,7 +55,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { createMcpHandler } from '@modelcontextprotocol/server'
 import { withOAuthProtectedResource, withSupabase } from '@supabase/server'
 import type { Database } from '../../../src/types/database.ts'
-import { createChatGptMcpServer } from '../_shared/chatgptTools.ts'
+import { createChatGptMcpServer, LIST_MEALS_DEFAULT_LIMIT, LIST_MEALS_MAX_LIMIT } from '../_shared/chatgptTools.ts'
+import {
+  groupMealsByDish,
+  type HistoryIngredient,
+  type HistoryMealRow,
+  pageMealsByDate,
+  summariseIngredients,
+} from '../_shared/mealHistory.ts'
 import { listPluginHouseholds, PluginHouseholdError, resolvePluginHousehold, switchPluginHousehold } from '../_shared/pluginHouseholds.ts'
 
 const corsHeaders = {
@@ -119,6 +126,55 @@ function weekFromToday(): string {
   const d = new Date()
   d.setDate(d.getDate() + 6)
   return d.toISOString().slice(0, 10)
+}
+
+function yearAgo(): string {
+  const d = new Date()
+  d.setUTCDate(d.getUTCDate() - 365)
+  return d.toISOString().slice(0, 10)
+}
+
+const HISTORY_MEAL_SELECT =
+  'id, title, date, outcome:meal_outcomes(status), ingredients:meal_plan_ingredients(ingredients(id, name, starred, warning))'
+
+interface HistoryMealSelectRow {
+  id: string
+  title: string
+  date: string
+  outcome: { status: 'as_planned' | 'did_not_happen' }[] | { status: 'as_planned' | 'did_not_happen' } | null
+  ingredients: { ingredients: HistoryIngredient | null }[] | null
+}
+
+function toHistoryMealRows(rows: unknown): HistoryMealRow[] {
+  return ((rows ?? []) as HistoryMealSelectRow[]).map((row) => {
+    const outcome = Array.isArray(row.outcome) ? row.outcome[0] : row.outcome
+    return {
+      id: row.id,
+      title: row.title,
+      date: row.date,
+      outcome_status: outcome?.status ?? null,
+      ingredients: (row.ingredients ?? [])
+        .map((link) => link.ingredients)
+        .filter((ingredient): ingredient is HistoryIngredient => ingredient !== null),
+    }
+  })
+}
+
+async function fetchHistoryMeals(
+  supabase: ReturnType<typeof createClient>,
+  householdId: string,
+  from: string,
+  to: string,
+): Promise<HistoryMealRow[]> {
+  const { data, error } = await supabase
+    .from('meal_plans')
+    .select(HISTORY_MEAL_SELECT)
+    .eq('household_id', householdId)
+    .gte('date', from)
+    .lte('date', to)
+    .order('date', { ascending: true })
+  if (error) throw new Error(error.message)
+  return toHistoryMealRows(data)
 }
 
 async function parseBody(req: Request): Promise<Record<string, unknown> | Response> {
@@ -226,6 +282,7 @@ const MCP_TOOLS = [
       properties: {
         from: { type: 'string', description: 'Start date YYYY-MM-DD (defaults to today)' },
         to: { type: 'string', description: 'End date YYYY-MM-DD (defaults to today +6 days)' },
+        limit: { type: 'integer', description: 'Maximum meals per page (default 100, max 365). Follow next_from when has_more is true.' },
       },
     },
   },
@@ -407,6 +464,28 @@ const MCP_TOOLS = [
       },
     },
   },
+  {
+    name: 'get_meal_history',
+    description: 'Summarise meal history as one entry per dish: how often it was planned, when it was last planned, outcomes and ingredients. Defaults to the past year.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'YYYY-MM-DD (defaults to a year ago)' },
+        to: { type: 'string', description: 'YYYY-MM-DD (defaults to today)' },
+      },
+    },
+  },
+  {
+    name: 'get_ingredient_stats',
+    description: 'Rank household ingredients by how many planned meals used them. Defaults to the past year.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'YYYY-MM-DD (defaults to a year ago)' },
+        to: { type: 'string', description: 'YYYY-MM-DD (defaults to today)' },
+      },
+    },
+  },
 ] as const
 
 // ─── MCP JSON-RPC helpers ─────────────────────────────────────────────────
@@ -568,19 +647,66 @@ async function executeMcpTool(
   // ── Meals ──────────────────────────────────────────────────────────────
 
   if (toolName === 'list_meals') {
-    const from = typeof args.from === 'string' ? args.from : new Date().toISOString().slice(0, 10)
-    const to = typeof args.to === 'string' ? args.to : (() => {
-      const d = new Date(); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10)
-    })()
+    const from = typeof args.from === 'string' ? args.from : today()
+    const to = typeof args.to === 'string' ? args.to : weekFromToday()
+    const limit = typeof args.limit === 'number'
+      ? Math.min(Math.max(Math.trunc(args.limit), 1), LIST_MEALS_MAX_LIMIT)
+      : LIST_MEALS_DEFAULT_LIMIT
     const { data, error } = await supabase
       .from('meal_plans')
-      .select('id, title, description, date, household_id, created_at')
+      .select('id, title, description, date, ingredients:meal_plan_ingredients(ingredients(name))')
       .eq('household_id', hid)
       .gte('date', from)
       .lte('date', to)
       .order('date', { ascending: true })
+      .order('created_at', { ascending: true })
+      .limit(limit + 1)
     if (error) throw new Error(error.message)
-    return { meals: data }
+    interface ListedMealRow {
+      id: string
+      title: string
+      description: string | null
+      date: string
+      ingredients: { ingredients: { name: string } | null }[] | null
+    }
+    const rows = (data ?? []) as unknown as ListedMealRow[]
+    const { page, has_more, next_from } = pageMealsByDate(rows, limit)
+    const meals = page.map((row) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      date: row.date,
+      ingredients: (row.ingredients ?? [])
+        .map((link) => link.ingredients?.name)
+        .filter((name): name is string => typeof name === 'string')
+        .sort((a, b) => a.localeCompare(b)),
+    }))
+    return { meals, has_more, next_from }
+  }
+
+  if (toolName === 'get_meal_history') {
+    const from = typeof args.from === 'string' ? args.from : yearAgo()
+    const to = typeof args.to === 'string' ? args.to : today()
+    const rows = await fetchHistoryMeals(supabase, hid, from, to)
+    return { from, to, total_meals: rows.length, dishes: groupMealsByDish(rows, today()) }
+  }
+
+  if (toolName === 'get_ingredient_stats') {
+    const from = typeof args.from === 'string' ? args.from : yearAgo()
+    const to = typeof args.to === 'string' ? args.to : today()
+    const [rows, { data: householdIngredients, error }] = await Promise.all([
+      fetchHistoryMeals(supabase, hid, from, to),
+      supabase
+        .from('ingredients')
+        .select('id, name, starred, warning')
+        .eq('household_id', hid),
+    ])
+    if (error) throw new Error(error.message)
+    return {
+      from,
+      to,
+      ingredients: summariseIngredients(rows, (householdIngredients ?? []) as HistoryIngredient[]),
+    }
   }
 
   if (toolName === 'create_meal') {

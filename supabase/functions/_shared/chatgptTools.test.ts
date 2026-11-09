@@ -1,7 +1,7 @@
 // @ChatGPTPlugin #UnitTesting #Backend #ChatGptPlugin
 import { describe, expect, it, vi } from 'vitest'
 import { createMcpHandler } from '@modelcontextprotocol/server'
-import { CHATGPT_TOOL_DEFINITIONS, createChatGptMcpServer } from './chatgptTools'
+import { CHATGPT_TOOL_DEFINITIONS, createChatGptMcpServer, SERVER_INSTRUCTIONS } from './chatgptTools'
 
 async function readMcpResponse(response: Response): Promise<unknown> {
   const text = await response.text()
@@ -162,7 +162,62 @@ describe('ChatGPT MCP tool definitions', () => {
     }
 
     expect(body.result.structuredContent).toEqual({ todos: [] })
-    expect(body.result.content?.[0]?.text).toBe('list_todos returned 0 items.')
+    expect(body.result.content?.[0]?.text).toContain('list_todos returned 0 items.')
+  })
+
+  it('puts the full result data in the text content so clients that ignore structured content can read it', async () => {
+    const meals = [{
+      id: 'eaed8f18-c9e8-4f01-a9fa-fab14486fd10',
+      title: 'Fish pie',
+      description: null,
+      date: '2026-03-01',
+      ingredients: ['Fish', 'Potato'],
+    }]
+    const handler = createMcpHandler(
+      () => createChatGptMcpServer(async () => ({ meals, has_more: false, next_from: null })),
+    )
+    const response = await handler.fetch(new Request('http://localhost/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'tools/call',
+        params: { name: 'list_meals', arguments: {} },
+      }),
+    }))
+    const body = await readMcpResponse(response) as {
+      result: { content?: { text?: string }[] }
+    }
+    const text = body.result.content?.[0]?.text ?? ''
+
+    expect(text).toContain('Fish pie')
+    expect(JSON.parse(text.slice(text.indexOf('\n') + 1))).toEqual({
+      meals,
+      has_more: false,
+      next_from: null,
+    })
+  })
+
+  it('offers read-only history and ingredient summaries with bounded meal paging', () => {
+    const history = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'get_meal_history')
+    const stats = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'get_ingredient_stats')
+    const listMeals = CHATGPT_TOOL_DEFINITIONS.find((tool) => tool.name === 'list_meals')
+
+    expect(history?.annotations.readOnlyHint).toBe(true)
+    expect(stats?.annotations.readOnlyHint).toBe(true)
+    expect(history?.inputSchema.safeParse({ from: '2025-11-09' }).success).toBe(true)
+    expect(listMeals?.inputSchema.safeParse({ limit: 365 }).success).toBe(true)
+    expect(listMeals?.inputSchema.safeParse({ limit: 366 }).success).toBe(false)
+    expect(listMeals?.inputSchema.safeParse({ limit: 0 }).success).toBe(false)
+  })
+
+  it('tells the model which tool answers history and ingredient questions', () => {
+    expect(SERVER_INSTRUCTIONS).toContain('get_meal_history')
+    expect(SERVER_INSTRUCTIONS).toContain('get_ingredient_stats')
   })
 
   it('dispatches moving a meal as its own operation', async () => {
