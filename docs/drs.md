@@ -33,6 +33,7 @@ as `#ContinuousIntegration` to find the decision and the tests it governs.
 | #FeatureTags | [dr-019](drs/dr-019-feature-tags.md) | Every Gherkin feature file carries one PascalCase `@FeatureName` tag (e.g. `@ChatGPTPlugin`, `@ClaudeIntegration`) — file names unchanged — so a GitHub search finds every test for a feature, and the README can link `@FeatureName` to a `docs/features/` page. |
 | #DocumentationTaxonomy | [dr-020](drs/dr-020-documentation-taxonomy.md) | Product features, decision themes, and UI components use indexed `@Feature`, `#DecisionRecord`, and `!UiComponent` markers in documentation and tests, making related evidence discoverable by repository search. |
 | #CustomDomain | [dr-021](drs/dr-021-custom-domain.md) | Production is served from `https://www.plannyplanny.uk` via GitHub Pages' custom-domain support (`public/CNAME`, `BASE_PATH=/`); Supabase Auth Site/Redirect URLs point at it; the MCP endpoint stays on Supabase unless a `mcp.plannyplanny.uk` proxy is needed for plugin submission. |
+| #McpDataVolume | [dr-022](drs/dr-022-mcp-data-volume.md) | MCP tool text content carries the serialised JSON result; history and inspiration questions are served by server-side aggregation (`get_meal_history`, `get_ingredient_stats`, one entry per dish/ingredient) and raw `list_meals` is paged and capped (default 100, max 365) so a year of data never floods the model's context. |
 
 ## Rules
 

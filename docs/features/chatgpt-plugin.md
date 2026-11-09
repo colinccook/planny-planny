@@ -16,6 +16,31 @@ This capability helps a household plan, decide, or collaborate with less frictio
    works automatically without a saved choice.
 4. Plan meals, manage todos, ideas and events, and record outcomes within
    that household. Existing role checks and RLS still apply.
+5. Ask for inspiration from your own history: "what haven't we eaten for a
+   while?", "what are our most common ingredients?" or "suggest meals based
+   on what we've cooked this year". The assistant calls `get_meal_history`
+   and `get_ingredient_stats`, which return one compact entry per dish or
+   ingredient rather than every planned day.
+
+## History and inspiration tools
+
+- `get_meal_history` (read-only; defaults to the past year) returns one
+  entry per dish: `times_planned`, `first_planned`, `last_planned`,
+  `days_since_last_planned`, `times_as_planned`, `times_did_not_happen` and
+  the `ingredients` used. Dishes are ordered longest-unplanned first.
+  Titles are grouped case- and whitespace-insensitively; near-duplicate
+  names are left for the assistant to merge.
+- `get_ingredient_stats` (read-only; defaults to the past year) ranks
+  household ingredients by `meal_count`, with `last_used`, up to three
+  `example_meals`, and the `starred` / `warning` flags. Ingredients never
+  used in the range appear with a count of zero.
+- `list_meals` now includes each meal's ingredient names and is paged:
+  pass `limit` (default 100, max 365) and follow `next_from` while
+  `has_more` is true. Pages end on a date boundary.
+- Every tool's text content contains the full JSON result, not just an item
+  count, so clients that ignore `structuredContent` still see the data.
+
+See [dr-022](../drs/dr-022-mcp-data-volume.md) for the sizing rationale.
 
 See [Claude household tools and permissions](claude-integration.md#household-tools-and-permissions)
 for the shared tool contracts, role restrictions and explicit-URL override.

@@ -28,6 +28,33 @@ const meal = z.object({
   date,
 })
 
+const listedMeal = meal.extend({
+  ingredients: z.array(z.string()),
+})
+
+export const LIST_MEALS_DEFAULT_LIMIT = 100
+export const LIST_MEALS_MAX_LIMIT = 365
+
+const dishHistory = z.object({
+  title: z.string(),
+  times_planned: z.number().int().nonnegative(),
+  first_planned: date,
+  last_planned: date,
+  days_since_last_planned: z.number().int(),
+  times_as_planned: z.number().int().nonnegative(),
+  times_did_not_happen: z.number().int().nonnegative(),
+  ingredients: z.array(z.string()),
+})
+
+const ingredientStat = z.object({
+  name: z.string(),
+  starred: z.boolean(),
+  warning: z.boolean(),
+  meal_count: z.number().int().nonnegative(),
+  last_used: date.nullable(),
+  example_meals: z.array(z.string()),
+})
+
 const outcome = z.object({
   meal_id: id,
   status: z.enum(['as_planned', 'did_not_happen']),
@@ -192,9 +219,17 @@ export const CHATGPT_TOOL_DEFINITIONS = [
   {
     name: 'list_meals',
     title: 'List planned meals',
-    description: 'List meals in the active household for an optional date range.',
-    inputSchema: z.object({ from: date.optional(), to: date.optional() }),
-    outputSchema: z.object({ meals: z.array(meal) }),
+    description: 'List individual planned meals in the active household for an optional date range (default: today to six days ahead), including their ingredients. Results are paged: when has_more is true, call again with from set to next_from. For questions about history, rotation or inspiration over months, prefer get_meal_history.',
+    inputSchema: z.object({
+      from: date.optional(),
+      to: date.optional(),
+      limit: z.number().int().min(1).max(LIST_MEALS_MAX_LIMIT).optional(),
+    }),
+    outputSchema: z.object({
+      meals: z.array(listedMeal),
+      has_more: z.boolean(),
+      next_from: date.nullable(),
+    }),
     annotations: readOnly,
     _meta: oauthMeta,
   },
@@ -370,6 +405,33 @@ export const CHATGPT_TOOL_DEFINITIONS = [
     annotations: readOnly,
     _meta: oauthMeta,
   },
+  {
+    name: 'get_meal_history',
+    title: 'Summarise meal history by dish',
+    description: 'Summarise the household meal history as one entry per dish (default: the past year up to today): how many times it was planned, when it was first and last planned, days since it was last planned, how often it happened or did not, and the ingredients used. Dishes are ordered with the longest-unplanned first. Use this for "what haven\'t we eaten for a while?", rotation planning and inspiration from past meals instead of listing every day.',
+    inputSchema: z.object({ from: date.optional(), to: date.optional() }),
+    outputSchema: z.object({
+      from: date,
+      to: date,
+      total_meals: z.number().int().nonnegative(),
+      dishes: z.array(dishHistory),
+    }),
+    annotations: readOnly,
+    _meta: oauthMeta,
+  },
+  {
+    name: 'get_ingredient_stats',
+    title: 'Summarise ingredient usage',
+    description: 'Rank the household\'s ingredients by how many planned meals used them in an optional date range (default: the past year up to today), with the most recent use, example meals, and whether the ingredient is starred as a favourite or flagged with a warning. Ingredients never used in the range are included with a count of zero. Use this for "what are our most common ingredients?" and "what should we eat more or less of?".',
+    inputSchema: z.object({ from: date.optional(), to: date.optional() }),
+    outputSchema: z.object({
+      from: date,
+      to: date,
+      ingredients: z.array(ingredientStat),
+    }),
+    annotations: readOnly,
+    _meta: oauthMeta,
+  },
 ] as const
 
 export type ChatGptToolName = (typeof CHATGPT_TOOL_DEFINITIONS)[number]['name']
@@ -391,15 +453,23 @@ function toolSummary(toolName: ChatGptToolName, result: Record<string, unknown>)
   return `${toolName} completed successfully.`
 }
 
+// MCP clients such as Claude reason over the text content rather than
+// structuredContent, so the text must carry the full serialised result or
+// the model only ever sees the item count.
+export function toolText(toolName: ChatGptToolName, result: Record<string, unknown>): string {
+  return `${toolSummary(toolName, result)}\n${JSON.stringify(result)}`
+}
+
+export const SERVER_INSTRUCTIONS =
+  'Use the active Planny Planny household, shared with the app. Use list_households to discover memberships and the active household; if none is active, ask the user to choose and use switch_household. A sole household is selected automatically. Confirm before switching households or making destructive changes. Read current records before updating or deleting them. '
+  + 'Tool results include the full JSON data in their text content. For questions about what the household has eaten over weeks or months, what has not been eaten for a while, or ideas inspired by past meals, call get_meal_history rather than listing every day. For questions about ingredients the household uses most or should eat more of, call get_ingredient_stats. Use list_meals for specific dates; it is paged, so follow next_from when has_more is true.'
+
 export function createChatGptMcpServer(
   execute: (toolName: string, args: Record<string, unknown>) => Promise<unknown>,
 ): McpServer {
   const server = new McpServer(
-    { name: 'Planny Planny', version: '2.0.0' },
-    {
-      instructions:
-        'Use the active Planny Planny household, shared with the app. Use list_households to discover memberships and the active household; if none is active, ask the user to choose and use switch_household. A sole household is selected automatically. Confirm before switching households or making destructive changes. Read current records before updating or deleting them.',
-    },
+    { name: 'Planny Planny', version: '2.1.0' },
+    { instructions: SERVER_INSTRUCTIONS },
   )
 
   for (const definition of CHATGPT_TOOL_DEFINITIONS) {
@@ -423,7 +493,7 @@ export function createChatGptMcpServer(
 
         return {
           structuredContent: result,
-          content: [{ type: 'text', text: toolSummary(definition.name, result) }],
+          content: [{ type: 'text', text: toolText(definition.name, result) }],
         }
       },
     )
